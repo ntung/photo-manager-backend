@@ -28,8 +28,11 @@ def index():
     all_todos = todos.find()
     return render_template('index.html', todos=all_todos)
 
+
 def save_matadata(_submission_folder, _filename, _title, _description, _photo_courtesy):
-    pass
+    photos = db.photos
+    photos.insert_one({ 'folder': _submission_folder, 'filename': _filename, 
+        'title': _title, 'description': _description, 'photo_courtesy': _photo_courtesy })
 
 
 
@@ -85,14 +88,16 @@ def upload():
             file.save(os.path.join(UPLOAD_DIR, filename))
         
             # save the file's metadata into MongoDB
-            title = request.headers["Title"]
-            description = request.headers["Description"]
-            origin = request.headers["Photo-Courtesy"]
+            title = request.headers["Title"] if request.headers["Title"] is not None else filename
+            description = request.headers["Description"] if request.headers["Description"] is not None else filename
+            origin = request.headers["Photo-Courtesy"] if request.headers["Photo-Courtesy"] is not None else filename
             save_matadata(submission_folder, filename, title, description, origin)
             return jsonify(
                 message="Completed upload files successfully!",
                 submission_folder=submission_folder,
                 original_filename=file.filename, 
-                after_uploaded_filename=filename)
+                after_uploaded_filename=filename, 
+                title=title, 
+                photo_courtesy=origin)
         
     return jsonify(message="Under construction or operation is not supported!")
