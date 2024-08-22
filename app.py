@@ -40,6 +40,24 @@ def save_metadata(_submission_folder, _filename, _title, _description, _photo_co
                        'title': _title, 'description': _description, 'photo_courtesy': _photo_courtesy})
 
 
+@app.route('/photo/albums', methods=('GET', 'POST'))
+def photo_albums():
+    if request.method == 'POST':
+        # file = request.files['photo-upload']
+        # file = request.form['photo-upload']
+        # title = request.form['title']
+        # description = request.form['description']
+        # courtesy = request.form['courtesy']
+        # do_upload_load(request, file)
+        return redirect(url_for('photo_albums'))
+    elif request.method == 'GET':
+        print("come here")
+        
+    albums = db.albums
+    all_albums = albums.find()
+    return render_template('photo-albums.html', albums=all_albums)
+
+
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
     if request.method == 'POST':
