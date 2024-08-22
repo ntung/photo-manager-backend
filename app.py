@@ -1,5 +1,6 @@
 import os
 import tempfile
+import bson
 
 from flask import Flask
 from flask import jsonify, render_template, request, url_for, redirect
@@ -51,12 +52,25 @@ def photo_albums():
         # do_upload_load(request, file)
         return redirect(url_for('photo_albums'))
     elif request.method == 'GET':
-        print("come here")
-        
+
+        albums = db.albums
+        all_albums = albums.find()
+        return render_template('photo-albums.html', albums=all_albums)
+
+@app.route('/albums', defaults={'path': None}, methods=('GET', 'POST'))
+@app.route('/albums/<path>', methods=('GET', 'POST'))
+def albums(path):
     albums = db.albums
     all_albums = albums.find()
-    return render_template('photo-albums.html', albums=all_albums)
-
+    if path is None:
+        print(all_albums)
+        # return {"name": "Tung"}
+        docs_as_extended_json = bson.json_util.dumps(all_albums)
+        # bson.json_util.loads(docs_as_extended_json)
+        return docs_as_extended_json
+    else:
+        return jsonify(path="zhao-zhi", title="Zhao Zhi", description="Zhao Zhi Collection")
+    
 
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
