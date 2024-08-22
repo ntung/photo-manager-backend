@@ -4,6 +4,7 @@ import bson
 
 from flask import Flask
 from flask import jsonify, render_template, request, url_for, redirect
+from flask_cors import CORS, cross_origin
 from pymongo import MongoClient
 
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
@@ -16,6 +17,8 @@ todos = db.todos
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type: application/json'
 
 
 @app.route('/', methods=('GET', 'POST'))
