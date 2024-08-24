@@ -1,12 +1,12 @@
 import os
 import tempfile
-import bson
-from bson import ObjectId
 
+import bson
 import bson.json_util
+from bson import ObjectId
 from flask import Flask
 from flask import jsonify, render_template, request, url_for, redirect, send_from_directory
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 from pymongo import MongoClient
 
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
@@ -58,9 +58,10 @@ def photo_albums():
         return redirect(url_for('photo_albums'))
     elif request.method == 'GET':
 
-        albums = db.albums
-        all_albums = albums.find()
+        db_albums = db.albums
+        all_albums = db_albums.find()
         return render_template('photo-albums.html', albums=all_albums)
+
 
 @app.route('/albums', defaults={'path': None}, methods=('GET', 'POST'))
 @app.route('/albums/<path>', methods=('GET', 'POST'))
@@ -72,21 +73,21 @@ def albums(path):
         # bson.json_util.loads(docs_as_extended_json)
         return docs_as_extended_json
     else:
-        result = albums.find({ "path": path })
+        result = albums.find({"path": path})
         first_album = result[0]
         photos = first_album['photos']
         # print(photos)
         photo_details = []
         for photo_id in photos:
-            photo_doc = db.photos.find_one({ "_id": ObjectId(photo_id) })
+            photo_doc = db.photos.find_one({"_id": ObjectId(photo_id)})
             photo_details.append(photo_doc)
             # print(bson.json_util.dumps(photo_doc))
-        
+
         first_album["photos_details"] = photo_details
         json_result = bson.json_util.dumps(first_album)
         # print("JSON result " + json_result)
         return json_result
-    
+
 
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
