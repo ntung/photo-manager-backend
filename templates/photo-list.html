@@ -49,8 +49,9 @@
     <hr>
     {% for photo in photos %}
         <div class="photo">
-            <p>{{ photo['title'] }} <i>({{ photo['description']}})</i></p>
+            <p><strong>{{ photo['title'] }}</strong></p><div>{{ photo['description']}}</div>
         </div>
+        <hr/>
     {% endfor %}
 
     </div></div></div>
