@@ -101,10 +101,10 @@
         crossorigin="anonymous"></script>
 <script>
     // Get the elements with class="column"
-    var elements = document.getElementsByClassName("w3s-column");
+    const elements = document.getElementsByClassName("w3s-column");
 
     // Declare a loop variable
-    var i;
+    let i;
 
     // Full-width images
     function one() {
@@ -131,11 +131,11 @@
     }
 
     // Add active class to the current button (highlight it)
-    var header = document.getElementById("myHeader");
-    var btns = header.getElementsByClassName("w3c-btn");
-    for (var i = 0; i < btns.length; i++) {
-        btns[i].addEventListener("click", function() {
-            var current = document.getElementsByClassName("active");
+    const header = document.getElementById("myHeader");
+    const buttons = header.getElementsByClassName("w3s-btn");
+    for (let i = 0; i < buttons.length; i++) {
+        buttons[i].addEventListener("click", function() {
+            const current = document.getElementsByClassName("active");
             current[0].className = current[0].className.replace(" active", "");
             this.className += " active";
         });
