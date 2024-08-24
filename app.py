@@ -1,6 +1,7 @@
 import os
 import tempfile
-
+import uuid
+import requests
 import bson
 import bson.json_util
 from bson import ObjectId
@@ -93,10 +94,6 @@ def albums(path):
 def photo_list():
     if request.method == 'POST':
         file = request.files['photo-upload']
-        # file = request.form['photo-upload']
-        title = request.form['title']
-        description = request.form['description']
-        courtesy = request.form['courtesy']
         do_upload_load(request, file)
         return redirect(url_for('photo_list'))
 
@@ -178,6 +175,17 @@ def photo_view():
     return render_template('photo-view.html', photos=all_photos)
 
 
+def do_download_image(storage_location, image_url):
+    # this function is working like a charm for Facebook images
+    res = requests.get(image_url, stream=True)
+    print(res.status_code)
+    # Request the image and save it:
+    out_filename = str(uuid.uuid4()) + ".jpg"
+    with open(storage_location + "/" + out_filename, "wb") as f:
+        f.write(res.content)
+    return out_filename
+
+
 def do_upload_load(client_request, file):
     #flash('No selected file')
     #return redirect(request.url)
@@ -185,10 +193,18 @@ def do_upload_load(client_request, file):
     submission_folder = client_request.headers["Submission-Folder"] \
         if ("Submission-Folder" in request.headers
             and client_request.headers["Submission-Folder"] is not None) else "aaaa"  # TODO: tinh cai nay sau
-    filename = file.filename  #secure_filename(file.filename)
     UPLOAD_DIR = app.config['UPLOAD_FOLDER'] + "/" + submission_folder
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    file.save(os.path.join(UPLOAD_DIR, filename))
+
+    if file.content_length > 0:
+        filename = file.filename  #secure_filename(file.filename)
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        file.save(os.path.join(UPLOAD_DIR, filename))
+    else:
+        # download the image from the provided image URL
+        image_url = client_request.headers["Image-URL"] \
+            if ("Image-URL" in request.headers
+                and client_request.headers["Image-URL"] is not None) else client_request.form['photo-url']
+        filename = do_download_image(UPLOAD_DIR, image_url)
 
     # save the file's metadata into MongoDB
     title = client_request.headers["Title"] \
