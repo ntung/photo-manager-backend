@@ -5,7 +5,7 @@ from bson import ObjectId
 
 import bson.json_util
 from flask import Flask
-from flask import jsonify, render_template, request, url_for, redirect
+from flask import jsonify, render_template, request, url_for, redirect, send_from_directory
 from flask_cors import CORS, cross_origin
 from pymongo import MongoClient
 
@@ -105,6 +105,16 @@ def photo_list():
     photos = db.photos
     all_photos = photos.find()
     return render_template('photo-list.html', photos=all_photos)
+
+
+@app.route('/photo/<path:path>', methods=['GET', 'POST'])
+def photo_read(path):
+    print(UPLOAD_FOLDER)
+    try:
+        print(path)
+        return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True)
+    except FileNotFoundError as fnfe:
+        print("404: File Not Found " + fnfe)
 
 
 @app.route('/photo/upload', methods=('GET', 'POST'))
