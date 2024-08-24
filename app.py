@@ -68,26 +68,23 @@ def albums(path):
     albums = db.albums
     if path is None:
         all_albums = albums.find()
-        # print(all_albums)
-        # return {"name": "Tung"}
         docs_as_extended_json = bson.json_util.dumps(all_albums)
         # bson.json_util.loads(docs_as_extended_json)
         return docs_as_extended_json
     else:
         result = albums.find({ "path": path })
         first_album = result[0]
-        # return jsonify(path="zhao-zhi", title="Zhao Zhi", description="Zhao Zhi Collection")
         photos = first_album['photos']
-        print(photos)
+        # print(photos)
         photo_details = []
         for photo_id in photos:
             photo_doc = db.photos.find_one({ "_id": ObjectId(photo_id) })
             photo_details.append(photo_doc)
-            print(bson.json_util.dumps(photo_doc))
+            # print(bson.json_util.dumps(photo_doc))
         
         first_album["photos_details"] = photo_details
         json_result = bson.json_util.dumps(first_album)
-        print("JSON result " + json_result)
+        # print("JSON result " + json_result)
         return json_result
     
 
@@ -109,9 +106,7 @@ def photo_list():
 
 @app.route('/photo/<path:path>', methods=['GET', 'POST'])
 def photo_read(path):
-    print(UPLOAD_FOLDER)
     try:
-        print(path)
         return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True)
     except FileNotFoundError as fnfe:
         print("404: File Not Found " + fnfe)
