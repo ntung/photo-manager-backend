@@ -1,7 +1,9 @@
 import os
 import tempfile
 import bson
+from bson import ObjectId
 
+import bson.json_util
 from flask import Flask
 from flask import jsonify, render_template, request, url_for, redirect
 from flask_cors import CORS, cross_origin
@@ -64,15 +66,29 @@ def photo_albums():
 @app.route('/albums/<path>', methods=('GET', 'POST'))
 def albums(path):
     albums = db.albums
-    all_albums = albums.find()
     if path is None:
-        print(all_albums)
+        all_albums = albums.find()
+        # print(all_albums)
         # return {"name": "Tung"}
         docs_as_extended_json = bson.json_util.dumps(all_albums)
         # bson.json_util.loads(docs_as_extended_json)
         return docs_as_extended_json
     else:
-        return jsonify(path="zhao-zhi", title="Zhao Zhi", description="Zhao Zhi Collection")
+        result = albums.find({ "path": path })
+        first_album = result[0]
+        # return jsonify(path="zhao-zhi", title="Zhao Zhi", description="Zhao Zhi Collection")
+        photos = first_album['photos']
+        print(photos)
+        photo_details = []
+        for photo_id in photos:
+            photo_doc = db.photos.find_one({ "_id": ObjectId(photo_id) })
+            photo_details.append(photo_doc)
+            print(bson.json_util.dumps(photo_doc))
+        
+        first_album["photos_details"] = photo_details
+        json_result = bson.json_util.dumps(first_album)
+        print("JSON result " + json_result)
+        return json_result
     
 
 @app.route('/photo/list', methods=('GET', 'POST'))
