@@ -169,6 +169,14 @@ def photo_upload():
     return jsonify(message="Under construction or operation is not supported!")
 
 
+@app.route('/photo/view', methods=['GET', 'POST'])
+def photo_view():
+    photos = db.photos
+    all_photos = photos.find()
+    print(all_photos)
+    return render_template('photo-view.html', photos=all_photos)
+
+
 def do_upload_load(client_request, file):
     #flash('No selected file')
     #return redirect(request.url)
