@@ -1,3 +1,4 @@
+import math
 import os
 import tempfile
 import uuid
@@ -167,12 +168,38 @@ def photo_upload():
     return jsonify(message="Under construction or operation is not supported!")
 
 
+# TODO: check md5 preventing duplicated images
+
 @app.route('/photo/view', methods=['GET', 'POST'])
 def photo_view():
     photos = db.photos
     all_photos = photos.find()
-    print(all_photos)
-    return render_template('photo-view.html', photos=all_photos)
+    bucket_size = math.ceil(photos.count_documents({}) / 4)
+    buckets = []
+    counter = 1
+    bucket = []
+    for photo in all_photos:
+        if counter <= bucket_size:
+            bucket.append(photo)
+            counter += 1
+        else:
+            buckets.append(bucket)
+            bucket = []
+            counter = 1
+
+    # after looping over all_photos as a Cursor, all_photos is empty
+    all_photos = flatten_concatenation(buckets)
+
+    return render_template('photo-view.html', photos=all_photos, buckets=buckets)
+
+
+# https://realpython.com/python-flatten-list/
+def flatten_concatenation(matrix):
+    flat_list = []
+    for row in matrix:
+        flat_list += row
+
+    return flat_list
 
 
 def do_download_image(storage_location, image_url):
