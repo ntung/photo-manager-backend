@@ -8,8 +8,13 @@ curl -X POST \
   -F file=@/Users/tnguyen/Music/FBVideos/451845670_122161434170133782_9141442333876530996_n.jpg \
   http://localhost:5000/photo/upload
 END
-# echo "Test"
+: <<'END'
 curl -s -X GET \
   -H "Accept: application/json" \
   http://localhost:5000/albums | jq
+END
+
 #   http://localhost:5000/albums/zhao-zhi
+# curl -s -X GET http://127.0.0.1:7000/biomodels/services/download/get-files/MODEL1901160001/3/BIOMD0000000578_url.xml
+curl -s -X GET http://127.0.0.1:5000/photo/aaaa/456713969_122167976138133782_3718382245528688943_n.jpg
+# curl -s -X GET http://0.0.0.0:5000/photo/aaaa/myfile.txt
