@@ -78,16 +78,13 @@ def albums(path):
         result = albums.find({"path": path})
         first_album = result[0]
         photos = first_album['photos']
-        # print(photos)
         photo_details = []
         for photo_id in photos:
             photo_doc = db.photos.find_one({"_id": ObjectId(photo_id)})
             photo_details.append(photo_doc)
-            # print(bson.json_util.dumps(photo_doc))
 
         first_album["photos_details"] = photo_details
         json_result = bson.json_util.dumps(first_album)
-        # print("JSON result " + json_result)
         return json_result
 
 
@@ -206,8 +203,6 @@ def photo_view():
     if counter <= bucket_size:
         buckets.append(bucket)
 
-    print("Nb. of all photos {}".format(i))
-
     # after looping over all_photos as a Cursor, all_photos is empty
     all_photos = flatten_concatenation(buckets)
     api_svr = os.environ.get('API_SERVER')
@@ -227,7 +222,6 @@ def flatten_concatenation(matrix):
 def do_download_image(storage_location, image_url):
     # this function is working like a charm for Facebook images
     res = requests.get(image_url, stream=True)
-    print(res.status_code)
     # Request the image and save it:
     out_filename = str(uuid.uuid4()) + ".jpg"
     with open(storage_location + "/" + out_filename, "wb") as f:
