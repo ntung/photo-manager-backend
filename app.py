@@ -172,20 +172,39 @@ def photo_upload():
 
 @app.route('/photo/view', methods=['GET', 'POST'])
 def photo_view():
-    photos = db.photos
-    all_photos = photos.find()
-    bucket_size = math.ceil(photos.count_documents({}) / 4)
+    dbphotos = db.photos
+    all_photos = dbphotos.find()
+    bucket_size = math.ceil(dbphotos.count_documents({}) / 4)
     buckets = []
-    counter = 1
+    """
+    counter = 0 -> the last bucket will have less or equal the number of photos than the bucket size
+    counter = 1 -> the first bucket will have less or equal the number of photos than the bucket size
+    """
+    counter = 0
     bucket = []
+    i = 0
+    b = 1
     for photo in all_photos:
-        if counter <= bucket_size:
+        i += 1
+        if counter == bucket_size:
+            # REMEMBER: always adding the last photo to the current bucket!!!
             bucket.append(photo)
-            counter += 1
-        else:
             buckets.append(bucket)
+            # then reset the bucket and the counters
             bucket = []
             counter = 1
+            b += 1
+        else:
+            bucket.append(photo)
+            counter += 1
+
+        print("Bucket {} - Photo {}: {}".format(b, i, photo["filename"]))
+
+    # append the last bucket regardless of no matter how it has
+    if counter <= bucket_size:
+        buckets.append(bucket)
+
+    print("Nb. of all photos {}".format(i))
 
     # after looping over all_photos as a Cursor, all_photos is empty
     all_photos = flatten_concatenation(buckets)
