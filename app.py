@@ -197,7 +197,7 @@ def photo_view():
             bucket.append(photo)
             counter += 1
 
-        print("Bucket {} - Photo {}: {}".format(b, i, photo["filename"]))
+        # print("Bucket {} - Photo {}: {}".format(b, i, photo["filename"]))
 
     # append the last bucket regardless of no matter how it has
     if counter <= bucket_size:
