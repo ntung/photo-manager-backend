@@ -253,12 +253,15 @@ def do_upload_load(client_request, file):
     title = client_request.headers["Title"] \
         if ("Title" in request.headers
             and client_request.headers["Title"] is not None) else client_request.form['title']
+    title = title if title is not None else filename
     description = client_request.headers["Description"] \
         if ("Description" in request.headers
             and client_request.headers["Description"] is not None) else client_request.form['description']
+    description = description if description is not None else filename
     origin = client_request.headers["Photo-Courtesy"] \
         if ("Photo-Courtesy" in request.headers
             and client_request.headers["Photo-Courtesy"] is not None) else client_request.form['courtesy']
+    origin = origin if origin is not None else "Unknown"
     save_metadata(submission_folder, filename, title, description, origin)
     return {'submission_folder': submission_folder, 'filename': filename,
             'title': title, 'description': description, 'origin': origin}
