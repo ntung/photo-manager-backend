@@ -100,7 +100,9 @@ def photo_list():
 
     photos = db.photos
     all_photos = photos.find()
-    return render_template('photo-list.html', photos=all_photos)
+
+    api_svr = os.environ.get('API_SERVER')
+    return render_template('photo-list.html', photos=all_photos, api_svr=api_svr)
 
 
 @app.route('/photo/<path:path>', methods=['GET', 'POST'])
@@ -208,8 +210,9 @@ def photo_view():
 
     # after looping over all_photos as a Cursor, all_photos is empty
     all_photos = flatten_concatenation(buckets)
+    api_svr = os.environ.get('API_SERVER')
 
-    return render_template('photo-view.html', photos=all_photos, buckets=buckets)
+    return render_template('photo-view.html', photos=all_photos, buckets=buckets, api_svr=api_svr)
 
 
 # https://realpython.com/python-flatten-list/

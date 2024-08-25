@@ -54,7 +54,10 @@
     <hr>
     {% for photo in photos %}
         <div class="photo">
-            <p><strong>{{ photo['title'] }}</strong></p><div>{{ photo['description']}}</div>
+            <p><strong>{{ photo['title'] }} ({{ photo['filename'] }})</strong></p><div>
+            <img src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
+                 style="width:15%" alt="{{ photo['title'] }}"><br/>
+            {{ photo['description']}}</div>
         </div>
         <hr/>
     {% endfor %}

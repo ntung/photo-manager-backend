@@ -3,3 +3,6 @@ __pycache__
 venv
 
 # files
+.env
+.env.*
+.flaskenv
