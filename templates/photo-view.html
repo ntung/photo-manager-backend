@@ -77,7 +77,7 @@
         {%  for bucket in buckets %}
         <div class="w3s-column">
             {% for photo in bucket %}
-            <img src="{{ 'http://127.0.0.1:5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
+            <img src="{{ 'http://0.0.0.0:5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
                  style="width:100%" alt="{{ photo['title'] }}">
             {% endfor %}
         </div>
@@ -87,7 +87,7 @@
     {#<div class="photo">
     {% for photo in photos %}
         <div class="row"><div class="col">
-        <p><img src="{{ 'http://127.0.0.1:5000/photo/' + photo['folder'] + '/' + photo['filename'] }}" width="25%">
+        <p><img src="{{ 'http://0.0.0.0:5000/photo/' + photo['folder'] + '/' + photo['filename'] }}" width="25%">
             <br/>
             <strong>{{ photo['title'] }}</strong>
             <br/>
