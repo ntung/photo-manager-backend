@@ -53,19 +53,45 @@
     </form>
     <hr>
     {% for photo in photos %}
-        <div class="photo">
-            <p><strong>{{ photo['title'] }} ({{ photo['filename'] }})</strong></p><div>
-            <img src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
+        <div class="row">
+            <p><strong>{{ photo['title'] }} ({{ photo['filename'] }})</strong></p>
+        <div>
+            <img id="{{ photo['folder'] }}-{{ photo['filename'] }}" src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
                  style="width:15%" alt="{{ photo['title'] }}"><br/>
-            {{ photo['description']}}</div>
+        {{ photo['description']}}</div>
+            <br/>
+        <div id="action-buttons" class="row">
+            <div class="col-2">
+            <input type="button" value="Add to album" class="btn btn-primary" name="add-to-album"
+                   data-image-folder="{{ photo['folder'] }}"
+                   data-image-filename="{{ photo['filename'] }}"/></div>
+            <div class="col-10">
+            <select class="form-select form-select-sm" aria-label="Small select example"
+                    multiple aria-label="Multiple select example">
+                <option selected>Select an album</option>
+                <option value="1">One</option>
+                <option value="2">Two</option>
+                <option value="3">Three</option>
+            </select></div>
         </div>
-        <hr/>
+        </div>
     {% endfor %}
 
     </div></div></div>
 </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" 
-        crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.slim.js"
+    integrity="sha256-UgvvN8vBkgO0luPSUl2s8TIlOSYRoGFAX4jlCIm9Adc="
+    crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+<script>
+    $('input[name=add-to-album]').on("click", function() {
+        console.log("implemented me!");
+        const imageFolder = $(this).attr("data-image-folder");
+        const imageFilename = $(this).attr("data-image-filename");
+        console.log(imageFolder, imageFilename);
+    });
+</script>
 </body>
 </html>
