@@ -78,12 +78,12 @@ def albums(path):
         # bson.json_util.loads(docs_as_extended_json)
         return docs_as_extended_json
     else:
-        first_album = get_albums(path)
+        first_album = get_album(path)
         json_result = bson.json_util.dumps(first_album)
         return json_result
 
 
-def get_albums(path):
+def get_album(path):
     dbalbums = db.albums
     result = dbalbums.find({"path": path})
     first_album = result[0]
@@ -103,7 +103,7 @@ def albums_view(path):
     if path is None:
         pass
     else:
-        album = get_albums(path)
+        album = get_album(path)
         api_svr = os.environ.get('API_SERVER')
         return render_template('album-view.html', album=album, api_svr=api_svr)
 
@@ -117,9 +117,25 @@ def photo_list():
 
     photos = db.photos
     all_photos = photos.find()
+    all_albums = db.albums.find()
+    map_photo_album = {
+        "default": {"album-1": "Album 1"}
+    }
+    for album in all_albums:
+        album_detail = get_album(album['path'])
+        for photo in album_detail['photos_details']:
+            if photo['filename'] in map_photo_album:
+                dict_albums = map_photo_album[photo['filename']]
+                if album['path'] is not dict_albums:
+                    dict_albums[album['path']] = album['title']
+            else:
+                map_photo_album[photo['filename']] = {album['path']: album['title']}
+    for p in map_photo_album:
+        print("{}: {}".format(p, map_photo_album[p]))
 
     api_svr = os.environ.get('API_SERVER')
-    return render_template('photo-list.html', photos=all_photos, api_svr=api_svr)
+    return render_template('photo-list.html',
+                           photos=all_photos, map_photo_album=map_photo_album, api_svr=api_svr)
 
 
 @app.route('/photo/<path:path>', methods=['GET', 'POST'])

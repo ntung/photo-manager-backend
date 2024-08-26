@@ -68,7 +68,14 @@
             <div class="col-8">
                 <h3>{{ photo['title'] }}</h3>
                 <p><em>{{ photo['filename'] }}</em><br/>{{ photo['description'] }}</p>
-                <p style="font-style: italic; color: #9714d0">In Albums: </p>
+                <p style="font-style: italic; color: #9714d0">In Albums:
+                {% if photo['filename'] in map_photo_album %}
+                    {% set dict_album = map_photo_album[photo['filename']] %}
+                    {% for path, title in dict_album.items() %}
+                        <a href="/albums/view/{{ path }}">{{ title }}</a>,
+                    {% endfor %}
+                {% endif %}
+                </p>
                 <p>
                     <input type="button" value="Add to album" class="btn btn-primary" name="add-to-album"
                            data-image-folder="{{ photo['folder'] }}"
