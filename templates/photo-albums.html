@@ -51,7 +51,7 @@
     <hr>
     {% for album in albums %}
         <div class="album">
-            <p>{{ album['title'] }} (<b>{{ album['path'] }}</b>) <br/>
+            <p><a href="http://{{ api_svr }}:5000/albums/view/{{ album['path'] }}">{{ album['title'] }}</a><br/>
                 <em>{{ album['description']}}</em></p>
         </div>
     {% endfor %}

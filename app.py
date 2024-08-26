@@ -24,6 +24,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type: application/json'
 
+API_SVR = os.environ.get('API_SERVER')
+
 
 @app.route('/', methods=('GET', 'POST'))
 def index():
@@ -62,30 +64,48 @@ def photo_albums():
 
         db_albums = db.albums
         all_albums = db_albums.find()
-        return render_template('photo-albums.html', albums=all_albums)
+        return render_template('photo-albums.html', albums=all_albums, api_svr=API_SVR)
 
 
 @app.route('/albums', defaults={'path': None}, methods=('GET', 'POST'))
+@app.route('/albums/', defaults={'path': None}, methods=('GET', 'POST'))
 @app.route('/albums/<path>', methods=('GET', 'POST'))
 def albums(path):
-    albums = db.albums
+    dbalbums = db.albums
     if path is None:
-        all_albums = albums.find()
+        all_albums = dbalbums.find()
         docs_as_extended_json = bson.json_util.dumps(all_albums)
         # bson.json_util.loads(docs_as_extended_json)
         return docs_as_extended_json
     else:
-        result = albums.find({"path": path})
-        first_album = result[0]
-        photos = first_album['photos']
-        photo_details = []
-        for photo_id in photos:
-            photo_doc = db.photos.find_one({"_id": ObjectId(photo_id)})
-            photo_details.append(photo_doc)
-
-        first_album["photos_details"] = photo_details
+        first_album = get_albums(path)
         json_result = bson.json_util.dumps(first_album)
         return json_result
+
+
+def get_albums(path):
+    dbalbums = db.albums
+    result = dbalbums.find({"path": path})
+    first_album = result[0]
+    photos = first_album['photos']
+    photo_details = []
+    for photo_id in photos:
+        photo_doc = db.photos.find_one({"_id": ObjectId(photo_id)})
+        photo_details.append(photo_doc)
+
+    first_album["photos_details"] = photo_details
+
+    return first_album
+
+
+@app.route('/albums/view/<path>', methods=('GET', 'POST'))
+def albums_view(path):
+    if path is None:
+        pass
+    else:
+        album = get_albums(path)
+        api_svr = os.environ.get('API_SERVER')
+        return render_template('album-view.html', album=album, api_svr=api_svr)
 
 
 @app.route('/photo/list', methods=('GET', 'POST'))
