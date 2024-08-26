@@ -89,15 +89,16 @@
 
     <div class="photo">
     {% for photo in album['photos_details'] %}
-        <div class="row"><div class="col">
-        <p><a href="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
+        <div class="row" style="padding-top: 5px">
+        <div class="col-6">
+        <a href="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
               width="25%" alt="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
             <img src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
-                 style="width:15%" alt="{{ photo['title'] }}"></a>
-            <br/>
+                 style="width:25%" alt="{{ photo['title'] }}"></a></div>
+        <div class="col-6">
             <strong>{{ photo['title'] }}</strong>
             <br/>
-            {{ photo['description']}}</p>
+            {{ photo['description']}}
         </div></div>
     {% endfor %}
     </div>
