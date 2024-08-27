@@ -68,9 +68,13 @@
             <div class="col-8">
                 <h3>{{ photo['title'] }}</h3>
                 <p><em>{{ photo['filename'] }}</em><br/>{{ photo['description'] }}</p>
+                {% if "date_uploaded" in photo %}
+                    <p>Uploaded {{ photo['date_uploaded'] }}</p>
+                {% endif %}
                 <p style="font-style: italic; color: #9714d0">In Albums:
                 {% if photo['filename'] in map_photo_album %}
                     {% set dict_album = map_photo_album[photo['filename']] %}
+                    {% set dict_album_values = dict_album.values() %}
                     {% for path, title in dict_album.items() %}
                         <a href="/albums/view/{{ path }}">{{ title }}</a>,
                     {% endfor %}
@@ -81,16 +85,14 @@
                            data-image-folder="{{ photo['folder'] }}"
                            data-image-filename="{{ photo['filename'] }}"/>
                     <br/>
+                    <label for="{{ photo['filename'] }}" style="display: none"></label>
                     <select class="form-select choose-albums" id="{{ photo['filename'] }}"
-                            data-placeholder="Choose albums" multiple>
-                        <option>Christmas Island</option>
-                        <option>South Sudan</option>
-                        <option>Jamaica</option>
-                        <option>Kenya</option>
-                        <option>French Guiana</option>
-                        <option>Mayotta</option>
-                        <option>Liechtenstein</option>
-                        <option>Denmark</option>
+                                                                         data-placeholder="Choose albums" multiple>
+                        {% for album in albums %}
+                            {% if album['title'] not in dict_album_values  %}
+                                <option value="{{ album['path'] }}">{{ album['title'] }}</option>
+                            {% endif %}
+                        {% endfor %}
                     </select>
                 </p>
             </div>

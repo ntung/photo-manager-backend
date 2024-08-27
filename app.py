@@ -121,7 +121,9 @@ def photo_list():
     map_photo_album = {
         "default": {"album-1": "Album 1"}
     }
+    _albums = []
     for album in all_albums:
+        _albums.append({"path": album, "title": album['title'], "description": album['description']})
         album_detail = get_album(album['path'])
         for photo in album_detail['photos_details']:
             if photo['filename'] in map_photo_album:
@@ -130,11 +132,11 @@ def photo_list():
                     dict_albums[album['path']] = album['title']
             else:
                 map_photo_album[photo['filename']] = {album['path']: album['title']}
-    for p in map_photo_album:
-        print("{}: {}".format(p, map_photo_album[p]))
-
+    # for p in map_photo_album:
+    #     print("{}: {}".format(p, map_photo_album[p]))
+    print(_albums)
     api_svr = os.environ.get('API_SERVER')
-    return render_template('photo-list.html',
+    return render_template('photo-list.html', albums=_albums,
                            photos=all_photos, map_photo_album=map_photo_album, api_svr=api_svr)
 
 
