@@ -2,6 +2,8 @@ import math
 import os
 import tempfile
 import uuid
+from datetime import datetime
+
 import requests
 import bson
 import bson.json_util
@@ -47,7 +49,9 @@ def todo_list():
 def save_metadata(_submission_folder, _filename, _title, _description, _photo_courtesy):
     photos = db.photos
     photos.insert_one({'folder': _submission_folder, 'filename': _filename,
-                       'title': _title, 'description': _description, 'photo_courtesy': _photo_courtesy})
+                       'title': _title, 'description': _description, 'photo_courtesy': _photo_courtesy,
+                       'date_uploaded': datetime.now().astimezone(),
+                       'date_modified': datetime.now().astimezone()})
 
 
 @app.route('/photo/albums', methods=('GET', 'POST'))
