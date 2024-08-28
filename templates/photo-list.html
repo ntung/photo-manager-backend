@@ -60,6 +60,7 @@
     </div>
 
     {% for photo in photos %}
+        {% set id_image = photo['filename'][:-4] %}
         <div class="row" style="padding-top: 5px">
             <div class="col-4">
                 <img id="{{ photo['folder'] }}-{{ photo['filename'] }}"
@@ -80,21 +81,16 @@
                     {% endfor %}
                 {% endif %}
                 </p>
-                <p>
-                    <input type="button" value="Add to album" class="btn btn-primary" name="add-to-album"
-                           data-image-folder="{{ photo['folder'] }}"
-                           data-image-filename="{{ photo['filename'] }}"/>
-                    <br/>
-                    <label for="{{ photo['filename'] }}" style="display: none"></label>
-                    <select class="form-select choose-albums" id="{{ photo['filename'] }}"
-                                                                         data-placeholder="Choose albums" multiple>
-                        {% for album in albums %}
-                            {% if album['title'] not in dict_album_values  %}
-                                <option value="{{ album['path'] }}">{{ album['title'] }}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </p>
+                <p><input type="button" value="Add to album" class="btn btn-primary" name="add-to-album"
+                       data-photo-object-id="{{ photo.get('_id') }}"
+                       data-photo-folder="{{ photo['folder'] }}"
+                       data-photo-filename="{{ photo['filename'] }}"/>
+                &nbsp;
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal">
+                    Add too album (Open a modal)
+                </button></p>
+                <p id="{{ id_image }}" class="album-list"></p>
+                <div id="showAllAlbums"></div>
             </div>
         </div>
     {% endfor %}
@@ -106,18 +102,48 @@
     </div>
 
 </div>
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.slim.min.js"></script>
+{% include('select_album.html') %}
+<script
+        src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
+    let photoObjectId = "", photoFolder = "", photoFileName = "";
+
     $('input[name=add-to-album]').on("click", function () {
-        console.log("implemented me!");
-        const imageFolder = $(this).attr("data-image-folder");
-        const imageFilename = $(this).attr("data-image-filename");
-        console.log(imageFolder, imageFilename);
+        photoObjectId = $(this).attr("data-photo-object-id");
+        photoFolder = $(this).attr("data-photo-folder");
+        photoFileName = $(this).attr("data-photo-filename");
+        {#const select2Data = $('#' + imageFilename).select2('data');#}
+
+        $.ajax({
+            url: "http://192.168.0.10:5000/albums/add-photo",
+            method: "POST",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify({
+                "photo-folder": photoFolder,
+                "photo-filename": photoFileName,
+            }),
+            dataType: "html",
+            success: function(data) {
+                $('.album-list').html("");
+                const id_selector = photoFileName.substring(0, photoFileName.lastIndexOf("."));
+                $('#' + id_selector).html(data);
+
+                $('.choose-albums').select2({
+                    theme: 'bootstrap-5',
+                    width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
+                    placeholder: $(this).data('placeholder'),
+                    closeOnSelect: false,
+                    allowClear: true,
+                });
+            }
+        });
     });
     $('.choose-albums').select2({
         theme: 'bootstrap-5',
@@ -125,6 +151,47 @@
         placeholder: $(this).data('placeholder'),
         closeOnSelect: false,
         allowClear: true,
+    });
+    $('.album-list').on("click", "#btn-save", function() {
+        const select2Data = $('.select2-selection__choice');
+        let albums = [];
+        $.each(select2Data, (index, object) => {
+            const albumTitle = object.innerText;
+            const lastChildId = object.lastChild.id;
+            // the id of the lastChild looks like the sample below. It is patterned like
+            // "select2-{filename}-container-choice-xxxx-{album-path}
+            // id="select2-759b75a8-3bbb-4750-b5a7-b9f80d16c184jpg-container-choice-5ua6-pretties-girls-and-ladies"
+            const startPos = lastChildId.lastIndexOf("container-choice");
+            const albumPath = lastChildId.substring(startPos + "container-choice-".length + 5);
+            albums.push({ "path": albumPath, "title": albumTitle });
+        });
+        $.ajax({
+            url: "http://192.168.0.10:5000/photo/save-photo-to-albums/",
+            method: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({
+                "photo-object-id": photoObjectId,
+                "photo-folder": photoFolder,
+                "photo-filename": photoFileName,
+                "newly-added-albums": albums
+            }),
+            beforeSend: function(xhr) {
+                console.log("Sending data to server...");
+            },
+            success: function(data) {
+                console.log(data);
+            },
+            error: function() {
+
+            }
+        }).done(function(data) {
+            console.log("Done! - Data: ", data);
+        }).fail(function(jqXHR, textStatus) {
+            console.log(textStatus, ": ", JSON.stringify(jqXHR));
+        }).always(function(data) {
+            console.log("Saved the photo to the albums completely: ", data);
+        });
     });
 </script>
 </body>

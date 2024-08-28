@@ -1,3 +1,4 @@
+import json
 import math
 import os
 import tempfile
@@ -8,10 +9,10 @@ import requests
 import bson
 import bson.json_util
 from bson import ObjectId
-from flask import Flask
+from flask import Flask, Response
 from flask import jsonify, render_template, request, url_for, redirect, send_from_directory
 from flask_cors import CORS
-from pymongo import MongoClient
+from pymongo import MongoClient, ReturnDocument
 
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
@@ -100,6 +101,49 @@ def get_album(path):
     first_album["photos_details"] = photo_details
 
     return first_album
+
+
+@app.route('/photo/save-photo-to-albums', methods=['GET', 'POST'])
+@app.route('/photo/save-photo-to-albums/', methods=['POST'])
+def save_photo_to_albums():
+    request_json = request.get_json(silent=True)
+    print(request_json)
+    photo_object_id = request_json['photo-object-id']
+    photo_folder = request_json['photo-folder']
+    photo_filename = request_json['photo-filename']
+
+    # album_path = request_json['album_path']
+    # photo_object_id = request_json['photo_object_id']
+    # print("{} - {}".format(album_path, photo_object_id))
+    #
+    newly_added_albums = request_json['newly-added-albums']
+    results = []
+    for album in newly_added_albums:
+        album = get_album(album['path'])
+        updated_photo_list = []
+        if album is not None:
+            print("photo object id: ".format(photo_object_id))
+            updated_photo_list: object = album["photos"]
+            if (photo_object_id is not None and photo_folder != ""
+                    and photo_object_id not in updated_photo_list):
+                updated_photo_list.append(photo_object_id)
+        print("Updated photo list: {}".format(updated_photo_list))
+        r = db.albums.find_one_and_update(
+            {'_id': album.get('_id')}, {'$set': {"photos": updated_photo_list}},
+            return_document=ReturnDocument.AFTER
+        )
+        if r.get("_id") is not None:
+            results.append({"path": r['path'], "title": r['title']})
+    return Response(json.dumps(results),  mimetype='application/json')
+
+
+@app.route('/albums/add-photo', methods=['GET', 'POST'])
+@app.route('/albums/add-photo/', methods=['POST'])
+def albums_add_photo():
+    all_albums = db.albums.find()
+    # When the client clicks on Add to album button, is will render a select box and a Save button
+    return render_template('select_option_albums.html',
+                           filename=request.json['photo-filename'], albums=all_albums)
 
 
 @app.route('/albums/view/<path>', methods=('GET', 'POST'))
