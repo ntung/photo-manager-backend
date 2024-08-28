@@ -88,18 +88,38 @@
     </div>#}
 
     <div class="photo">
+    <div class="row">
+        <div class="col-6"></div>
+        <div class="col-4"></div>
+        <div class="col-2">
+            <button type="button" class="btn btn-primary" id="btn-remove-photo"
+                    data-album-path="{{ album['path'] }}"
+                    data-album-title="{{ album['title'] }}">Remove</button></div>
+    </div>
     {% for photo in album['photos_details'] %}
         <div class="row" style="padding-top: 5px">
         <div class="col-6">
         <a href="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
-              width="25%" alt="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
+              title="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
             <img src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
-                 style="width:25%" alt="{{ photo['title'] }}"></a></div>
-        <div class="col-6">
+                 style="width:25%" alt="{{ photo['title'] }}" data-photo-object-id="{{ photo.get('_id') }}"></a></div>
+        <div class="col-4">
             <strong>{{ photo['title'] }}</strong>
             <br/>
             {{ photo['description']}}
-        </div></div>
+        </div>
+        <div class="col-2">
+            <div class="form-check">
+                <input class="form-check-input cls-chk-remove-photo"
+                       type="checkbox" id="chk-remove-{{ photo['filename'] }}"
+                       name="chk-remove-{{ photo['filename'] }}"
+                       data-photo-object-id="{{ photo.get('_id') }}"
+                       data-photo-folder="{{ photo['folder'] }}"
+                       data-photo-filename="{{ photo['filename'] }}" >
+                <label class="form-check-label" for="chk-remove-{{ photo['filename'] }}"></label>
+            </div>
+        </div>
+        </div>
     {% endfor %}
     </div>
 </div>
@@ -148,6 +168,51 @@
             this.className += " active";
         });
     }#}
+    $('#btn-remove-photo').on("click", function() {
+        const albumPath = $(this).attr("data-album-path");
+        const checkBoxes = $('.cls-chk-remove-photo');
+        console.log("Nb. of checkboxes: ", checkBoxes.length);
+        let removedPhotos = [];
+        checkBoxes.map((index, checkbox) => {
+           if ($(checkbox).is(':checked')) {
+               const photoObjectId = $(checkbox).attr("data-photo-object-id");
+               const photoFolder = $(checkbox).attr("data-photo-folder");
+               const photoFileName =  $(checkbox).attr("data-photo-filename");
+               removedPhotos.push({ "photo-object-id": photoObjectId, "photo-folder": photoFolder,
+                   "photo-filename": photoFileName });
+                console.log("Folder ", $(checkbox).attr("data-photo-folder"), ", " +
+                    "File name: ", $(checkbox).attr("data-photo-filename"));
+            }
+        });
+        if (removedPhotos.length > 0) {
+            $.ajax({
+                url: "http://192.168.0.10:5000/albums/remove-photos/",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "album-path": albumPath,
+                    "removed-photos": removedPhotos
+                }),
+                beforeSend: function(xhr) {
+                    console.log("Sending data to server...");
+                },
+                success: function(data) {
+                    console.log(data);
+                    location.reload(true);
+                },
+                error: function() {
+
+                }
+            }).done(function(data) {
+                console.log("Done! - Data: ", data);
+            }).fail(function(jqXHR, textStatus) {
+                console.log(textStatus, ": ", JSON.stringify(jqXHR));
+            }).always(function(data) {
+                console.log("Removed the photos out the album completely: ", data);
+            });
+        }
+    });
 </script>
 
 </body>

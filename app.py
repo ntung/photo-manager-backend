@@ -146,6 +146,30 @@ def albums_add_photo():
                            filename=request.json['photo-filename'], albums=all_albums)
 
 
+@app.route('/albums/remove-photos', methods=['GET', 'POST'])
+@app.route('/albums/remove-photos/', methods=['POST'])
+def albums_remove_photos():
+    request_json = request.get_json(silent=True)
+    album_path = request_json['album-path']
+    album = get_album(album_path)
+    retval = {}
+    if (album is not None) and (album.get('photos') is not None):
+        original_photos = album['photos']
+        tobe_removed_photos = request_json['removed-photos']
+        for photo in tobe_removed_photos:
+            original_photos.remove(photo['photo-object-id'])
+
+        # save the update
+        r = db.albums.find_one_and_update(
+            {'_id': album.get('_id')}, {'$set': {"photos": original_photos}},
+            return_document=ReturnDocument.AFTER
+        )
+        if r.get("_id") is not None:
+            retval = {"path": r['path'], "title": r['title']}
+
+    return Response(json.dumps(retval),  mimetype='application/json')
+
+
 @app.route('/albums/view/<path>', methods=('GET', 'POST'))
 def albums_view(path):
     if path is None:
