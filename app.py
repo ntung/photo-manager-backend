@@ -14,6 +14,7 @@ from flask import Flask, Response
 from flask import jsonify, render_template, request, url_for, redirect, send_from_directory
 from flask_cors import CORS
 from pymongo import MongoClient, ReturnDocument
+from slugify import slugify
 
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
@@ -58,17 +59,28 @@ def save_metadata(_submission_folder, _filename, _title, _description, _photo_co
 
 @app.route('/photo/albums', methods=('GET', 'POST'))
 def photo_albums():
+    db_albums = db.albums
+
     if request.method == 'POST':
-        # file = request.files['photo-upload']
-        # file = request.form['photo-upload']
-        # title = request.form['title']
-        # description = request.form['description']
-        # courtesy = request.form['courtesy']
-        # do_upload_load(request, file)
+        file = request.files['cover']
+        if file.content_length > 0:
+            print("TODO: implement to store this photo")
+        title = request.form['title'] if request.form['title'] is not None else 'Untitled'
+        description = request.form['description'] if request.form['description'] is not None else 'My new album'
+        if title == "Untitled":
+            all_untitled_albums = db_albums.find({
+                "title": {'$regex': '^Untitled'}}
+            ).limit(1).sort('title', pymongo.ASCENDING)
+            if all_untitled_albums is None:
+                title = "Untitled 001"
+            else:
+                for album in all_untitled_albums:
+                    print(album['title'])
+        path = slugify(title)
+        r = db.albums.insert_one({'path': path, 'title': title, 'description': description, 'photos': []})
+        print(r)
         return redirect(url_for('photo_albums'))
     elif request.method == 'GET':
-
-        db_albums = db.albums
         all_albums = db_albums.find()
         return render_template('photo-albums.html', albums=all_albums, api_svr=API_SVR)
 

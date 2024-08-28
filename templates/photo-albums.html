@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Photo Manager</title>
+    <title>Albums | Photo Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bootstrap demo</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
@@ -21,31 +21,28 @@
 <div class="container">
     <div class="row"><div class="col">
         {% include '_menu-bar.html' %}
-        <h1>Photo Albums</h1>
+        <h1>Albums | Photo Manager</h1>
     <hr/>
     <div class="content">
     <form method="post" enctype="multipart/form-data">
         <div class="mb-3">
-            <b><label for="photo-upload" class="form-label">Upload photos/images/pictures/figures/videos/clips...</label></b>
-            <input type="file" id="photo-upload" name="photo-upload" 
+            <strong><label for="cover" class="form-label">Upload a photo for Album cover</label></strong>
+            <input type="file" id="cover" name="cover"
             class="form-control" accept="image/png,image/jpeg,image/jpg"/>
         </div>
 
         <div class="mb-3">
-            <strong><label for="photo-title" class="form-label">Title</label></strong><br/>
-            <input id="photo-title" name="title" type="text" placeholder="Title of photo" class="form-control"/>
+            <strong><label for="title" class="form-label">Title</label></strong><br/>
+            <input id="title" name="title" type="text" placeholder="Album Title" class="form-control"/>
         </div>
         <div class="mb-3">
-            <strong><label for="photo-description" class="form-label">Description</label></strong><br/>
-            <textarea id="photo-description" name="description" type="textarea" placeholder="Provide a description" 
+            <strong><label for="description" class="form-label">Description</label></strong><br/>
+            <textarea id="description" name="description" type="textarea" placeholder="Describe your album"
             class="form-control"></textarea>
         </div>
+
         <div class="mb-3">
-            <strong><label for="photo-courtesy" class="form-label">Credit/Courtesy</label></strong><br/>
-            <input id="photo-courtesy" name="courtesy" type="text" placeholder="Photo courtesy" class="form-control"/>
-        </div>
-        <div class="mb-3">
-        <button type="submit" class="btn btn-primary">Upload</button>
+        <button type="submit" class="btn btn-primary">Create</button>
         </div>
     </form>
     <hr>

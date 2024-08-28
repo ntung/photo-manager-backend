@@ -3,3 +3,4 @@ pymongo
 requests
 flask-cors
 python-dotenv
+python-slugify
