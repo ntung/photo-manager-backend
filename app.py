@@ -5,6 +5,7 @@ import tempfile
 import uuid
 from datetime import datetime
 
+import pymongo
 import requests
 import bson
 import bson.json_util
@@ -188,7 +189,7 @@ def photo_list():
         return redirect(url_for('photo_list'))
 
     photos = db.photos
-    all_photos = photos.find()
+    all_photos = photos.find().sort([("date_uploaded", pymongo.DESCENDING)])
     all_albums = db.albums.find()
     map_photo_album = {
         "default": {"album-1": "Album 1"}
@@ -206,7 +207,7 @@ def photo_list():
                 map_photo_album[photo['filename']] = {album['path']: album['title']}
     # for p in map_photo_album:
     #     print("{}: {}".format(p, map_photo_album[p]))
-    print(_albums)
+    # print(_albums)
     api_svr = os.environ.get('API_SERVER')
     return render_template('photo-list.html', albums=_albums,
                            photos=all_photos, map_photo_album=map_photo_album, api_svr=api_svr)
