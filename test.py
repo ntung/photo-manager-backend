@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
-import json
+import os
 
 import requests
 import uuid
@@ -84,5 +84,51 @@ def pretty(d, indent=0):
             print('\t' * (indent + 1) + str(value))
 
 
+def get_date_created_n_modified_then_update_db_photos():
+    import datetime
+    import glob
+    import pathlib
+
+    # create database and collection instances
+    mongo_client = MongoClient('mongodb://localhost:27017')
+    db = mongo_client.flask_db
+    col = db["photos"]
+
+    photos_path = "/Users/tnguyen/MyBusiness/data/photo-manager/aaaa/"
+    files = glob.glob(photos_path + "*.jpg")
+    # print(files)
+    arr_files = []
+    for file in files:
+        print(file)
+        filename = os.path.basename(file)
+        f_name = pathlib.Path(file)
+
+        # get modification time
+        m_timestamp = f_name.stat().st_mtime
+
+        # convert ti to dd-mm-yyyy hh:mm:ss
+        m_time = datetime.datetime.fromtimestamp(m_timestamp)
+        arr_files.append({"filename": filename, "timestamp": m_time})
+        doc = col.find({"filename": filename})
+        # print(doc)
+        for photo in doc:
+            if photo is not None and "date_uploaded" not in photo and "date_modified" not in photo:
+                print("created: date created and modified")
+                photo = col.update_one(
+                    {"_id": photo.get("_id")},
+                    {
+                        "$set": {
+                            "date_uploaded": m_time,
+                            "date_modified": m_time
+                        }
+                    },
+                    upsert=False
+                )
+                print(photo)
+            else:
+                print("no need to be updated")
+
+
 if __name__ == '__main__':
-    update_mongodb_doc()
+    # update_mongodb_doc()
+    get_date_created_n_modified_then_update_db_photos()
