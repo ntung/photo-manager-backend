@@ -135,16 +135,30 @@ def get_date_created_n_modified_then_update_db_photos():
         m_time = datetime.datetime.fromtimestamp(m_timestamp)
         arr_files.append({"filename": filename, "timestamp": m_time})
         doc = col.find({"filename": filename})
+
+        # check md5
+        hash_md5_str = ""
+        md5_hash = hashlib.md5()
+        with open(file, "rb") as f:
+            # Read and update hash in chunks of 4K
+            for byte_block in iter(lambda: f.read(4096), b""):
+                md5_hash.update(byte_block)
+            hash_md5_str = md5_hash.hexdigest()
         # print(doc)
         for photo in doc:
-            if photo is not None and "date_uploaded" not in photo and "date_modified" not in photo:
-                print("created: date created and modified")
+            # if photo is not None and "date_uploaded" not in photo and "date_modified" not in photo:
+            if photo is not None and "hash_md5" not in photo:
+                # print("created: date created and modified")
+                print("updated hash md5")
                 photo = col.update_one(
                     {"_id": photo.get("_id")},
                     {
+                        # "$set": {
+                        #     "date_uploaded": m_time,
+                        #     "date_modified": m_time
+                        # }
                         "$set": {
-                            "date_uploaded": m_time,
-                            "date_modified": m_time
+                            "hash_md5": hash_md5_str
                         }
                     },
                     upsert=False
@@ -156,6 +170,6 @@ def get_date_created_n_modified_then_update_db_photos():
 
 if __name__ == '__main__':
     # update_mongodb_doc()
-    # get_date_created_n_modified_then_update_db_photos()
+    get_date_created_n_modified_then_update_db_photos()
     # download_save_image()
-    check_find_result()
+    # check_find_result()
