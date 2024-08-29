@@ -205,6 +205,24 @@ def albums_remove_photos():
     return Response(json.dumps(retval),  mimetype='application/json')
 
 
+@app.route('/albums/delete', methods=('GET', 'POST'))
+@app.route('/albums/delete/', methods=('GET', 'POST'))
+def albums_delete():
+    request_json = request.get_json(silent=True)
+    album_object_id = request_json['album-object-id']
+    print(album_object_id)
+    album_path = request_json['album-path']
+    print(album_path)
+    if album_path is not None and album_path is not None:
+        print("deleting...")
+        db_albums = db.albums
+        query = {"_id": ObjectId(album_object_id)}
+        result = db_albums.delete_one(query)
+        print(result)
+
+    return jsonify(message="Deleted successfully")
+
+
 @app.route('/albums/update/', methods=('GET', 'POST'))
 def albums_update():
     request_json = request.get_json(silent=True)

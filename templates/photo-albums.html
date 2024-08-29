@@ -71,6 +71,7 @@
                     data-album-title="{{album['title']}}">
                 <i id="edit-{{ album['path'] }}" class="fa fa-pencil-square-o" style="font-size:24px"></i></a>
             <a id="btn-delete-{{album['path']}}" class="btn-delete-album"
+                    data-album-object-id="{{album.get('_id')}}"
                     data-album-path="{{album['path']}}"
                     data-album-title="{{album['title']}}">
                 <i id="delete-{{ album['path'] }}"  class='fa fa-trash-o' style='font-size:24px'></i></a>
@@ -100,30 +101,69 @@
         let albumDescription = $('#album-description-'+albumPath)[0].innerText;
         console.log(albumDescription);
         $("#description").val(albumDescription);
-        // Change Creat to Save button
+        // Change Create to Save button
         $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
         $("#btn-save").on("click", function() {
             console.log("saving...");
             albumTitle = $('#title').val();
             albumDescription = $('#description').val();
+
+            $.ajax({
+                url: "http://192.168.0.10:5000/albums/update",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "album-path": albumPath,
+                    "album-title": albumTitle,
+                    "album-description": albumDescription
+                }),
+                beforeSend: function(xhr) {
+                    console.log("Sending data to server...");
+                },
+                success: function(data) {
+                    toastr.success("Updated successfully! The page is refreshing within 5 seconds.");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 5000);
+                    // alternatively, reload the album using jQuery without refreshing the page
+                },
+                error: function() {
+
+                }
+            }).done(function(data) {
+                console.log("Done! - Data: ", data);
+            }).fail(function(jqXHR, textStatus) {
+                console.log(textStatus, ": ", JSON.stringify(jqXHR));
+            }).always(function(data) {
+                console.log("The request has completed: ", data);
+                toastr.success("The request has completed : " + JSON.stringify(data));
+            });
+        });
+    });
+
+    $('.btn-delete-album').on("click", function() {
+        albumPath = $(this).attr("data-album-path");
+        albumTitle = $(this).attr("data-album-title");
+        const albumObjectId = $(this).attr("data-album-object-id");
         $.ajax({
-            url: "http://192.168.0.10:5000/albums/update",
+            url: "http://192.168.0.10:5000/albums/delete",
             method: "POST",
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             data: JSON.stringify({
+                "album-object-id": albumObjectId,
                 "album-path": albumPath,
-                "album-title": albumTitle,
-                "album-description": albumDescription
+                "album-title": albumTitle
             }),
             beforeSend: function(xhr) {
                 console.log("Sending data to server...");
             },
             success: function(data) {
-                toastr.success("Updated successfully! The page is refreshing within 5 seconds.");
+                toastr.success("Updated successfully! The page is refreshing within 3 seconds.");
                 setTimeout(() => {
                     window.location.reload();
-                }, 5000);
+                }, 1000);
                 // alternatively, reload the album using jQuery without refreshing the page
             },
             error: function() {
@@ -137,10 +177,6 @@
             console.log("The request has completed: ", data);
             toastr.success("The request has completed : " + JSON.stringify(data));
         });
-        });
-    });
-    $('.btn-delete-album').on("click", function() {
-        toastr.warning("you've clicked me! However, I haven't been implemented yet!");
     });
 </script>
 </body>
