@@ -124,11 +124,13 @@ def get_album(path):
     first_album = result[0]
     photos = first_album['photos']
     photo_details = []
+    sorted_photo_details = []
     for photo_id in photos:
         photo_doc = db.photos.find_one({"_id": ObjectId(photo_id)})
         photo_details.append(photo_doc)
-
-    first_album["photos_details"] = photo_details
+        # Sort the list of photos by the date uploaded
+        sorted_photo_details = sorted(photo_details, key=lambda x: x['date_uploaded'], reverse=True)
+    first_album["photos_details"] = sorted_photo_details
 
     return first_album
 
