@@ -264,7 +264,7 @@ def albums_view(path):
 def photo_list():
     if request.method == 'POST':
         file = request.files['photo-upload']
-        do_upload_load(request, file)
+        do_upload_photo(request, file)
         return redirect(url_for('photo_list'))
 
     photos = db.photos
@@ -345,7 +345,7 @@ def photo_upload():
             return jsonify(message="File to be uploaded not found or incomplete operation!")
         if file:
             filename = file.filename
-            result = do_upload_load(request, file)
+            result = do_upload_photo(request, file)
             if "message" in result and result["message"] == "EXISTED":
                 return jsonify(message="File existed!")
             return jsonify(
@@ -421,7 +421,7 @@ def do_download_image(storage_location, image_url):
     return {"filename": out_filename, "hash_md5": hash_md5}
 
 
-def do_upload_load(client_request, file):
+def do_upload_photo(client_request, file):
     #flash('No selected file')
     #return redirect(request.url)
     #if file and allowed_file(file.filename):
