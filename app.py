@@ -120,34 +120,37 @@ def get_album(path):
 @app.route('/photo/save-photo-to-albums/', methods=['POST'])
 def save_photo_to_albums():
     request_json = request.get_json(silent=True)
-    print(request_json)
+    # print(request_json)
     photo_object_id = request_json['photo-object-id']
     photo_folder = request_json['photo-folder']
     photo_filename = request_json['photo-filename']
+
 
     # album_path = request_json['album_path']
     # photo_object_id = request_json['photo_object_id']
     # print("{} - {}".format(album_path, photo_object_id))
     #
     newly_added_albums = request_json['newly-added-albums']
-    results = []
+    updated_albums = []
     for album in newly_added_albums:
         album = get_album(album['path'])
         updated_photo_list = []
         if album is not None:
-            print("photo object id: ".format(photo_object_id))
+            # print("photo object id: ".format(photo_object_id))
             updated_photo_list: object = album["photos"]
             if (photo_object_id is not None and photo_folder != ""
                     and photo_object_id not in updated_photo_list):
                 updated_photo_list.append(photo_object_id)
-        print("Updated photo list: {}".format(updated_photo_list))
+        # print("Updated photo list: {}".format(updated_photo_list))
         r = db.albums.find_one_and_update(
             {'_id': album.get('_id')}, {'$set': {"photos": updated_photo_list}},
             return_document=ReturnDocument.AFTER
         )
-        if r.get("_id") is not None:
-            results.append({"path": r['path'], "title": r['title']})
-    return Response(json.dumps(results),  mimetype='application/json')
+        # print(r)
+        if r.get('_id') is not None:
+            updated_albums.append({"path": r['path'], "title": r['title']})
+        result = {"updated-albums": updated_albums, "photo-object-id": photo_object_id}
+    return Response(json.dumps(result),  mimetype='application/json')
 
 
 @app.route('/albums/add-photo', methods=['GET', 'POST'])
