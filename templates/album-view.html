@@ -86,7 +86,7 @@
         </div>
         {% endfor %}
     </div>#}
-
+    {% if not is_empty_album %}
     <div class="photo">
     <div class="row">
         <div class="col-6"></div>
@@ -122,6 +122,13 @@
         </div>
     {% endfor %}
     </div>
+    {% else %}
+        <div class="row">
+        <div class="col">
+            <h2>No photo</h2>
+        </div>
+        </div>
+    {% endif %}
 </div>
     <script src="{{ url_for('static', filename='js/lightbox-plus-jquery.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 

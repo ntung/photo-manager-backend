@@ -189,8 +189,10 @@ def albums_view(path):
         pass
     else:
         album = get_album(path)
+        is_empty_album = not album["photos"]
         api_svr = os.environ.get('API_SERVER')
-        return render_template('album-view.html', album=album, api_svr=api_svr)
+        return render_template('album-view.html',
+                               album=album, is_empty_album=is_empty_album, api_svr=api_svr)
 
 
 @app.route('/photo/list', methods=('GET', 'POST'))
