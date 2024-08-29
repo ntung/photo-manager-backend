@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
+import hashlib
 import os
 
 import requests
@@ -24,12 +25,17 @@ def download_save_image():
     img_url = ("https://scontent.flhr1-1.fna.fbcdn.net/v/t39.30808-6/456406141_122167657232133782_5336542751530079681_n"
                ".jpg?_nc_cat=107&ccb=1-7&_nc_sid=833d8c&_nc_ohc=rBjXcYld-LAQ7kNvgE4Sqeo&_nc_ht=scontent.flhr1-1.fna&oh"
                "=00_AYABNpdsL1eunGYTIV0gSWVnmbwbJlV4lCy1ohNpfDZZNw&oe=66CFE27D")
+    img_url = ("https://scontent-lhr8-1.xx.fbcdn.net/v/t39.30808-6/456459176_10222302455374329_8715846420532793352_n"
+               ".jpg?_nc_cat=111&ccb=1-7&_nc_sid=f727a1&_nc_ohc=sE5iT2-HUe8Q7kNvgFUZsor&_nc_ht=scontent-lhr8-1.xx"
+               "&_nc_gid=A0X-Xx9rQwF20iS5lQ41OKl&oh=00_AYAMu2l92viMsCKxYlD5WHvOgvngumHUJcoa5LGlwmiCbA&oe=66D66CA0")
     res = requests.get(img_url)
     print(res.status_code)
     # Request the image and save it:
     out_filename = str(uuid.uuid4())
     with open("tmp/" + out_filename + ".jpg", "wb") as f:
         f.write(res.content)
+        hashMD5 = hashlib.md5(res.content).hexdigest()
+        print(hashMD5)
 
 
 def update_mongodb_doc():
@@ -131,4 +137,5 @@ def get_date_created_n_modified_then_update_db_photos():
 
 if __name__ == '__main__':
     # update_mongodb_doc()
-    get_date_created_n_modified_then_update_db_photos()
+    # get_date_created_n_modified_then_update_db_photos()
+    download_save_image()

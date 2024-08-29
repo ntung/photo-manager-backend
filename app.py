@@ -1,3 +1,4 @@
+import hashlib
 import json
 import math
 import os
@@ -34,7 +35,7 @@ Done    2/ Add/remove photos to/out albums
         5/ Loading more data when scrolling or pagination, do not load all once.
 Done    6/ View photos by albums
 Done    7/ Add/Edit an album: edit title, description; add more photos...
-        8/ Check md5 to avoid repeating images
+Done    8/ Check md5 to avoid repeating images
         9/ Favourite/Highlight
         10/ Set album profile/cover photo
 Progress11/ Sort photos by title, data uploaded
@@ -66,12 +67,13 @@ def todo_list():
     return render_template('todo-list.html', todos=all_todos)
 
 
-def save_metadata(_submission_folder, _filename, _title, _description, _photo_courtesy):
+def save_metadata(_submission_folder, _filename, _title, _description, _photo_courtesy, _hash_md5):
     photos = db.photos
     photos.insert_one({'folder': _submission_folder, 'filename': _filename,
                        'title': _title, 'description': _description, 'photo_courtesy': _photo_courtesy,
                        'date_uploaded': datetime.now().astimezone(),
-                       'date_modified': datetime.now().astimezone()})
+                       'date_modified': datetime.now().astimezone(),
+                       'hash_md5': _hash_md5})
 
 
 @app.route('/photo/albums', methods=('GET', 'POST'))
@@ -344,6 +346,8 @@ def photo_upload():
         if file:
             filename = file.filename
             result = do_upload_load(request, file)
+            if "message" in result and result["message"] == "EXISTED":
+                return jsonify(message="File existed!")
             return jsonify(
                 message="Completed upload files successfully!",
                 submission_folder=result['submission_folder'],
@@ -412,7 +416,9 @@ def do_download_image(storage_location, image_url):
     out_filename = str(uuid.uuid4()) + ".jpg"
     with open(storage_location + "/" + out_filename, "wb") as f:
         f.write(res.content)
-    return out_filename
+        hash_md5 = hashlib.md5(res.content).hexdigest()
+        print(hash_md5)
+    return {"filename": out_filename, "hash_md5": hash_md5}
 
 
 def do_upload_load(client_request, file):
@@ -427,13 +433,23 @@ def do_upload_load(client_request, file):
     if file.content_length > 0:
         filename = file.filename  #secure_filename(file.filename)
         os.makedirs(UPLOAD_DIR, exist_ok=True)
+        hash_md5 = hashlib.md5(file.read()).hexdigest()
         file.save(os.path.join(UPLOAD_DIR, filename))
     else:
         # download the image from the provided image URL
         image_url = client_request.headers["Image-URL"] \
             if ("Image-URL" in request.headers
                 and client_request.headers["Image-URL"] is not None) else client_request.form['photo-url']
-        filename = do_download_image(UPLOAD_DIR, image_url)
+        result = do_download_image(UPLOAD_DIR, image_url)
+        filename = result["filename"]
+        hash_md5 = result["hash_md5"]
+
+    # find any existing photo with hash_md5
+    col_photos = db.photos
+    docs = col_photos.find({"hash_md5": hash_md5})
+    if docs is not None:
+        # move the photo to another folder
+        return jsonify(message="EXISTED", submission_folder=submission_folder)
 
     # save the file's metadata into MongoDB
     title = client_request.headers["Title"] \
@@ -448,6 +464,6 @@ def do_upload_load(client_request, file):
         if ("Photo-Courtesy" in request.headers
             and client_request.headers["Photo-Courtesy"] is not None) else client_request.form['courtesy']
     origin = origin if origin is not None else "Unknown"
-    save_metadata(submission_folder, filename, title, description, origin)
+    save_metadata(submission_folder, filename, title, description, origin, hash_md5)
     return {'submission_folder': submission_folder, 'filename': filename,
-            'title': title, 'description': description, 'origin': origin}
+            'title': title, 'description': description, 'origin': origin, 'hash_md5': hash_md5}
