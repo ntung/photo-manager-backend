@@ -24,6 +24,23 @@ client = MongoClient('localhost', 27017)
 db = client.flask_db
 todos = db.todos
 
+"""
+TODO LIST
+        0/ Calculate aaaa, aaab, aaac... submission folders
+        1/ Delete photos and albums: will delete physical photos and albums too.
+Done    2/ Add/remove photos to/out albums
+        3/ Improve the views by allowing zoom, click open a single photo
+        4/ Improve adding photos: add tags, hashes, key words, etc.
+        5/ Loading more data when scrolling or pagination, do not load all once.
+Done    6/ View photos by albums
+        7/ Add/Edit an album: edit title, description; add more photos...
+        8/ Check md5 to avoid repeating images
+        9/ Favourite/Highlight
+        10/ Set album profile/cover photo
+Progress11/ Sort photos by title, data uploaded
+Done    12/ After Save photo to album, update "In Albums:"
+        13/ handle the date_uploaded and date_modified using datetime.strftime('%Y-%m-%d %H:%M:%S')
+"""
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 cors = CORS(app)
@@ -294,8 +311,6 @@ def photo_upload():
 
     return jsonify(message="Under construction or operation is not supported!")
 
-
-# TODO: check md5 preventing duplicated images
 
 @app.route('/photo/view', methods=['GET', 'POST'])
 def photo_view():
