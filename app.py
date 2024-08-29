@@ -33,7 +33,7 @@ Done    2/ Add/remove photos to/out albums
         4/ Improve adding photos: add tags, hashes, key words, etc.
         5/ Loading more data when scrolling or pagination, do not load all once.
 Done    6/ View photos by albums
-        7/ Add/Edit an album: edit title, description; add more photos...
+Done    7/ Add/Edit an album: edit title, description; add more photos...
         8/ Check md5 to avoid repeating images
         9/ Favourite/Highlight
         10/ Set album profile/cover photo
@@ -201,6 +201,29 @@ def albums_remove_photos():
             retval = {"path": r['path'], "title": r['title']}
 
     return Response(json.dumps(retval),  mimetype='application/json')
+
+
+@app.route('/albums/update/', methods=('GET', 'POST'))
+def albums_update():
+    request_json = request.get_json(silent=True)
+    album_path = request_json['album-path']
+    album_title = request_json['album-title']
+    album_description = request_json['album-description']
+    album = get_album(album_path)
+    db_albums = db.albums
+    if album is not None:
+        album = db_albums.update_one(
+            {"_id": album.get('_id')},
+            {
+                "$set": {
+                    "title": album_title,
+                    "description": album_description
+                }
+            }, upsert=False
+        )
+        print(album)
+    retval = {"message": "Updated completely", "title": album_title, "description": album_description}
+    return Response(json.dumps(retval), mimetype='application/json')
 
 
 @app.route('/albums/view/<path>', methods=('GET', 'POST'))
