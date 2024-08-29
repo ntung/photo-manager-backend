@@ -2,6 +2,7 @@ import hashlib
 import json
 import math
 import os
+import pathlib
 import tempfile
 import uuid
 from datetime import datetime
@@ -448,7 +449,9 @@ def do_upload_photo(client_request, file):
     col_photos = db.photos
     docs = col_photos.find({"hash_md5": hash_md5})
     if docs is not None:
-        # move the photo to another folder
+        # move or delete the photo to another folder
+        abs_file_path = os.path.join(UPLOAD_DIR, filename)
+        pathlib.Path(abs_file_path).unlink(missing_ok=True)
         return jsonify(message="EXISTED", submission_folder=submission_folder)
 
     # save the file's metadata into MongoDB
