@@ -315,7 +315,7 @@ def photo_upload():
 @app.route('/photo/view', methods=['GET', 'POST'])
 def photo_view():
     dbphotos = db.photos
-    all_photos = dbphotos.find()
+    all_photos = dbphotos.find().sort([("date_uploaded", pymongo.DESCENDING)])
     bucket_size = math.ceil(dbphotos.count_documents({}) / 4)
     buckets = []
     """
