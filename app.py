@@ -130,7 +130,11 @@ def get_album(path):
     sorted_photo_details = []
     for photo_id in photos:
         photo_doc = db.photos.find_one({"_id": ObjectId(photo_id)})
-        photo_details.append(photo_doc)
+        if photo_doc is not None:
+            photo_details.append(photo_doc)
+        else:
+            print("Photo object id {} was removed.".format(photo_id))
+
         # Sort the list of photos by the date uploaded
         sorted_photo_details = sorted(photo_details, key=lambda x: x['date_uploaded'], reverse=True)
     first_album["photos_details"] = sorted_photo_details
