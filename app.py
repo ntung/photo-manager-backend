@@ -418,7 +418,7 @@ def do_download_image(storage_location, image_url):
     with open(storage_location + "/" + out_filename, "wb") as f:
         f.write(res.content)
         hash_md5 = hashlib.md5(res.content).hexdigest()
-        print(hash_md5)
+
     return {"filename": out_filename, "hash_md5": hash_md5}
 
 
@@ -447,10 +447,11 @@ def do_upload_photo(client_request, file):
 
     # find any existing photo with hash_md5
     col_photos = db.photos
-    docs = col_photos.find({"hash_md5": hash_md5})
+    docs = col_photos.find_one({"hash_md5": hash_md5})
     if docs is not None:
         # move or delete the photo to another folder
         abs_file_path = os.path.join(UPLOAD_DIR, filename)
+        # https://stackoverflow.com/a/59185523/865603
         pathlib.Path(abs_file_path).unlink(missing_ok=True)
         return jsonify(message="EXISTED", submission_folder=submission_folder)
 

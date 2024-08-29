@@ -38,6 +38,25 @@ def download_save_image():
         print(hashMD5)
 
 
+def check_find_result():
+    mongo_client = MongoClient('mongodb://localhost:27017')
+
+    # create database and collection instances
+    db = mongo_client.flask_db
+    col = db["photos"]
+    # 4adb01c0d1c361ca1b79fbe92db634f8 --> exists
+    # 7da09a6d42d2d32cadcc3c8f82cef3a8 --> non-exists
+    cursor = col.find_one({"hash_md5": "4adb01c0d1c361ca1b79fbe92db634f8"})
+    if cursor is None:
+        print("nothing found")
+    else:
+        print(cursor)
+        if cursor.get('_id') is None:
+            print("The Cursor is empty")
+        else:
+            print("The Cursor is not empty")
+
+
 def update_mongodb_doc():
     # docs: https://kb.objectrocket.com/mongo-db/how-to-update-a-mongodb-document-in-python-356
     # create a client instance of the MongoClient class
@@ -138,4 +157,5 @@ def get_date_created_n_modified_then_update_db_photos():
 if __name__ == '__main__':
     # update_mongodb_doc()
     # get_date_created_n_modified_then_update_db_photos()
-    download_save_image()
+    # download_save_image()
+    check_find_result()
