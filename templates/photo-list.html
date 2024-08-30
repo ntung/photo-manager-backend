@@ -129,6 +129,13 @@
                         data-photo-folder="{{photo['folder']}}"
                         data-photo-filename="{{photo['filename']}}">
                     Edit
+                </button>
+                    &nbsp;
+                <button type="button" class="btn btn-primary btn-delete-photo" id="btn-delete-photo"
+                        data-photo-object-id="{{photo.get('_id')}}"
+                        data-photo-folder="{{photo['folder']}}"
+                        data-photo-filename="{{photo['filename']}}">
+                    Delete
                 </button></p>
                 <p id="{{ id_image }}" class="album-list"></p>
                 <div id="showAllAlbums"></div>
@@ -277,6 +284,45 @@
             });
         });
     });
+
+    $(".btn-delete-photo").on("click", function() {
+        const photoObjectId = $(this).attr("data-photo-object-id");
+        const photoFolder = $(this).attr("data-photo-folder");
+        const photoFileName = $(this).attr("data-photo-filename");
+
+        $.ajax({
+            url: "http://192.168.0.10:5000/photo/delete",
+            method: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({
+                "photo-object-id": photoObjectId,
+                "photo-folder": photoFolder,
+                "photo-filename": photoFileName,
+            }),
+            beforeSend: function(xhr) {
+                console.log("Sending data to server...");
+            },
+            success: function(data) {
+                toastr.success("Deleted successfully! The page is refreshing within 3 seconds.");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+                // alternatively, reload the album using jQuery without refreshing the page
+            },
+            error: function() {
+
+            }
+        }).done(function(data) {
+            console.log("Done! - Data: ", data);
+        }).fail(function(jqXHR, textStatus) {
+            console.log(textStatus, ": ", JSON.stringify(jqXHR));
+        }).always(function(data) {
+            console.log("The request has completed: ", data);
+            toastr.success("The request has completed : " + JSON.stringify(data));
+        });
+    });
+
 
     $('.album-list').on("click", "#btn-save", function() {
         // retrieves the existing albums which the photo in question has been added

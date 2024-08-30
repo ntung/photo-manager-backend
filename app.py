@@ -29,7 +29,7 @@ todos = db.todos
 """
 TODO LIST
         0/ Calculate aaaa, aaab, aaac... submission folders
-        1/ Delete photos and albums: will delete physical photos and albums too.
+Done        1/ Delete photos and albums: will delete physical photos and albums too.
 Done    2/ Add/remove photos to/out albums
         3/ Improve the views by allowing zoom, click open a single photo
         4/ Improve adding photos: add tags, hashes, key words, etc.
@@ -269,6 +269,22 @@ def albums_view(path):
         api_svr = os.environ.get('API_SERVER')
         return render_template('album-view.html',
                                album=album, is_empty_album=is_empty_album, api_svr=api_svr)
+
+
+@app.route('/photo/delete', methods=('GET', 'POST'))
+def photo_delete():
+    request_json = request.get_json(silent=True)
+    photo_object_id = request_json['photo-object-id']
+    query = {"_id": ObjectId(photo_object_id)}
+    result = db.photos.delete_one(query)
+    print(result)
+    # delete the file
+    photo_folder = request_json['photo-folder']
+    photo_filename = request_json['photo-filename']
+    abs_file_path = os.path.join(UPLOAD_FOLDER, photo_folder, photo_filename)
+    pathlib.Path(abs_file_path).unlink(missing_ok=True)
+    # TODO: delete the photo object id where it is being associated with albums
+    return jsonify(message="Deleted successfully")
 
 
 @app.route('/photo/list', methods=('GET', 'POST'))
