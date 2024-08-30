@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import math
 import os
 import pathlib
@@ -53,6 +54,13 @@ cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type: application/json'
 
 API_SVR = os.environ.get('API_SERVER')
+logging.basicConfig(
+    filename="logs/app.log",
+    encoding="utf-8",
+    filemode="a",
+    level=logging.INFO
+)
+LOGGER = app.logger
 
 
 @app.route('/', methods=('GET', 'POST'))
@@ -249,11 +257,8 @@ def do_album_remove_photos(album, tobe_removed_photos):
 def albums_delete():
     request_json = request.get_json(silent=True)
     album_object_id = request_json['album-object-id']
-    print(album_object_id)
     album_path = request_json['album-path']
-    print(album_path)
     if album_path is not None and album_path is not None:
-        print("deleting...")
         db_albums = db.albums
         query = {"_id": ObjectId(album_object_id)}
         result = db_albums.delete_one(query)
@@ -523,6 +528,7 @@ def do_upload_photo(client_request, file):
 
     if client_request.files['photo-upload'].filename:
         print("Uploading a local photo...")
+        LOGGER.info("uploading a local photo...")
         # filename = secure_filename(file.filename)
         # filename = file.filename
         os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -532,6 +538,7 @@ def do_upload_photo(client_request, file):
     else:
         # download the image from the provided image URL
         print("Downloading a photo from a remote location...")
+        LOGGER.info("Downloading a photo from a remote location...")
         image_url = client_request.headers["Image-URL"] \
             if ("Image-URL" in request.headers
                 and client_request.headers["Image-URL"] is not None) else client_request.form['photo-url']
@@ -551,6 +558,7 @@ def do_upload_photo(client_request, file):
         return jsonify(message="EXISTED", submission_folder=submission_folder)
     else:
         print("{} is a new photo.".format(filename))
+        LOGGER.info("{} is a new photo.".format(filename))
 
     # save the file's metadata into MongoDB
     title = client_request.headers["Title"] \
