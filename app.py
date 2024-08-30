@@ -45,6 +45,7 @@ Done    8/ Check md5 to avoid repeating images
 Progress11/ Sort photos by title, data uploaded
 Done    12/ After Save photo to album, update "In Albums:"
         13/ handle the date_uploaded and date_modified using datetime.strftime('%Y-%m-%d %H:%M:%S')
+        14/ uuid for photos uploaded via browsing files
 """
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -495,11 +496,12 @@ def flatten_concatenation(matrix):
     return flat_list
 
 
-def do_download_image(storage_location, image_url):
+def do_download_image(storage_location, image_url, out_filename=None):
     # this function is working like a charm for Facebook images
     res = requests.get(image_url, stream=True)
     # Request the image and save it:
-    out_filename = str(uuid.uuid4()) + ".jpg"
+    if out_filename is None:
+        out_filename = str(uuid.uuid4()) + ".jpg"
     with open(storage_location + "/" + out_filename, "wb") as f:
         f.write(res.content)
         hash_md5 = hashlib.md5(res.content).hexdigest()
@@ -518,6 +520,9 @@ def do_upload_photo(client_request, file):
 
     if file.content_length > 0:
         filename = file.filename  #secure_filename(file.filename)
+
+    # regenerate a new file for both cases
+    filename = str(uuid.uuid4()) + ".jpg"
         os.makedirs(UPLOAD_DIR, exist_ok=True)
         hash_md5 = hashlib.md5(file.read()).hexdigest()
         file.save(os.path.join(UPLOAD_DIR, filename))
@@ -526,7 +531,7 @@ def do_upload_photo(client_request, file):
         image_url = client_request.headers["Image-URL"] \
             if ("Image-URL" in request.headers
                 and client_request.headers["Image-URL"] is not None) else client_request.form['photo-url']
-        result = do_download_image(UPLOAD_DIR, image_url)
+        result = do_download_image(UPLOAD_DIR, image_url, filename)
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
 
