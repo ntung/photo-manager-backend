@@ -3,6 +3,7 @@
 import hashlib
 import os
 import shutil
+import tempfile
 
 import requests
 import uuid
@@ -174,6 +175,19 @@ def copy_and_move_file():
     target = "/Users/tnguyen/tmp/001.jpg"
     # shutil.copyfile(source, target)
     shutil.copy2(source, target)
+
+
+def get_file_length(_file):
+    # https://stackoverflow.com/a/23601025/865603
+
+    temp_file_path = os.path.join(tempfile.gettempdir(), _file.filename)
+    _file.save(temp_file_path)
+    file_length = os.stat(temp_file_path).st_size
+    print(temp_file_path)
+    # os.remove(temp_file_path)
+    # pathlib.Path(temp_file_path).unlink(missing_ok=True)
+
+    return {"file-length": file_length, "abs-file-path": temp_file_path}
 
 
 if __name__ == '__main__':
