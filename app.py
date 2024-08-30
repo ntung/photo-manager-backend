@@ -20,6 +20,8 @@ from flask_cors import CORS
 from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
 
+from utils import PhotoManager
+
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
@@ -332,6 +334,7 @@ def photo_delete():
 
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
+    PhotoManager.hello()
     if request.method == 'POST':
         file = request.files['photo-upload']
         if not file.filename:
@@ -461,19 +464,10 @@ def photo_view():
         buckets.append(bucket)
 
     # after looping over all_photos as a Cursor, all_photos is empty
-    all_photos = flatten_concatenation(buckets)
+    all_photos = PhotoManager.flatten_concatenation(buckets)
     api_svr = os.environ.get('API_SERVER')
 
     return render_template('photo-view.html', photos=all_photos, buckets=buckets, api_svr=api_svr)
-
-
-# https://realpython.com/python-flatten-list/
-def flatten_concatenation(matrix):
-    flat_list = []
-    for row in matrix:
-        flat_list += row
-
-    return flat_list
 
 
 def do_download_image(storage_location, image_url, out_filename=None):
