@@ -101,8 +101,6 @@ def save_metadata(_submission_folder, _filename, _title, _description, _courtesy
 
 @app.route('/photo/albums', methods=('GET', 'POST'))
 def photo_albums():
-    db_albums = db.albums
-
     if request.method == 'POST':
         file = request.files['cover']
         if file.content_length > 0:
@@ -116,7 +114,7 @@ def photo_albums():
         else:
             description = 'My new album'
         if title == "Untitled":
-            all_untitled_albums = db_albums.find({
+            all_untitled_albums = db.albums.find({
                 "title": {'$regex': '^Untitled'}}
             ).limit(1).sort('title', pymongo.ASCENDING)
             if all_untitled_albums is None:
@@ -140,7 +138,7 @@ def photo_albums():
         print("Inserted a new record to db.photos {}".format(r))
         return redirect(url_for('photo_albums'))
     elif request.method == 'GET':
-        all_albums = db_albums.find()
+        all_albums = db.albums.find()
         return render_template('photo-albums.html', albums=all_albums, api_svr=API_SVR)
 
 
@@ -317,7 +315,7 @@ def photo_delete():
     photo_folder = request_json['photo-folder']
     photo_filename = request_json['photo-filename']
     abs_file_path = os.path.join(UPLOAD_FOLDER, photo_folder, photo_filename)
-    pathlib.Path(abs_file_path).unlink(missing_ok=True)
+    pathlib.Path(str(abs_file_path)).unlink(missing_ok=True)
     # delete the photo object id where it is being associated with albums
     tobe_removed_photos = [
         {
@@ -375,7 +373,7 @@ def photo_read(path):
     try:
         return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True)
     except FileNotFoundError as exception:
-        print("404: File Not Found " + exception)
+        print("404: File Not Found " + str(exception))
 
 
 @app.route('/photo/update', methods=('GET', 'POST'))
@@ -520,7 +518,7 @@ def do_upload_photo(client_request, file):
         # move or delete the photo to another folder
         abs_file_path = os.path.join(UPLOAD_DIR, filename)
         # https://stackoverflow.com/a/59185523/865603
-        pathlib.Path(abs_file_path).unlink(missing_ok=True)
+        pathlib.Path(str(abs_file_path)).unlink(missing_ok=True)
         # TODO: figure out how to use the returned json below on the view
         return jsonify(message="EXISTED", submission_folder=submission_folder)
     else:
