@@ -108,7 +108,16 @@
             <br/>
             {{photo['description']}}
             <br/>
-            {{photo['courtesy']}}
+            {% if photo['courtesy'].startswith('http') %}
+                {% if 'facebook.com' in photo['courtesy'] %}
+                    {% set source = "Facebook" %}
+                {% else %}
+                    {% set source = "Other" %}
+                {% endif %}
+                <a href="{{photo['courtesy']}}" target="_blank">{{source}}</a>
+            {% else %}
+                {{photo['courtesy']}}
+            {% endif %}
         </div>
         <div class="col-2">
             <div class="form-check">
