@@ -335,6 +335,10 @@ def photo_delete():
 def photo_list():
     if request.method == 'POST':
         file = request.files['photo-upload']
+        if not file.filename:
+            LOGGER.error("No file uploaded")
+            return redirect(url_for('photo_list'))
+
         result = do_upload_photo(request, file)
         LOGGER.debug(result)
         return redirect(url_for('photo_list'))
@@ -474,6 +478,8 @@ def flatten_concatenation(matrix):
 
 def do_download_image(storage_location, image_url, out_filename=None):
     # this function is working like a charm for Facebook images
+    if not image_url or image_url is None:
+        return jsonify(message="Image URL not found!")
     res = requests.get(image_url, stream=True)
     # Request the image and save it:
     if out_filename is None:
@@ -493,7 +499,7 @@ def do_upload_photo(client_request, file):
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
 
-    if client_request.files['photo-upload'].filename:
+    if file.filename:
         print("Uploading a local photo...")
         LOGGER.info("uploading a local photo...")
         # filename = secure_filename(file.filename)
