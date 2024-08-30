@@ -104,9 +104,11 @@
             <img src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
                  style="width:25%" alt="{{ photo['title'] }}" data-photo-object-id="{{ photo.get('_id') }}"></a></div>
         <div class="col-4">
-            <strong>{{ photo['title'] }}</strong>
+            <strong>{{photo['title']}}</strong>
             <br/>
-            {{ photo['description']}}
+            {{photo['description']}}
+            <br/>
+            {{photo['courtesy']}}
         </div>
         <div class="col-2">
             <div class="form-check">

@@ -68,10 +68,10 @@ def todo_list():
     return render_template('todo-list.html', todos=all_todos)
 
 
-def save_metadata(_submission_folder, _filename, _title, _description, _photo_courtesy, _hash_md5):
+def save_metadata(_submission_folder, _filename, _title, _description, _courtesy, _hash_md5):
     photos = db.photos
     photos.insert_one({'folder': _submission_folder, 'filename': _filename,
-                       'title': _title, 'description': _description, 'photo_courtesy': _photo_courtesy,
+                       'title': _title, 'description': _description, 'courtesy': _courtesy,
                        'date_uploaded': datetime.now().astimezone(),
                        'date_modified': datetime.now().astimezone(),
                        'hash_md5': _hash_md5})
@@ -365,7 +365,7 @@ def photo_upload():
                 original_filename=filename,
                 after_uploaded_filename=filename,
                 title=result['title'],
-                photo_courtesy=result['origin'])
+                courtesy=result['origin'])
 
     return jsonify(message="Under construction or operation is not supported!")
 
