@@ -427,9 +427,10 @@ def photo_upload():
 
 @app.route('/photo/view', methods=['GET', 'POST'])
 def photo_view():
-    dbphotos = db.photos
-    all_photos = dbphotos.find().sort([("date_uploaded", pymongo.DESCENDING)])
-    bucket_size = math.ceil(dbphotos.count_documents({}) / 4)
+    all_photos = db.photos.find().sort([("date_uploaded", pymongo.DESCENDING)])
+    # divide 4 because I installed this layout [1]
+    # [1] https://www.w3schools.com/howto/howto_js_image_grid.asp
+    bucket_size = math.ceil(db.photos.count_documents({}) / 4)
     buckets = []
     """
     counter = 0 -> the last bucket will have less or equal the number of photos than the bucket size
