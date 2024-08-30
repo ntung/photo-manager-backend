@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime
 
 import pymongo
+import pytz
 import requests
 import bson
 import bson.json_util
@@ -25,6 +26,8 @@ UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
 client = MongoClient('localhost', 27017)
 db = client.flask_db
 todos = db.todos
+
+TZ_LONDON = pytz.timezone("Europe/London")
 
 """
 TODO LIST
@@ -174,7 +177,11 @@ def save_photo_to_albums():
                 updated_photo_list.append(photo_object_id)
         # print("Updated photo list: {}".format(updated_photo_list))
         r = db.albums.find_one_and_update(
-            {'_id': album.get('_id')}, {'$set': {"photos": updated_photo_list}},
+            {'_id': album.get('_id')},
+            {'$set': {
+                 "photos": updated_photo_list,
+                 "date_modified": datetime.now(TZ_LONDON)
+            }},
             return_document=ReturnDocument.AFTER
         )
         # print(r)
@@ -217,7 +224,11 @@ def do_album_remove_photos(album, tobe_removed_photos):
 
         # save the update
         r = db.albums.find_one_and_update(
-            {'_id': album.get('_id')}, {'$set': {"photos": original_photos}},
+            {'_id': album.get('_id')},
+            {'$set': {
+                "photos": original_photos,
+                "date_modified": datetime.now(TZ_LONDON)
+            }},
             return_document=ReturnDocument.AFTER
         )
         if r.get("_id") is not None:
@@ -259,7 +270,7 @@ def albums_update():
                 "$set": {
                     "title": album_title,
                     "description": album_description,
-                    "date_modified": datetime.now().astimezone()
+                    "date_modified": datetime.now(TZ_LONDON)
                 }
             }, upsert=False
         )
@@ -360,7 +371,7 @@ def photo_update():
                 "title": photo_title,
                 "description": photo_description,
                 "courtesy": photo_courtesy,
-                "date_modified": datetime.now().astimezone()
+                "date_modified": datetime.now(TZ_LONDON)
             }
         }, upsert=False
     )
