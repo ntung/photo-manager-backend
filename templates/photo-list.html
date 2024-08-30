@@ -108,7 +108,7 @@
                        data-photo-filename="{{photo['filename']}}"/>
                 &nbsp;
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal">
-                    Add too album (Open a modal)
+                    Add to albums (Open a modal)
                 </button>
                     &nbsp;
                 <button type="button" class="btn btn-primary btn-edit-photo" id="btn-edit-photo"
@@ -201,6 +201,16 @@
         closeOnSelect: false,
         allowClear: true,
     });
+    $("#myModal").on("hidden.bs.modal", function () {
+        // put your default event here
+        //console.log("you've closed the modal");
+    });
+
+    $("#btn-add2album").on("click", function () {
+        // put your default event here
+        console.log("you've clicked on the Add button on the modal");
+    });
+
     $(".btn-edit-photo").on("click", function() {
         const photoObjectId = $(this).attr("data-photo-object-id");
         const photoFolder = $(this).attr("data-photo-folder");
