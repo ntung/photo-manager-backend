@@ -35,8 +35,7 @@
             <div class="content">
                 <form method="post" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <b><label for="photo-upload" class="form-label">Upload
-                            photos/images/pictures/figures/videos/clips...</label></b>
+                        <b><label for="photo-upload" class="form-label">Browse a photo</label></b>
                         <input type="file" id="photo-upload" name="photo-upload"
                                class="form-control" accept="image/png,image/jpeg,image/jpg"/>
                         <br/>
@@ -85,10 +84,10 @@
                 <p id="photo-description-{{photo.get("_id")}}">{{photo['description']}}</p>
                 <p id="photo-other-metadata-{{photo.get("_id")}}">
                 {% if "date_uploaded" in photo %}
-                    <span>Uploaded {{photo['date_uploaded'].strftime('%Y-%m-%d')}}</span>
+                    <span>Uploaded {{photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S')}}</span>
                 {% endif %}
                 {% if "date_modified" in photo %}
-                    <span>| Updated {{photo['date_uploaded'].strftime('%Y-%m-%d')}}</span>
+                    <span>| Updated {{photo['date_modified'].strftime('%d/%m/%Y, %H:%M:%S')}}</span>
                 {% endif %}
                     | Source:
                     <span id="original-photo-courtesy-{{photo.get("_id")}}"
