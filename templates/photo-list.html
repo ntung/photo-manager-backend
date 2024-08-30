@@ -239,6 +239,7 @@
         const photoCourtesy = $('#original-photo-courtesy-'+photoObjectId)[0].innerHTML;
         $("#photo-courtesy").val(photoCourtesy);
         //console.log(photoCourtesy);
+        window.scrollTo(0, 0);
         $("#btn-save").on("click", function() {
             console.log("saving...");
 
