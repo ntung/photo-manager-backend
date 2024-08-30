@@ -105,8 +105,11 @@ def photo_albums():
         file = request.files['cover']
         if file.content_length > 0:
             print("TODO: implement to store this photo")
-        title = request.form['title'] if request.form['title'] is not None else 'Untitled'
-        if request.form['description'] is not None:
+        if request.form['title'] is not None or  not request.form['title']:
+            title = request.form['title']
+        else:
+            title = "Untitled"
+        if request.form['description'] is not None or not request.form['description']:
             description = request.form['description']
         else:
             description = 'My new album'
@@ -119,6 +122,12 @@ def photo_albums():
             else:
                 for album in all_untitled_albums:
                     print(album['title'])
+        print("{}\t{}".format(title, description))
+
+        if not title:
+            # stop creating untitled album
+            return redirect(url_for('photo_albums'))
+
         path = slugify(title)
         r = db.albums.insert_one({
             'path': path, 'title': title, 'description': description,
