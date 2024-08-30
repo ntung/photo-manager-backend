@@ -14,6 +14,16 @@
           href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"/>
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css">
+    <style>
+        .photo-block {
+            border: 2px solid #9714d0;
+            margin-bottom: 2px;
+        }
+        .photo-metadata {
+            padding-top: 3px;
+            margin-bottom: 0 !important;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -64,18 +74,21 @@
 
     {% for photo in photos %}
         {% set id_image = photo['filename'][:-4] %}
-        <div class="row" style="padding-top: 5px">
+        <div class="row photo-block">
             <div class="col-4">
                 <img id="{{photo['folder']}}-{{photo['filename']}}"
                      src="{{'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename']}}"
                      style="width:100%" alt="{{photo['title']}}"></div>
-            <div class="col-8">
+            <div class="col-8 photo-metadata">
                 <h3 id="photo-title-{{photo.get("_id")}}">{{photo['title']}}</h3>
                 <p id="photo-filename-{{photo.get("_id")}}"><em>{{photo['filename']}}</em></p>
                 <p id="photo-description-{{photo.get("_id")}}">{{photo['description']}}</p>
                 <p id="photo-other-metadata-{{photo.get("_id")}}">
                 {% if "date_uploaded" in photo %}
-                    <span>Uploaded {{photo['date_uploaded']}}</span>
+                    <span>Uploaded {{photo['date_uploaded'].strftime('%Y-%m-%d')}}</span>
+                {% endif %}
+                {% if "date_modified" in photo %}
+                    <span>| Updated {{photo['date_uploaded'].strftime('%Y-%m-%d')}}</span>
                 {% endif %}
                     | Source:
                     <span id="original-photo-courtesy-{{photo.get("_id")}}"
