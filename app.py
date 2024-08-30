@@ -199,12 +199,21 @@ def albums_remove_photos():
     request_json = request.get_json(silent=True)
     album_path = request_json['album-path']
     album = get_album(album_path)
+
+    tobe_removed_photos = request_json['removed-photos']
+    retval = do_album_remove_photos(album, tobe_removed_photos)
+
+    return Response(json.dumps(retval),  mimetype='application/json')
+
+
+def do_album_remove_photos(album, tobe_removed_photos):
     retval = {}
     if (album is not None) and (album.get('photos') is not None):
         original_photos = album['photos']
-        tobe_removed_photos = request_json['removed-photos']
         for photo in tobe_removed_photos:
-            original_photos.remove(photo['photo-object-id'])
+            photo_oid = photo['photo-object-id']
+            if photo_oid in original_photos:
+                original_photos.remove(photo_oid)
 
         # save the update
         r = db.albums.find_one_and_update(
@@ -214,7 +223,7 @@ def albums_remove_photos():
         if r.get("_id") is not None:
             retval = {"path": r['path'], "title": r['title']}
 
-    return Response(json.dumps(retval),  mimetype='application/json')
+    return retval
 
 
 @app.route('/albums/delete', methods=('GET', 'POST'))
@@ -284,6 +293,15 @@ def photo_delete():
     abs_file_path = os.path.join(UPLOAD_FOLDER, photo_folder, photo_filename)
     pathlib.Path(abs_file_path).unlink(missing_ok=True)
     # TODO: delete the photo object id where it is being associated with albums
+    tobe_removed_photos = [
+        {
+            "photo-object-id": photo_object_id,
+            "photo-folder": photo_folder,
+            "photo-filename": photo_filename
+        }
+    ]
+    for album in db.albums.find():
+        do_album_remove_photos(album, tobe_removed_photos)
     return jsonify(message="Deleted successfully")
 
 
