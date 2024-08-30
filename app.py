@@ -325,9 +325,13 @@ def photo_delete():
 
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
+    print("You are in photo list")
     if request.method == 'POST':
+        print("{}\tCome here to upload photos...".format(datetime.now(TZ_LONDON)))
         file = request.files['photo-upload']
-        do_upload_photo(request, file)
+        print("{}\tSize: {}".format(datetime.now(TZ_LONDON), file.content_length))
+        result = do_upload_photo(request, file)
+        print("{}\tUploaded result: {}".format(datetime.now(TZ_LONDON), result))
         return redirect(url_for('photo_list'))
 
     photos = db.photos
@@ -510,24 +514,24 @@ def do_download_image(storage_location, image_url, out_filename=None):
 
 
 def do_upload_photo(client_request, file):
-    #flash('No selected file')
-    #return redirect(request.url)
-    #if file and allowed_file(file.filename):
     submission_folder = client_request.headers["Submission-Folder"] \
         if ("Submission-Folder" in request.headers
             and client_request.headers["Submission-Folder"] is not None) else "aaaa"  # TODO: tinh cai nay sau
     UPLOAD_DIR = app.config['UPLOAD_FOLDER'] + "/" + submission_folder
-
-    if file.content_length > 0:
-        filename = file.filename  #secure_filename(file.filename)
-
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
+
+    if client_request.files['photo-upload'].filename:
+        print("Uploading a local photo...")
+        # filename = secure_filename(file.filename)
+        # filename = file.filename
         os.makedirs(UPLOAD_DIR, exist_ok=True)
-        hash_md5 = hashlib.md5(file.read()).hexdigest()
         file.save(os.path.join(UPLOAD_DIR, filename))
+        with open(os.path.join(UPLOAD_DIR, filename), "rb") as f:
+            hash_md5 = hashlib.md5(f.read()).hexdigest()
     else:
         # download the image from the provided image URL
+        print("Downloading a photo from a remote location...")
         image_url = client_request.headers["Image-URL"] \
             if ("Image-URL" in request.headers
                 and client_request.headers["Image-URL"] is not None) else client_request.form['photo-url']
@@ -535,7 +539,7 @@ def do_upload_photo(client_request, file):
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
 
-    # find any existing photo with hash_md5
+    # find any existing photos with hash_md5
     col_photos = db.photos
     docs = col_photos.find_one({"hash_md5": hash_md5})
     if docs is not None:
@@ -543,7 +547,10 @@ def do_upload_photo(client_request, file):
         abs_file_path = os.path.join(UPLOAD_DIR, filename)
         # https://stackoverflow.com/a/59185523/865603
         pathlib.Path(abs_file_path).unlink(missing_ok=True)
+        # TODO: figure out how to use the returned json below on the view
         return jsonify(message="EXISTED", submission_folder=submission_folder)
+    else:
+        print("{} is a new photo.".format(filename))
 
     # save the file's metadata into MongoDB
     title = client_request.headers["Title"] \
