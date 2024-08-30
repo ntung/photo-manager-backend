@@ -2,6 +2,7 @@
 #-*- coding: utf-8 -*-
 import hashlib
 import os
+import shutil
 
 import requests
 import uuid
@@ -168,8 +169,16 @@ def get_date_created_n_modified_then_update_db_photos():
                 print("no need to be updated")
 
 
+def copy_and_move_file():
+    source = "/var/folders/xl/k19y1yrx38s6kw44qn5m5lfr0000gp/T/3a015210-2c15-4dd9-8556-bcf9f1fc9b8e.jpg"
+    target = "/Users/tnguyen/tmp/001.jpg"
+    # shutil.copyfile(source, target)
+    shutil.copy2(source, target)
+
+
 if __name__ == '__main__':
     # update_mongodb_doc()
-    get_date_created_n_modified_then_update_db_photos()
+    # get_date_created_n_modified_then_update_db_photos()
     # download_save_image()
     # check_find_result()
+    copy_and_move_file()
