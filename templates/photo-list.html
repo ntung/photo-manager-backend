@@ -49,10 +49,11 @@
                     </div>
                     <div class="mb-3">
                         <strong><label for="photo-courtesy" class="form-label">Credit/Courtesy</label></strong><br/>
-                        <input id="photo-courtesy" name="courtesy" type="text" placeholder="Photo courtesy"
+                        <input id="photo-courtesy" name="courtesy" type="text" placeholder="Credit or Courtesy"
                                class="form-control"/>
                     </div>
                     <div class="mb-3">
+                    <div class="mb-3" id="action-button">
                         <button type="submit" class="btn btn-primary">Upload</button>
                     </div>
                 </form>
@@ -65,31 +66,56 @@
         {% set id_image = photo['filename'][:-4] %}
         <div class="row" style="padding-top: 5px">
             <div class="col-4">
-                <img id="{{ photo['folder'] }}-{{ photo['filename'] }}"
-                     src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
-                     style="width:100%" alt="{{ photo['title'] }}"></div>
+                <img id="{{photo['folder']}}-{{photo['filename']}}"
+                     src="{{'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename']}}"
+                     style="width:100%" alt="{{photo['title']}}"></div>
             <div class="col-8">
-                <h3>{{ photo['title'] }}</h3>
-                <p><em>{{ photo['filename'] }}</em><br/>{{ photo['description'] }}</p>
+                <h3 id="photo-title-{{photo.get("_id")}}">{{photo['title']}}</h3>
+                <p id="photo-filename-{{photo.get("_id")}}"><em>{{photo['filename']}}</em></p>
+                <p id="photo-description-{{photo.get("_id")}}">{{photo['description']}}</p>
+                <p id="photo-other-metadata-{{photo.get("_id")}}">
                 {% if "date_uploaded" in photo %}
-                    <p>Uploaded {{ photo['date_uploaded'] }}</p>
+                    <span>Uploaded {{photo['date_uploaded']}}</span>
                 {% endif %}
-                <p id="in-albums-{{ photo.get('_id') }}" style="font-style: italic; color: #9714d0">In Albums:
+                    | Source:
+                    <span id="original-photo-courtesy-{{photo.get("_id")}}"
+                          style="display: none">{{photo['courtesy']}}</span>
+                    <span id="photo-courtesy-{{photo.get("_id")}}">
+                        {% if photo['courtesy'].startswith('http') %}
+                            {% if 'facebook.com' in photo['courtesy'] %}
+                                {% set source = "Facebook" %}
+                            {% else %}
+                                {% set source = "Other" %}
+                            {% endif %}
+                            <a href="{{photo['courtesy']}}" target="_blank">{{source}}</a>
+                        {% else %}
+                            {{photo['courtesy']}}
+                        {% endif %}
+                    </span>
+                </p>
+                <p id="in-albums-{{photo.get('_id')}}" style="font-style: italic; color: #9714d0">In Albums:
                 {% if photo['filename'] in map_photo_album %}
                     {% set dict_album = map_photo_album[photo['filename']] %}
                     {% set dict_album_values = dict_album.values() %}
                     {% for path, title in dict_album.items() %}
-                        <a href="/albums/view/{{ path }}">{{ title }}</a>,
+                        <a href="/albums/view/{{path}}">{{title}}</a>,
                     {% endfor %}
                 {% endif %}
                 </p>
                 <p><input type="button" value="Add to album" class="btn btn-primary" name="add-to-album"
-                       data-photo-object-id="{{ photo.get('_id') }}"
-                       data-photo-folder="{{ photo['folder'] }}"
-                       data-photo-filename="{{ photo['filename'] }}"/>
+                       data-photo-object-id="{{photo.get('_id')}}"
+                       data-photo-folder="{{photo['folder']}}"
+                       data-photo-filename="{{photo['filename']}}"/>
                 &nbsp;
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal">
                     Add too album (Open a modal)
+                </button>
+                    &nbsp;
+                <button type="button" class="btn btn-primary btn-edit-photo" id="btn-edit-photo"
+                        data-photo-object-id="{{photo.get('_id')}}"
+                        data-photo-folder="{{photo['folder']}}"
+                        data-photo-filename="{{photo['filename']}}">
+                    Edit
                 </button></p>
                 <p id="{{ id_image }}" class="album-list"></p>
                 <div id="showAllAlbums"></div>
@@ -175,6 +201,23 @@
         closeOnSelect: false,
         allowClear: true,
     });
+    $(".btn-edit-photo").on("click", function() {
+        const photoObjectId = $(this).attr("data-photo-object-id");
+        const photoFolder = $(this).attr("data-photo-folder");
+        const photoFileName = $(this).attr("data-photo-filename");
+        //console.log(photoObjectId, photoFolder, photoFileName);
+        const photoTitle = $('#photo-title-'+photoObjectId)[0].innerText;
+        $("#photo-title").val(photoTitle);
+        // Change Create to Save button
+        $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
+        const photoDescription = $('#photo-description-'+photoObjectId)[0].innerHTML;
+        $("#photo-description").val(photoDescription);
+        //console.log(photoDescription);
+        const photoCourtesy = $('#original-photo-courtesy-'+photoObjectId)[0].innerHTML;
+        $("#photo-courtesy").val(photoCourtesy);
+        //console.log(photoCourtesy);
+    });
+
     $('.album-list').on("click", "#btn-save", function() {
         // retrieves the existing albums which the photo in question has been added
         const inAlbumsSelector = $('#in-albums-' + photoObjectId)[0];
