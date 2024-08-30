@@ -105,7 +105,7 @@ def photo_albums():
         file = request.files['cover']
         if file.content_length > 0:
             print("TODO: implement to store this photo")
-        if request.form['title'] is not None or  not request.form['title']:
+        if request.form['title'] is not None or not request.form['title']:
             title = request.form['title']
         else:
             title = "Untitled"
@@ -192,23 +192,22 @@ def save_photo_to_albums():
         updated_photo_list = []
         if album is not None:
             updated_photo_list: object = album["photos"]
-            if (photo_object_id is not None and photo_folder != ""
-                    and photo_object_id not in updated_photo_list):
+            if (photo_object_id is not None) and (not photo_folder) and (photo_object_id not in updated_photo_list):
                 updated_photo_list.append(photo_object_id)
 
         r = db.albums.find_one_and_update(
             {'_id': album.get('_id')},
             {'$set': {
-                 "photos": updated_photo_list,
-                 "date_modified": datetime.now(TZ_LONDON)
+                "photos": updated_photo_list,
+                "date_modified": datetime.now(TZ_LONDON)
             }},
             return_document=ReturnDocument.AFTER
         )
         if r.get('_id') is not None:
             updated_albums.append({"path": r['path'], "title": r['title']})
-        result = {"updated-albums": updated_albums, "photo-object-id": photo_object_id}
 
-    return Response(json.dumps(result),  mimetype='application/json')
+    result = {"updated-albums": updated_albums, "photo-object-id": photo_object_id}
+    return Response(json.dumps(result), mimetype='application/json')
 
 
 @app.route('/albums/add-photo', methods=['GET', 'POST'])
@@ -230,7 +229,7 @@ def albums_remove_photos():
     tobe_removed_photos = request_json['removed-photos']
     retval = do_album_remove_photos(album, tobe_removed_photos)
 
-    return Response(json.dumps(retval),  mimetype='application/json')
+    return Response(json.dumps(retval), mimetype='application/json')
 
 
 def do_album_remove_photos(album, tobe_removed_photos):
@@ -549,4 +548,3 @@ def do_upload_photo(client_request, file):
     save_metadata(submission_folder, filename, title, description, origin, hash_md5)
     return {'submission_folder': submission_folder, 'filename': filename,
             'title': title, 'description': description, 'origin': origin, 'hash_md5': hash_md5}
-
