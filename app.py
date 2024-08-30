@@ -82,8 +82,8 @@ def save_metadata(_submission_folder, _filename, _title, _description, _courtesy
         _courtesy = "Unknown"
     photos.insert_one({'folder': _submission_folder, 'filename': _filename,
                        'title': _title, 'description': _description, 'courtesy': _courtesy,
-                       'date_uploaded': datetime.now().astimezone(),
-                       'date_modified': datetime.now().astimezone(),
+                       'date_uploaded': datetime.now(TZ_LONDON),
+                       'date_modified': datetime.now(TZ_LONDON),
                        'hash_md5': _hash_md5})
 
 
@@ -110,10 +110,10 @@ def photo_albums():
         r = db.albums.insert_one({
             'path': path, 'title': title, 'description': description,
             'photos': [],
-            'date_created': datetime.now().astimezone(),
-            'date_modified': datetime.now().astimezone()
+            'date_created': datetime.now(TZ_LONDON),
+            'date_modified': datetime.now(TZ_LONDON)
         })
-        print(r)
+        print("Inserted a new record to db.photos {}".format(r))
         return redirect(url_for('photo_albums'))
     elif request.method == 'GET':
         all_albums = db_albums.find()
