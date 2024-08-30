@@ -312,8 +312,27 @@ def photo_read(path):
 
 
 @app.route('/photo/update', methods=('GET', 'POST'))
-def photo_date():
-    return jsonify(message="Updated successfully")
+def photo_update():
+    request_json = request.get_json(silent=True)
+    photo_object_id = request_json['photo-object-id']
+    photo_title = request_json['photo-title']
+    photo_description = request_json['photo-description']
+    photo_courtesy = request_json['photo-courtesy']
+    print("Photo requesting to be updated: {}".format(request_json))
+    result = db.photos.update_one(
+        {"_id": ObjectId(photo_object_id)},
+        {
+            "$set": {
+                "title": photo_title,
+                "description": photo_description,
+                "courtesy": photo_courtesy,
+                "date_modified": datetime.now().astimezone()
+            }
+        }, upsert=False
+    )
+    print("Updated result: {}".format(result))
+    retval = {"message": "Updated completely", "title": photo_title}
+    return Response(json.dumps(retval), mimetype='application/json')
 
 
 @app.route('/photo/upload', methods=('GET', 'POST'))

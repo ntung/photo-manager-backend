@@ -236,9 +236,9 @@
                 dataType: "json",
                 data: JSON.stringify({
                     "photo-object-id": photoObjectId,
-                    "photo-title": photoTitle,
-                    "photo-description": photoDescription,
-                    "photo-courtesy": photoCourtesy
+                    "photo-title": $("#photo-title").val(),
+                    "photo-description": $("#photo-description").val(),
+                    "photo-courtesy": $("#photo-courtesy").val()
                 }),
                 beforeSend: function(xhr) {
                     console.log("Sending data to server...");
