@@ -97,7 +97,12 @@ def photo_albums():
                 for album in all_untitled_albums:
                     print(album['title'])
         path = slugify(title)
-        r = db.albums.insert_one({'path': path, 'title': title, 'description': description, 'photos': []})
+        r = db.albums.insert_one({
+            'path': path, 'title': title, 'description': description,
+            'photos': [],
+            'date_created': datetime.now().astimezone(),
+            'date_modified': datetime.now().astimezone()
+        })
         print(r)
         return redirect(url_for('photo_albums'))
     elif request.method == 'GET':
@@ -244,7 +249,8 @@ def albums_update():
             {
                 "$set": {
                     "title": album_title,
-                    "description": album_description
+                    "description": album_description,
+                    "date_modified": datetime.now().astimezone()
                 }
             }, upsert=False
         )
