@@ -7,6 +7,7 @@ import pathlib
 import tempfile
 import uuid
 from datetime import datetime
+from logging.config import dictConfig
 
 import pymongo
 import pytz
@@ -50,19 +51,40 @@ Done    12/ After Save photo to album, update "In Albums:"
         13/ handle the date_uploaded and date_modified using datetime.strftime('%Y-%m-%d %H:%M:%S')
 Done    14/ uuid for photos uploaded via browsing files
 """
+dictConfig({
+    "version": 1,
+    "formatters": {
+        "default": {
+            "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+        }
+    },
+    "handlers": {
+        "wsgi": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://flask.logging.wsgi_errors_stream",
+            "formatter": "default"
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "logs/app.log",
+            "mode": "a",
+            "maxBytes": 1024 * 1024 * 10,
+            "backupCount": 5,
+            "formatter": "default"
+        }
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["wsgi", "file"]
+    }
+})
+
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type: application/json'
 
 API_SVR = os.environ.get('API_SERVER')
-logging.basicConfig(
-    filename="logs/app.log",
-    encoding="utf-8",
-    filemode="a",
-    level=logging.INFO
-)
-LOGGER = app.logger
 
 
 @app.route('/', methods=('GET', 'POST'))
@@ -72,6 +94,7 @@ def index():
 
 @app.route('/todo/list', methods=('GET', 'POST'))
 def todo_list():
+    app.logger.info("You've accessed TODO List")
     if request.method == 'POST':
         content = request.form['content']
         degree = request.form['degree']
@@ -101,10 +124,11 @@ def save_metadata(_submission_folder, _filename, _title, _description, _courtesy
 
 @app.route('/photo/albums', methods=('GET', 'POST'))
 def photo_albums():
+    app.logger.info("You've accessed photo albums")
     if request.method == 'POST':
         file = request.files['cover']
         if file.content_length > 0:
-            print("TODO: implement to store this photo")
+            app.logger.info("TODO: implement to store this photo")
         if request.form['title'] is not None or not request.form['title']:
             title = request.form['title']
         else:
@@ -121,8 +145,8 @@ def photo_albums():
                 title = "Untitled 001"
             else:
                 for album in all_untitled_albums:
-                    print(album['title'])
-        print("{}\t{}".format(title, description))
+                    app.logger.info(album['title'])
+        app.logger.info("{}\t{}".format(title, description))
 
         if not title:
             # stop creating untitled album
@@ -135,7 +159,7 @@ def photo_albums():
             'date_created': datetime.now(TZ_LONDON),
             'date_modified': datetime.now(TZ_LONDON)
         })
-        print("Inserted a new record to db.photos {}".format(r))
+        app.logger.info("Inserted a new record to db.photos {}".format(r))
         return redirect(url_for('photo_albums'))
     elif request.method == 'GET':
         all_albums = db.albums.find()
@@ -168,7 +192,7 @@ def get_album(path):
         if photo_doc is not None:
             photo_details.append(photo_doc)
         else:
-            print("Photo object id {} was removed.".format(photo_id))
+            app.logger.info("Photo object id {} was removed.".format(photo_id))
 
         # Sort the list of photos by the date uploaded
         sorted_photo_details = sorted(photo_details, key=lambda x: x['date_uploaded'], reverse=True)
@@ -264,7 +288,7 @@ def albums_delete():
     if album_path is not None and album_path is not None:
         query = {"_id": ObjectId(album_object_id)}
         result = db.albums.delete_one(query)
-        print(result)
+        app.logger.info(result)
 
     return jsonify(message="Deleted successfully")
 
@@ -287,7 +311,7 @@ def albums_update():
                 }
             }, upsert=False
         )
-        print(album)
+        app.logger.info(album)
     retval = {"message": "Updated completely", "title": album_title, "description": album_description}
     return Response(json.dumps(retval), mimetype='application/json')
 
@@ -310,7 +334,7 @@ def photo_delete():
     photo_object_id = request_json['photo-object-id']
     query = {"_id": ObjectId(photo_object_id)}
     result = db.photos.delete_one(query)
-    LOGGER.debug(result)
+    app.logger.debug(result)
     # delete the physical file
     photo_folder = request_json['photo-folder']
     photo_filename = request_json['photo-filename']
@@ -336,11 +360,11 @@ def photo_list():
     if request.method == 'POST':
         file = request.files['photo-upload']
         if not file.filename:
-            LOGGER.error("No file uploaded")
+            app.logger.error("No file uploaded")
             return redirect(url_for('photo_list'))
 
         result = do_upload_photo(request, file)
-        LOGGER.debug(result)
+        app.logger.debug(result)
         return redirect(url_for('photo_list'))
 
     photos = db.photos
@@ -373,7 +397,7 @@ def photo_read(path):
     try:
         return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True)
     except FileNotFoundError as exception:
-        print("404: File Not Found " + str(exception))
+        app.logger.error("404: File Not Found " + str(exception))
 
 
 @app.route('/photo/update', methods=('GET', 'POST'))
@@ -383,7 +407,7 @@ def photo_update():
     photo_title = request_json['photo-title']
     photo_description = request_json['photo-description']
     photo_courtesy = request_json['photo-courtesy']
-    print("Photo requesting to be updated: {}".format(request_json))
+    app.logger.info("Photo requesting to be updated: {}".format(request_json))
     result = db.photos.update_one(
         {"_id": ObjectId(photo_object_id)},
         {
@@ -395,7 +419,7 @@ def photo_update():
             }
         }, upsert=False
     )
-    print("Updated result: {}".format(result))
+    app.logger.info("Updated result: {}".format(result))
     retval = {"message": "Updated completely", "title": photo_title}
     return Response(json.dumps(retval), mimetype='application/json')
 
@@ -492,8 +516,7 @@ def do_upload_photo(client_request, file):
     filename = str(uuid.uuid4()) + ".jpg"
 
     if file.filename:
-        print("Uploading a local photo...")
-        LOGGER.info("uploading a local photo...")
+        app.logger.info("uploading a local photo...")
         # filename = secure_filename(file.filename)
         # filename = file.filename
         os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -502,8 +525,7 @@ def do_upload_photo(client_request, file):
             hash_md5 = hashlib.md5(f.read()).hexdigest()
     else:
         # download the image from the provided image URL
-        print("Downloading a photo from a remote location...")
-        LOGGER.info("Downloading a photo from a remote location...")
+        app.logger.info("Downloading a photo from a remote location...")
         image_url = client_request.headers["Image-URL"] \
             if ("Image-URL" in request.headers
                 and client_request.headers["Image-URL"] is not None) else client_request.form['photo-url']
@@ -522,8 +544,7 @@ def do_upload_photo(client_request, file):
         # TODO: figure out how to use the returned json below on the view
         return jsonify(message="EXISTED", submission_folder=submission_folder)
     else:
-        print("{} is a new photo.".format(filename))
-        LOGGER.info("{} is a new photo.".format(filename))
+        app.logger.info("{} is a new photo.".format(filename))
 
     # save the file's metadata into MongoDB
     title = client_request.headers["Title"] \
