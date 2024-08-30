@@ -73,6 +73,12 @@ def todo_list():
 
 def save_metadata(_submission_folder, _filename, _title, _description, _courtesy, _hash_md5):
     photos = db.photos
+    if not _title:
+        _title = "Untitled"
+    if not _description:
+        _description = _filename
+    if not _courtesy:
+        _courtesy = "Unknown"
     photos.insert_one({'folder': _submission_folder, 'filename': _filename,
                        'title': _title, 'description': _description, 'courtesy': _courtesy,
                        'date_uploaded': datetime.now().astimezone(),
