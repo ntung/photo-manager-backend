@@ -216,6 +216,42 @@
         const photoCourtesy = $('#original-photo-courtesy-'+photoObjectId)[0].innerHTML;
         $("#photo-courtesy").val(photoCourtesy);
         //console.log(photoCourtesy);
+        $("#btn-save").on("click", function() {
+            console.log("saving...");
+
+            $.ajax({
+                url: "http://192.168.0.10:5000/photo/update",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "photo-object-id": photoObjectId,
+                    "photo-title": photoTitle,
+                    "photo-description": photoDescription,
+                    "photo-courtesy": photoCourtesy
+                }),
+                beforeSend: function(xhr) {
+                    console.log("Sending data to server...");
+                },
+                success: function(data) {
+                    toastr.success("Updated successfully! The page is refreshing within 3 seconds.");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                    // alternatively, reload the album using jQuery without refreshing the page
+                },
+                error: function() {
+
+                }
+            }).done(function(data) {
+                console.log("Done! - Data: ", data);
+            }).fail(function(jqXHR, textStatus) {
+                console.log(textStatus, ": ", JSON.stringify(jqXHR));
+            }).always(function(data) {
+                console.log("The request has completed: ", data);
+                toastr.success("The request has completed : " + JSON.stringify(data));
+            });
+        });
     });
 
     $('.album-list').on("click", "#btn-save", function() {

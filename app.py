@@ -311,6 +311,11 @@ def photo_read(path):
         print("404: File Not Found " + fnfe)
 
 
+@app.route('/photo/update', methods=('GET', 'POST'))
+def photo_date():
+    return jsonify(message="Updated successfully")
+
+
 @app.route('/photo/upload', methods=('GET', 'POST'))
 def photo_upload():
     """
