@@ -1,0 +1,36 @@
+{% for photo in album['photos_details'] %}
+    <div class="row" style="padding-top: 5px">
+        <div class="col-5">
+            {% set photo_url = 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] %}
+            <a href="{{photo_url}}" title="{{photo['title']}}" data-lightbox="{{album['path']}}">
+                <img src="{{photo_url}}" style="width:25%" alt="{{photo['title']}}"
+                     data-photo-object-id="{{photo.get('_id')}}"></a></div>
+        <div class="col-4">
+            <strong>{{photo['title']}}</strong>
+            <br/>
+            {{photo['description']}}
+            <br/>
+            {% if photo['courtesy'].startswith('http') %}
+                {% if 'facebook.com' in photo['courtesy'] %}
+                    {% set source = "Facebook" %}
+                {% else %}
+                    {% set source = "Other" %}
+                {% endif %}
+                <a href="{{photo['courtesy']}}" target="_blank">{{source}}</a>
+            {% else %}
+                {{photo['courtesy']}}
+            {% endif %}
+        </div>
+        <div class="col-3">
+            <div class="form-check">
+                <input class="form-check-input cls-chk-remove-photo"
+                       type="checkbox" id="chk-remove-{{photo['filename']}}"
+                       name="chk-remove-{{photo['filename']}}"
+                       data-photo-object-id="{{photo.get('_id')}}"
+                       data-photo-folder="{{photo['folder']}}"
+                       data-photo-filename="{{photo['filename']}}">
+                <label class="form-check-label" for="chk-remove-{{photo['filename']}}"></label>
+            </div>
+        </div>
+    </div>
+{% endfor %}

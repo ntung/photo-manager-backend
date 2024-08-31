@@ -46,7 +46,7 @@ Done    7/ Add/Edit an album: edit title, description; add more photos...
 Done    8/ Check md5 to avoid repeating images
         9/ Favourite/Highlight
         10/ Set album profile/cover photo
-Progress11/ Sort photos by title, data uploaded
+Progress11/ Sort photos by title, data uploaded, shuffle photos
 Done    12/ After Save photo to album, update "In Albums:"
         13/ handle the date_uploaded and date_modified using datetime.strftime('%Y-%m-%d %H:%M:%S')
 Done    14/ uuid for photos uploaded via browsing files
@@ -328,8 +328,16 @@ def albums_view(path):
         if album is None:
             return render_template('album-view.html', status="NOT_FOUND", message="No such album")
         is_empty_album = not album["photos"]
+        view = "album-view.html"
+        if not is_empty_album:
+            sort = request.args.get('sort')
+            if sort == "shuffle":
+                import random
+                view = "_album-view.html"
+                random.shuffle(album["photos_details"])
+
         api_svr = os.environ.get('API_SERVER')
-        return render_template('album-view.html', status="FOUND",
+        return render_template(view, status="FOUND",
                                album=album, is_empty_album=is_empty_album, api_svr=api_svr)
 
 

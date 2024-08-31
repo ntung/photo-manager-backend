@@ -92,59 +92,29 @@
         {% endfor %}
     </div>#}
     {% if not is_empty_album %}
-        <div class="photo">
-            <div class="row">
-                <div class="col-6">
-                    <button type="button" class="btn btn-primary" id="btn-reorder-photo">Reorder</button>
-                    <button type="button" class="btn btn-primary" id="btn-sort-photo">Sort</button>
-                    <button type="button" class="btn btn-primary" id="btn-shuffle-photo"
-                            data-album-object-id="{{album.get("_id")}}">Shuffle</button>
-                </div>
-                <div class="col-3">
-                </div>
-                <div class="col-3">
-                    <button type="button" class="btn btn-primary" id="btn-remove-photo"
-                            data-album-path="{{album['path']}}"
-                            data-album-title="{{album['title']}}">Remove
-                    </button>
-                </div>
+        <div class="row">
+            <div class="col-5">
+                <button type="button" class="btn btn-primary" id="btn-reset-order-photo">Reset Order</button>
+                <button type="button" class="btn btn-primary" id="btn-reorder-photo">Reorder</button>
+                <button type="button" class="btn btn-primary" id="btn-sort-photo">Sort</button>
+                <button type="button" class="btn btn-primary" id="btn-shuffle-photo"
+                        data-album-object-id="{{album.get("_id")}}"
+                        data-album-path="{{album['path']}}">Shuffle</button>
             </div>
-            {% for photo in album['photos_details'] %}
-                <div class="row" style="padding-top: 5px">
-                    <div class="col-6">
-                        {% set photo_url = 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] %}
-                        <a href="{{photo_url}}" title="{{photo['title']}}" data-lightbox="{{album['path']}}">
-                            <img src="{{photo_url}}" style="width:25%" alt="{{photo['title']}}"
-                                 data-photo-object-id="{{photo.get('_id')}}"></a></div>
-                    <div class="col-4">
-                        <strong>{{photo['title']}}</strong>
-                        <br/>
-                        {{photo['description']}}
-                        <br/>
-                        {% if photo['courtesy'].startswith('http') %}
-                            {% if 'facebook.com' in photo['courtesy'] %}
-                                {% set source = "Facebook" %}
-                            {% else %}
-                                {% set source = "Other" %}
-                            {% endif %}
-                            <a href="{{photo['courtesy']}}" target="_blank">{{source}}</a>
-                        {% else %}
-                            {{photo['courtesy']}}
-                        {% endif %}
-                    </div>
-                    <div class="col-2">
-                        <div class="form-check">
-                            <input class="form-check-input cls-chk-remove-photo"
-                                   type="checkbox" id="chk-remove-{{photo['filename']}}"
-                                   name="chk-remove-{{photo['filename']}}"
-                                   data-photo-object-id="{{photo.get('_id')}}"
-                                   data-photo-folder="{{photo['folder']}}"
-                                   data-photo-filename="{{photo['filename']}}">
-                            <label class="form-check-label" for="chk-remove-{{photo['filename']}}"></label>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
+            <div class="col-4">
+
+            </div>
+            <div class="col-3">
+                <button type="button" class="btn btn-primary" id="btn-remove-photo"
+                        data-album-path="{{album['path']}}"
+                        data-album-title="{{album['title']}}">Remove
+                </button>
+            </div>
+        </div>
+        <hr/>
+
+        <div class="photo">
+        {% include("_album-view.html") %}
         </div>
     {% else %}
         <div class="row">
@@ -161,6 +131,7 @@
     </div>
     {% endif %}
 </div>
+<!-- JavaScript -->
 <script src="{{url_for('static', filename='js/lightbox-plus-jquery.js')}}"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
@@ -255,31 +226,26 @@
     });
 
     $("#btn-shuffle-photo").on("click", function() {
-        const albumObjectId = $(this).attr("data-album-object-id");
-        console.log("Shuffling all photos of the album", albumObjectId);
-        const URL = "";
+        const albumPath = $(this).attr("data-album-path");
+        const URL = "http://192.168.0.10:5000/albums/view/" + albumPath + "?sort=shuffle";
         fetch(URL, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json; charset=utf-8'
-            }
+            method: 'GET'
         }).then(response => {
             if (!response.ok) {
                 throw new Error('Network response failed!!!');
             }
-            return response.json();
+            return response.text();
         }).then(data => {
-            console.log(data);
-            if (data['logged_in']) {
-                if (document.URL !== document.referrer) {
-                    window.location = document.referrer;
-                } else {
-                    window.location = "../admin/";
-                }
-            }
+            $(".photo").html(data);
         }).catch(error => {
             console.error('Error: ', error);
         });
+    });
+
+    $("#btn-reorder-photo").on("click", function() {
+        $(this).removeClass("btn-primary");
+        $(this).addClass("btn-secondary");
+        $(this)[0].innerText = "Complete";
     });
 </script>
 
