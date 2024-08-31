@@ -182,8 +182,10 @@ def albums(path):
 
 
 def get_album(path):
-    result = db.albums.find({"path": path})
-    first_album = result[0]
+    first_album = db.albums.find_one({"path": path})
+    if first_album is None:
+        return None
+
     photos = first_album['photos']
     photo_details = []
     sorted_photo_details = []
@@ -319,13 +321,15 @@ def albums_update():
 
 @app.route('/albums/view/<path>', methods=('GET', 'POST'))
 def albums_view(path):
-    if path is None:
-        pass
+    if path is None or path == '':
+        return jsonify(message="Path is empty")
     else:
         album = get_album(path)
+        if album is None:
+            return render_template('album-view.html', status="NOT_FOUND", message="No such album")
         is_empty_album = not album["photos"]
         api_svr = os.environ.get('API_SERVER')
-        return render_template('album-view.html',
+        return render_template('album-view.html', status="FOUND",
                                album=album, is_empty_album=is_empty_album, api_svr=api_svr)
 
 
