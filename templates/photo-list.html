@@ -85,33 +85,35 @@
         {% set id_image = photo['filename'][:-4] %}
         <div class="row photo-block">
             <div class="col-4">
-                <img id="{{ photo['folder'] }}-{{ photo['filename'] }}"
-                     src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
-                     style="width:100%" alt="{{ photo['title'] }}"></div>
+                <a href="{{'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename']}}"
+                   title="{{photo['title']}}" data-fslightbox="gallery">
+                <img id="{{photo['folder']}}-{{photo['filename']}}"
+                     src="{{'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename']}}"
+                     style="width:100%" alt="{{ photo['title']}}"></a></div>
             <div class="col-8 photo-metadata">
-                <h3 id="photo-title-{{ photo.get("_id") }}">{{ photo['title'] }}</h3>
-                <p id="photo-filename-{{ photo.get("_id") }}"><em>{{ photo['filename'] }}</em></p>
-                <p id="photo-description-{{ photo.get("_id") }}">{{ photo['description'] }}</p>
-                <p id="photo-other-metadata-{{ photo.get("_id") }}">
+                <h3 id="photo-title-{{photo.get("_id")}}">{{photo['title']}}</h3>
+                <p id="photo-filename-{{photo.get("_id")}}"><em>{{photo['filename']}}</em></p>
+                <p id="photo-description-{{photo.get("_id")}}">{{photo['description']}}</p>
+                <p id="photo-other-metadata-{{photo.get("_id")}}">
                     {% if "date_uploaded" in photo %}
-                        <span>Uploaded {{ photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
+                        <span>Uploaded {{photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S')}}</span>
                     {% endif %}
                     {% if "date_modified" in photo %}
-                        <span>| Updated {{ photo['date_modified'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
+                        <span>| Updated {{photo['date_modified'].strftime('%d/%m/%Y, %H:%M:%S')}}</span>
                     {% endif %}
                     | Source:
-                    <span id="original-photo-courtesy-{{ photo.get("_id") }}"
-                          style="display: none">{{ photo['courtesy'] }}</span>
-                    <span id="photo-courtesy-{{ photo.get("_id") }}">
+                    <span id="original-photo-courtesy-{{photo.get("_id")}}"
+                          style="display: none">{{photo['courtesy']}}</span>
+                    <span id="photo-courtesy-{{photo.get("_id") }}">
                         {% if photo['courtesy'].startswith('http') %}
                             {% if 'facebook.com' in photo['courtesy'] %}
                                 {% set source = "Facebook" %}
                             {% else %}
                                 {% set source = "Other" %}
                             {% endif %}
-                            <a href="{{ photo['courtesy'] }}" target="_blank">{{ source }}</a>
+                            <a href="{{photo['courtesy']}}" target="_blank">{{source}}</a>
                         {% else %}
-                            {{ photo['courtesy'] }}
+                            {{photo['courtesy']}}
                         {% endif %}
                     </span>
                 </p>
@@ -407,5 +409,6 @@
         });
     });
 </script>
+<script src="{{url_for('static', filename='js/fslightbox.js')}}"></script>
 </body>
 </html>
