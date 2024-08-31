@@ -216,7 +216,7 @@ def save_photo_to_albums():
         updated_photo_list = []
         if album is not None:
             updated_photo_list: object = album["photos"]
-            if (photo_object_id is not None) and (not photo_folder) and (photo_object_id not in updated_photo_list):
+            if (photo_object_id != "") and (photo_object_id not in updated_photo_list):
                 updated_photo_list.append(photo_object_id)
 
         r = db.albums.find_one_and_update(
@@ -230,7 +230,8 @@ def save_photo_to_albums():
         if r.get('_id') is not None:
             updated_albums.append({"path": r['path'], "title": r['title']})
 
-    result = {"updated-albums": updated_albums, "photo-object-id": photo_object_id}
+    result = {"updated-albums": updated_albums, "photo-object-id": photo_object_id,
+              "photo-folder": photo_folder, "photo-filename": photo_filename}
     return Response(json.dumps(result), mimetype='application/json')
 
 
