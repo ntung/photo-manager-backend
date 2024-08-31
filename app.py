@@ -359,10 +359,6 @@ def photo_list():
     PhotoManager.hello()
     if request.method == 'POST':
         file = request.files['photo-upload']
-        if not file.filename:
-            app.logger.error("No file uploaded")
-            return redirect(url_for('photo_list'))
-
         result = do_upload_photo(request, file)
         app.logger.debug(result)
         return redirect(url_for('photo_list'))
@@ -514,8 +510,7 @@ def do_upload_photo(client_request, file):
     UPLOAD_DIR = app.config['UPLOAD_FOLDER'] + "/" + submission_folder
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
-
-    if file.filename:
+    if file.filename and file.filename is not None:
         app.logger.info("uploading a local photo...")
         # filename = secure_filename(file.filename)
         # filename = file.filename
