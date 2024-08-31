@@ -524,6 +524,9 @@ def do_upload_photo(client_request, file):
         image_url = client_request.headers["Image-URL"] \
             if ("Image-URL" in request.headers
                 and client_request.headers["Image-URL"] is not None) else client_request.form['photo-url']
+        if image_url is None or image_url == '':
+            app.logger.error("Image URL not found!")
+            return render_template('photo-list.html', message="Image URL not found!")
         result = do_download_image(UPLOAD_DIR, image_url, filename)
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
