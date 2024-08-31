@@ -5,16 +5,16 @@
     <title>Album View</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" 
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" 
-        crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+          crossorigin="anonymous">
     <link href="{{ url_for('static', filename='css/lightbox.css') }}"
           rel="stylesheet" crossorigin="anonymous">
     <style>
 
         .w3s-header {
             text-align: center;
-            {#padding: 32px;#}
+        {#padding: 32px;#}
         }
 
         .w3s-row {
@@ -62,10 +62,11 @@
 <div class="container">
     <div class="row">
         <div class="col">
-        {% include '_menu-bar.html' %}
-        <h1>View Album {{ album['title'] }}</h1>
-    <hr/>
-    </div></div>
+            {% include '_menu-bar.html' %}
+            <h1>View Album {{ album['title'] }}</h1>
+            <hr/>
+        </div>
+    </div>
 
     <!-- Header -->
     {#<div class="w3s-header" id="myHeader">
@@ -87,63 +88,66 @@
         {% endfor %}
     </div>#}
     {% if not is_empty_album %}
-    <div class="photo">
-    <div class="row">
-        <div class="col-6"></div>
-        <div class="col-4"></div>
-        <div class="col-2">
-            <button type="button" class="btn btn-primary" id="btn-remove-photo"
-                    data-album-path="{{ album['path'] }}"
-                    data-album-title="{{ album['title'] }}">Remove</button></div>
-    </div>
-    {% for photo in album['photos_details'] %}
-        <div class="row" style="padding-top: 5px">
-        <div class="col-6">
-        <a href="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
-              title="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
-            <img src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
-                 style="width:25%" alt="{{ photo['title'] }}" data-photo-object-id="{{ photo.get('_id') }}"></a></div>
-        <div class="col-4">
-            <strong>{{photo['title']}}</strong>
-            <br/>
-            {{photo['description']}}
-            <br/>
-            {% if photo['courtesy'].startswith('http') %}
-                {% if 'facebook.com' in photo['courtesy'] %}
-                    {% set source = "Facebook" %}
-                {% else %}
-                    {% set source = "Other" %}
-                {% endif %}
-                <a href="{{photo['courtesy']}}" target="_blank">{{source}}</a>
-            {% else %}
-                {{photo['courtesy']}}
-            {% endif %}
-        </div>
-        <div class="col-2">
-            <div class="form-check">
-                <input class="form-check-input cls-chk-remove-photo"
-                       type="checkbox" id="chk-remove-{{ photo['filename'] }}"
-                       name="chk-remove-{{ photo['filename'] }}"
-                       data-photo-object-id="{{ photo.get('_id') }}"
-                       data-photo-folder="{{ photo['folder'] }}"
-                       data-photo-filename="{{ photo['filename'] }}" >
-                <label class="form-check-label" for="chk-remove-{{ photo['filename'] }}"></label>
+        <div class="photo">
+            <div class="row">
+                <div class="col-6"></div>
+                <div class="col-4"></div>
+                <div class="col-2">
+                    <button type="button" class="btn btn-primary" id="btn-remove-photo"
+                            data-album-path="{{ album['path'] }}"
+                            data-album-title="{{ album['title'] }}">Remove
+                    </button>
+                </div>
             </div>
+            {% for photo in album['photos_details'] %}
+                <div class="row" style="padding-top: 5px">
+                    <div class="col-6">
+                        <a href="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
+                           title="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
+                            <img src="{{ 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] }}"
+                                 style="width:25%" alt="{{ photo['title'] }}"
+                                 data-photo-object-id="{{ photo.get('_id') }}"></a></div>
+                    <div class="col-4">
+                        <strong>{{ photo['title'] }}</strong>
+                        <br/>
+                        {{ photo['description'] }}
+                        <br/>
+                        {% if photo['courtesy'].startswith('http') %}
+                            {% if 'facebook.com' in photo['courtesy'] %}
+                                {% set source = "Facebook" %}
+                            {% else %}
+                                {% set source = "Other" %}
+                            {% endif %}
+                            <a href="{{ photo['courtesy'] }}" target="_blank">{{ source }}</a>
+                        {% else %}
+                            {{ photo['courtesy'] }}
+                        {% endif %}
+                    </div>
+                    <div class="col-2">
+                        <div class="form-check">
+                            <input class="form-check-input cls-chk-remove-photo"
+                                   type="checkbox" id="chk-remove-{{ photo['filename'] }}"
+                                   name="chk-remove-{{ photo['filename'] }}"
+                                   data-photo-object-id="{{ photo.get('_id') }}"
+                                   data-photo-folder="{{ photo['folder'] }}"
+                                   data-photo-filename="{{ photo['filename'] }}">
+                            <label class="form-check-label" for="chk-remove-{{ photo['filename'] }}"></label>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-        </div>
-    {% endfor %}
-    </div>
     {% else %}
         <div class="row">
-        <div class="col">
-            <h2>No photo</h2>
-        </div>
+            <div class="col">
+                <h2>No photo</h2>
+            </div>
         </div>
     {% endif %}
 </div>
-    <script src="{{ url_for('static', filename='js/lightbox-plus-jquery.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" 
+<script src="{{ url_for('static', filename='js/lightbox-plus-jquery.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
 <script>
     {#// Get the elements with class="column"
@@ -186,18 +190,20 @@
             this.className += " active";
         });
     }#}
-    $('#btn-remove-photo').on("click", function() {
+    $('#btn-remove-photo').on("click", function () {
         const albumPath = $(this).attr("data-album-path");
         const checkBoxes = $('.cls-chk-remove-photo');
         console.log("Nb. of checkboxes: ", checkBoxes.length);
         let removedPhotos = [];
         checkBoxes.map((index, checkbox) => {
-           if ($(checkbox).is(':checked')) {
-               const photoObjectId = $(checkbox).attr("data-photo-object-id");
-               const photoFolder = $(checkbox).attr("data-photo-folder");
-               const photoFileName =  $(checkbox).attr("data-photo-filename");
-               removedPhotos.push({ "photo-object-id": photoObjectId, "photo-folder": photoFolder,
-                   "photo-filename": photoFileName });
+            if ($(checkbox).is(':checked')) {
+                const photoObjectId = $(checkbox).attr("data-photo-object-id");
+                const photoFolder = $(checkbox).attr("data-photo-folder");
+                const photoFileName = $(checkbox).attr("data-photo-filename");
+                removedPhotos.push({
+                    "photo-object-id": photoObjectId, "photo-folder": photoFolder,
+                    "photo-filename": photoFileName
+                });
                 console.log("Folder ", $(checkbox).attr("data-photo-folder"), ", " +
                     "File name: ", $(checkbox).attr("data-photo-filename"));
             }
@@ -212,21 +218,21 @@
                     "album-path": albumPath,
                     "removed-photos": removedPhotos
                 }),
-                beforeSend: function(xhr) {
+                beforeSend: function (xhr) {
                     console.log("Sending data to server...");
                 },
-                success: function(data) {
+                success: function (data) {
                     console.log(data);
                     window.location.reload();
                 },
-                error: function() {
+                error: function () {
 
                 }
-            }).done(function(data) {
+            }).done(function (data) {
                 console.log("Done! - Data: ", data);
-            }).fail(function(jqXHR, textStatus) {
+            }).fail(function (jqXHR, textStatus) {
                 console.log(textStatus, ": ", JSON.stringify(jqXHR));
-            }).always(function(data) {
+            }).always(function (data) {
                 console.log("Removed the photos out the album completely: ", data);
             });
         }

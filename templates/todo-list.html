@@ -16,16 +16,16 @@
 <body>
 {% include '_menu-bar.html' %}
 
-    <h1>ToDo List</h1>
-    <hr>
-    <div class="content">
+<h1>ToDo List</h1>
+<hr>
+<div class="content">
     <form method="post">
         <p>
             <b><label for="content">Create a ToDo Item</label></b>
         </p>
         <p>
             <input type="text" name="content"
-                placeholder="Todo Content"></input>
+                   placeholder="Todo Content"></input>
         </p>
 
         <p>
@@ -44,10 +44,10 @@
     <hr>
     {% for todo in todos %}
         <div class="todo">
-            <p>{{ todo['content'] }} <i>({{ todo['degree']}})</i></p>
+            <p>{{ todo['content'] }} <i>({{ todo['degree'] }})</i></p>
         </div>
     {% endfor %}
 
-    </div>
+</div>
 </body>
 </html>

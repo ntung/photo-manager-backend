@@ -1,9 +1,9 @@
 <select class="form-select choose-albums" data-placeholder="Choose albums"
-    id="{{ filename }}" data-placeholder="Choose albums" multiple>
+        id="{{ filename }}" data-placeholder="Choose albums" multiple>
     {% for album in albums %}
-{#        {% if album['title'] not in dict_album_values  %}#}
-            <option value="{{ album['path'] }}" data-id="{{ album['path'] }}">{{ album['title'] }}</option>
-{#        {% endif %}#}
+        {#        {% if album['title'] not in dict_album_values  %}#}
+        <option value="{{ album['path'] }}" data-id="{{ album['path'] }}">{{ album['title'] }}</option>
+        {#        {% endif %}#}
     {% endfor %}
 </select>
 <input type="button" class="btn btn-primary" value="Save" id="btn-save"/>
