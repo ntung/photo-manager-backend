@@ -3,15 +3,16 @@
         <button type="button" class="btn btn-primary" id="btn-reset-order-photo">Reset Order</button>
         <button type="button" class="btn btn-primary" id="btn-shuffle-photo"
                 data-album-object-id="{{ album.get("_id") }}"
-                data-album-path="{{ album['path'] }}">Shuffle
+                data-album-path="{{ album['path'] }}">Shuffle <i class="fa fa-random" style="font-size:20px"></i>
         </button>
+        <span><i id="btn-view-changer" class="fa fa-th-list" style="font-size:26px"></i></span>
     </div>
     <div class="col-5">
         <!-- Example split danger button -->
         <div class="btn-group" style="display: block">
             <div class="row">
                 <div class="col-2">
-                    <p style="font-size: 24px" id="sort-direction-block" class="sort-direction-para">
+                    <p style="font-size: 26px" id="sort-direction-block" class="sort-direction-para">
                         <i class="fa fa-arrow-circle-down" aria-hidden="true" id="sort-direction-icon"></i>
                     </p>
                 </div>

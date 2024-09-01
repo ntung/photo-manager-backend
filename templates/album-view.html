@@ -318,6 +318,51 @@
         }).catch(error => {
             console.error('Error: ', error);
         });
+    }
+
+    function callServerToChangeView(viewStyle) {
+        let photosObjectIds = [];
+        $('.photo').children().map((index, element) => {
+            photosObjectIds.push($(element).attr('id'));
+        });
+        //console.log(photosObjectIds);
+
+        const URL = "/albums/view/{{album['path']}}";
+        console.log(URL);
+        fetch(URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8'
+            },
+            body: JSON.stringify({
+                "view": viewStyle,
+                "photos-object-ids": photosObjectIds
+            })
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Network response failed!!!');
+            }
+            return response.text();
+        }).then(data => {
+            $(".photo").html(data);
+        }).catch(error => {
+            console.error('Error: ', error);
+        });
+    }
+
+    let viewStyle;
+    $("#btn-view-changer").on("click", function() {
+        if ($(this).hasClass("fa-th-list")) {
+            $(this).removeClass("fa-th-list");
+            $(this).addClass("fa-th-large");
+            viewStyle = "_album_view_gallery.html";
+        } else {
+            $(this).removeClass("fa-th-large");
+            $(this).addClass("fa-th-list");
+            viewStyle = "_album_view_list.html";
+        }
+        console.log(viewStyle);
+        callServerToChangeView(viewStyle);
     });
     {% endif %}
 </script>

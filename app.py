@@ -358,13 +358,26 @@ def albums_view(path):
         is_empty_album = not album["photos"]
         view = "album-view.html"
         if not is_empty_album:
+            if request.method == "POST":
+                request_json = request.get_json(silent=True)
+                print(request_json)
+                view = request_json['view']
+
+                # array_photos_object_ids = request_json['photos-object-ids']
+                # photos_details = album['photos_details']
+                # current_ordered_photos = []
+                # for id in array_photos_object_ids:
+
+                return render_template(view, status="FOUND", album=album,
+                                       is_empty_album=is_empty_album, api_svr=API_SVR)
+
             sort = request.args.get('sort')
             if sort is not None and sort == "shuffle":
                 import random
-                view = "_album-view.html"
+                view = "_album_view_list.html"
                 random.shuffle(album["photos_details"])
             elif sort is not None:
-                print(sort)
+                app.logger.info(sort)
 
                 s_opts = sort.split(";")
                 sort_field = s_opts[0]
@@ -374,10 +387,9 @@ def albums_view(path):
                     is_reverse = sort_direction == "down"
                     sorted_photos_details = sorted(photos_details, key=lambda x: x[sort_field], reverse=is_reverse)
                     album["photos_details"] = sorted_photos_details
-                    view = "_album-view.html"
+                    view = "_album_view_list.html"
 
-        return render_template(view, status="FOUND",
-                               album=album, is_empty_album=is_empty_album, api_svr=API_SVR)
+        return render_template(view, status="FOUND", album=album, is_empty_album=is_empty_album, api_svr=API_SVR)
 
 
 @app.route('/photo/delete', methods=('GET', 'POST'))
