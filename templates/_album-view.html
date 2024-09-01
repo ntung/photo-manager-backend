@@ -1,5 +1,5 @@
 {% for photo in album['photos_details'] %}
-    <div class="row" style="padding-top: 5px">
+    <div class="row" style="padding-top: 5px" id="{{photo.get('_id')}}">
         <div class="col-5">
             {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
             <a href="{{photo_url}}" title="{{photo['title']}}" data-lightbox="{{album['path']}}">

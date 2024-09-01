@@ -133,6 +133,7 @@
 </div>
 <!-- JavaScript -->
 <script src="{{url_for('static', filename='js/lightbox-plus-jquery.js')}}"></script>
+<script src="https://code.jquery.com/ui/1.14.0/jquery-ui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
@@ -177,6 +178,35 @@
             this.className += " active";
         });
     }#}
+    let original_photos_orders = [];
+    let order;
+    $(function() {
+        // below is used to drag
+        let i = 1;
+        {% for photo in album['photos_details'] %}
+            {#$("#{{photo.get('_id')}}").sortable();#}
+            order = {
+                "{{photo.get('_id')}}": i
+            };
+            original_photos_orders.push(order);
+            i++;
+        {% endfor %}
+        console.log(original_photos_orders);
+        // below is used to set sortable
+        $(".photo").sortable({
+            cursor: 'move',
+            distance: 30,
+            opacity: 0.6,
+            scrollSensitivity: 40,
+            update: function(event, ui) {
+                event.preventDefault();
+                //$('#message').html('Changes not saved');
+                console.log("Updating the current order...");
+                let productOrder = $(this).sortable('toArray'); //.toString();
+                console.log(productOrder);
+            }
+        });
+    });
     $('#btn-remove-photo').on("click", function() {
         const albumPath = $(this).attr("data-album-path");
         const checkBoxes = $('.cls-chk-remove-photo');
