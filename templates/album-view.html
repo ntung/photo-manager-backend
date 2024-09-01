@@ -147,7 +147,7 @@
     }#}
     let sortDirection = "down";
     let sortField = "data_uploaded"
-    let original_photos_orders = [];
+    let orgPhotoOrders = [];
     let order;
     $(function () {
         // below is used to drag
@@ -157,10 +157,10 @@
             order = {
                 "{{photo.get('_id')}}": i
             };
-            original_photos_orders.push(order);
+            orgPhotoOrders.push(order);
             i++;
         {% endfor %}
-        console.log(original_photos_orders);
+        console.log(orgPhotoOrders);
         // below is used to set sortable
         $(".photo").sortable({
             cursor: 'move',
