@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <title>Album View | Photo Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="{{url_for('static', filename='favicon.ico')}}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
           crossorigin="anonymous">
-    <link href="{{url_for('static', filename='css/lightbox.css')}}"
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="{{ url_for('static', filename='css/lightbox.css') }}"
           rel="stylesheet" crossorigin="anonymous">
     <style>
 
@@ -67,21 +69,22 @@
     </div>
     {% if status == "FOUND" %}
         <div class="row">
-        <div class="col">
-            <h1>View Album {{album['title']}}</h1><hr/>
+            <div class="col">
+                <h1>View Album {{ album['title'] }}</h1>
+                <hr/>
+            </div>
         </div>
-    </div>
 
-    <!-- Header -->
-    {#<div class="w3s-header" id="myHeader">
+        <!-- Header -->
+        {#<div class="w3s-header" id="myHeader">
         <p>Click on the buttons to change the grid view.</p>
         <button class="w3s-btn" onclick="one()">1</button>
         <button class="w3s-btn active" onclick="two()">2</button>
         <button class="w3s-btn" onclick="four()">4</button>
     </div>#}
 
-    <!-- Photo Grid -->
-    {#<div class="w3s-row">
+        <!-- Photo Grid -->
+        {#<div class="w3s-row">
         {%  for bucket in buckets %}
         <div class="w3s-column">
             {% for photo in bucket %}
@@ -91,47 +94,72 @@
         </div>
         {% endfor %}
     </div>#}
-    {% if not is_empty_album %}
-        <div class="row">
-            <div class="col-5">
-                <button type="button" class="btn btn-primary" id="btn-reset-order-photo">Reset Order</button>
-                <button type="button" class="btn btn-primary" id="btn-shuffle-photo"
-                        data-album-object-id="{{album.get("_id")}}"
-                        data-album-path="{{album['path']}}">Shuffle</button>
-                <button type="button" class="btn btn-primary" id="btn-sort-photo">Sort</button>
-            </div>
-            <div class="col-4">
+        {% if not is_empty_album %}
+            <div class="row">
+                <div class="col-5">
+                    <button type="button" class="btn btn-primary" id="btn-reset-order-photo">Reset Order</button>
+                    <button type="button" class="btn btn-primary" id="btn-shuffle-photo"
+                            data-album-object-id="{{ album.get("_id") }}"
+                            data-album-path="{{ album['path'] }}">Shuffle
+                    </button>
+                </div>
+                <div class="col-5">
+                    <!-- Example split danger button -->
+                    <div class="btn-group" style="display: block">
+                        <div class="row">
+                            <div class="col-2">
+                                <p style="font-size: 24px" id="sort-direction-block" class="sort-direction-para">
+                                    <i class="fa fa-arrow-circle-down" aria-hidden="true" id="sort-direction-icon"></i>
+                                </p>
+                            </div>
 
-            </div>
-            <div class="col-3">
-                <button type="button" class="btn btn-primary" id="btn-remove-photo"
-                        data-album-path="{{album['path']}}"
-                        data-album-title="{{album['title']}}">Remove
-                </button>
-            </div>
-        </div>
-        <hr/>
+                            <div class="col-10">
+                                <button type="button" class="btn btn-danger" id="btn-sort">Sort</button>
+                                <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" data-field-name="title">Title</a></li>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li><a class="dropdown-item" data-field-name="date_modified">Modified</a></li>
+                                    <li><a class="dropdown-item" data-field-name="date_uploaded">Uploaded</a></li>
+                                </ul>
+                            </div>
 
-        <div class="photo">
-        {% include("_album-view.html") %}
-        </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-2">
+                    <button type="button" class="btn btn-primary" id="btn-remove-photo"
+                            data-album-path="{{ album['path'] }}"
+                            data-album-title="{{ album['title'] }}">Remove
+                    </button>
+                </div>
+            </div>
+
+            <div class="photo">
+                {% include("_album-view.html") %}
+            </div>
+        {% else %}
+            <div class="row">
+                <div class="col">
+                    <h2>No photo</h2>
+                </div>
+            </div>
+        {% endif %}
     {% else %}
         <div class="row">
             <div class="col">
-                <h2>No photo</h2>
+                <h2>Album not found</h2>
             </div>
         </div>
     {% endif %}
-    {% else %}
-    <div class="row">
-        <div class="col">
-            <h2>Album not found</h2>
-        </div>
-    </div>
-    {% endif %}
 </div>
 <!-- JavaScript -->
-<script src="{{url_for('static', filename='js/lightbox-plus-jquery.js')}}"></script>
+<script src="{{ url_for('static', filename='js/lightbox-plus-jquery.js') }}"></script>
 <script src="https://code.jquery.com/ui/1.14.0/jquery-ui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
@@ -177,9 +205,11 @@
             this.className += " active";
         });
     }#}
+    let sortDirection = "down";
+    let sortField = "data_uploaded"
     let original_photos_orders = [];
     let order;
-    $(function() {
+    $(function () {
         // below is used to drag
         let i = 1;
         {% for photo in album['photos_details'] %}
@@ -197,7 +227,7 @@
             distance: 30,
             opacity: 0.6,
             scrollSensitivity: 40,
-            update: function(event, ui) {
+            update: function (event, ui) {
                 //$('#message').html('Changes not saved');
                 const photoOrder = $(this).sortable('toArray'); //.toString();
                 // console.log("Updating the current order...", photoOrder);
@@ -228,7 +258,7 @@
             }
         });
     });
-    $('#btn-remove-photo').on("click", function() {
+    $('#btn-remove-photo').on("click", function () {
         const albumPath = $(this).attr("data-album-path");
         const checkBoxes = $('.cls-chk-remove-photo');
         console.log("Nb. of checkboxes: ", checkBoxes.length);
@@ -256,27 +286,27 @@
                     "album-path": albumPath,
                     "removed-photos": removedPhotos
                 }),
-                beforeSend: function(xhr) {
+                beforeSend: function (xhr) {
                     console.log("Sending data to server...");
                 },
-                success: function(data) {
+                success: function (data) {
                     console.log(data);
                     window.location.reload();
                 },
-                error: function() {
+                error: function () {
 
                 }
-            }).done(function(data) {
+            }).done(function (data) {
                 console.log("Done! - Data: ", data);
-            }).fail(function(jqXHR, textStatus) {
+            }).fail(function (jqXHR, textStatus) {
                 console.log(textStatus, ": ", JSON.stringify(jqXHR));
-            }).always(function(data) {
+            }).always(function (data) {
                 console.log("Removed the photos out the album completely: ", data);
             });
         }
     });
 
-    $("#btn-shuffle-photo").on("click", function() {
+    $("#btn-shuffle-photo").on("click", function () {
         const albumPath = $(this).attr("data-album-path");
         const URL = "/albums/view/" + albumPath + "?sort=shuffle";
         fetch(URL, {
@@ -293,8 +323,55 @@
         });
     });
 
-    $("#btn-reset-order-photo").on("click", function() {
+    $("#btn-reset-order-photo").on("click", function () {
         window.location.reload();
+    });
+
+    $('.dropdown-menu a').on("click", function () {
+        $('button[data-toggle="dropdown"]').text($(this).text());
+        const selected = $(this).text();
+        $('#btn-sort').text(selected);
+        console.log(selected);
+        const fieldName = $(this).attr("data-field-name");
+        console.log(fieldName);
+        sortField = fieldName;
+    });
+
+    $('.sort-direction-para').on("click", function () {
+        const sortDirectionIcon = $('#sort-direction-icon');
+        if (sortDirectionIcon.hasClass("fa-arrow-circle-down")) {
+            sortDirectionIcon.removeClass("fa-arrow-circle-down");
+            sortDirectionIcon.addClass("fa-arrow-circle-up");
+            sortDirection = "up";
+        } else {
+            sortDirectionIcon.removeClass("fa-arrow-circle-up");
+            sortDirectionIcon.addClass("fa-arrow-circle-down");
+            sortDirection = "down";
+        }
+        const btnSort = $("#btn-sort");
+        if (btnSort.text() === "Sort") {
+            // if the sort field hasn't been selected, set 'Uploaded' the default sort field
+            btnSort.text("Uploaded");
+            sortField = "date_uploaded";
+        } else {
+            console.log("Sorting by the selected field");
+        }
+        const URL = "/albums/view/{{album['path']}}?sort=" + sortField + ";" + sortDirection;
+        console.log(URL);
+        fetch(URL, {
+            method: 'GET',
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Network response failed!!!');
+            }
+            return response.text();
+        }).then(data => {
+            {#window.location.reload();#}
+            {#console.log(data);#}
+            $(".photo").html(data);
+        }).catch(error => {
+            console.error('Error: ', error);
+        });
     });
 </script>
 

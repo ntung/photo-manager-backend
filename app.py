@@ -196,7 +196,7 @@ def get_album(path):
             app.logger.info("Photo object id {} was removed.".format(photo_id))
 
     # Sort the list of photos by the date uploaded
-    # sorted_photo_details = sorted(photo_details, key=lambda x: x['date_uploaded'], reverse=True)
+    # sorted_photo_details = sorted(photos_details, key=lambda x: x['date_uploaded'], reverse=True)
     # reverse the list of photos to make sure that we display photos of an album in the chronological order
     # photo_details.reverse()
     # After implementing the feature: reordering photos, we want to keep the order we have done on UX/UI
@@ -359,10 +359,22 @@ def albums_view(path):
         view = "album-view.html"
         if not is_empty_album:
             sort = request.args.get('sort')
-            if sort == "shuffle":
+            if sort is not None and sort == "shuffle":
                 import random
                 view = "_album-view.html"
                 random.shuffle(album["photos_details"])
+            elif sort is not None:
+                print(sort)
+
+                s_opts = sort.split(";")
+                sort_field = s_opts[0]
+                sort_direction = s_opts[1]
+                if sort_field in ["title", "date_uploaded", "date_modified"]:
+                    photos_details = album["photos_details"]
+                    is_reverse = sort_direction == "down"
+                    sorted_photos_details = sorted(photos_details, key=lambda x: x[sort_field], reverse=is_reverse)
+                    album["photos_details"] = sorted_photos_details
+                    view = "_album-view.html"
 
         return render_template(view, status="FOUND",
                                album=album, is_empty_album=is_empty_album, api_svr=API_SVR)
