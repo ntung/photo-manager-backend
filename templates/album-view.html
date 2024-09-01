@@ -74,7 +74,7 @@
                 <hr/>
             </div>
         </div>
-        
+
         {% if not is_empty_album %}
             {% include("_album_view_action_buttons.html") %}
 
@@ -270,10 +270,7 @@
         $('button[data-toggle="dropdown"]').text($(this).text());
         const selected = $(this).text();
         $('#btn-sort').text(selected);
-        console.log(selected);
-        const fieldName = $(this).attr("data-field-name");
-        console.log(fieldName);
-        sortField = fieldName;
+        sortField = $(this).attr("data-field-name");
         callServerToSortPhotos();
     });
 
@@ -301,7 +298,6 @@
 
     function callServerToSortPhotos() {
         const URL = "/albums/view/{{album['path']}}?sort=" + sortField + ";" + sortDirection;
-        console.log(URL);
         fetch(URL, {
             method: 'GET',
         }).then(response => {
@@ -359,7 +355,6 @@
             $(this).addClass("fa-th-list");
             viewStyle = "_album_view_list.html";
         }
-        console.log(viewStyle);
         callServerToChangeView(viewStyle);
     });
     {% endif %}
