@@ -75,73 +75,13 @@
             </div>
         </div>
 
-        <!-- Header -->
-        {#<div class="w3s-header" id="myHeader">
-        <p>Click on the buttons to change the grid view.</p>
-        <button class="w3s-btn" onclick="one()">1</button>
-        <button class="w3s-btn active" onclick="two()">2</button>
-        <button class="w3s-btn" onclick="four()">4</button>
-    </div>#}
+        {% include("_album_view_gallery.html") %}
 
-        <!-- Photo Grid -->
-        {#<div class="w3s-row">
-        {%  for bucket in buckets %}
-        <div class="w3s-column">
-            {% for photo in bucket %}
-            <img src="{{'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename']}}"
-                 style="width:100%" alt="{{photo['title']}}">
-            {% endfor %}
-        </div>
-        {% endfor %}
-    </div>#}
         {% if not is_empty_album %}
-            <div class="row">
-                <div class="col-5">
-                    <button type="button" class="btn btn-primary" id="btn-reset-order-photo">Reset Order</button>
-                    <button type="button" class="btn btn-primary" id="btn-shuffle-photo"
-                            data-album-object-id="{{ album.get("_id") }}"
-                            data-album-path="{{ album['path'] }}">Shuffle
-                    </button>
-                </div>
-                <div class="col-5">
-                    <!-- Example split danger button -->
-                    <div class="btn-group" style="display: block">
-                        <div class="row">
-                            <div class="col-2">
-                                <p style="font-size: 24px" id="sort-direction-block" class="sort-direction-para">
-                                    <i class="fa fa-arrow-circle-down" aria-hidden="true" id="sort-direction-icon"></i>
-                                </p>
-                            </div>
-
-                            <div class="col-10">
-                                <button type="button" class="btn btn-danger" id="btn-sort">Sort</button>
-                                <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split"
-                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span class="visually-hidden">Toggle Dropdown</span>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" data-field-name="title">Title</a></li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li><a class="dropdown-item" data-field-name="date_modified">Modified</a></li>
-                                    <li><a class="dropdown-item" data-field-name="date_uploaded">Uploaded</a></li>
-                                </ul>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-                <div class="col-2">
-                    <button type="button" class="btn btn-primary" id="btn-remove-photo"
-                            data-album-path="{{ album['path'] }}"
-                            data-album-title="{{ album['title'] }}">Remove
-                    </button>
-                </div>
-            </div>
+            {% include("_album_view_action_buttons.html") %}
 
             <div class="photo">
-                {% include("_album-view.html") %}
+                {% include("_album_view_list.html") %}
             </div>
         {% else %}
             <div class="row">
