@@ -37,7 +37,7 @@ TZ_LONDON = pytz.timezone("Europe/London")
 TODO LIST
         0/ Calculate aaaa, aaab, aaac... submission folders
 Done    1/ Delete photos and albums: will delete physical photos and albums too.
-Done    2/ Add/remove photos to/out albums
+Progress2/ Add/edit,remove photos to/out albums
         3/ Improve the views by allowing zoom, click open a single photo
 Progress4/ Improve adding photos: add tags, hashtags, keywords, etc.
         5/ Loading more data when scrolling or pagination, do not load all once.
@@ -196,9 +196,11 @@ def get_album(path):
         else:
             app.logger.info("Photo object id {} was removed.".format(photo_id))
 
-        # Sort the list of photos by the date uploaded
-        sorted_photo_details = sorted(photo_details, key=lambda x: x['date_uploaded'], reverse=True)
-    first_album["photos_details"] = sorted_photo_details
+    # Sort the list of photos by the date uploaded
+    # sorted_photo_details = sorted(photo_details, key=lambda x: x['date_uploaded'], reverse=True)
+    # reverse the list of photos to make sure that we display photos of an album in the chronological order
+    photo_details.reverse()
+    first_album["photos_details"] = photo_details  # sorted_photo_details
 
     return first_album
 
