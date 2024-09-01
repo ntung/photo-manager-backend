@@ -93,7 +93,7 @@
     {% else %}
         <div class="row">
             <div class="col">
-                <h2>Album not found</h2>
+                <h1>Album not found</h1>
             </div>
         </div>
     {% endif %}
@@ -145,6 +145,7 @@
             this.className += " active";
         });
     }#}
+    {% if status == "FOUND" %}
     let sortDirection = "down";
     let sortField = "data_uploaded"
     let orgPhotoOrders = [];
@@ -318,6 +319,7 @@
             console.error('Error: ', error);
         });
     });
+    {% endif %}
 </script>
 
 </body>
