@@ -79,25 +79,13 @@
         {% for bucket in buckets %}
             <div class="w3s-column">
                 {% for photo in bucket %}
-                    {% set photo_url = 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] %}
+                    {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
                     <a href="{{photo_url}}" title="{{photo['title']}}" data-fslightbox="gallery">
                         <img src="{{photo_url}}" style="width:100%" alt="{{photo['title']}}"></a>
                 {% endfor %}
             </div>
         {% endfor %}
     </div>
-
-    {#<div class="photo">
-    {% for photo in photos %}
-        <div class="row"><div class="col">
-        <p><img src="{{ 'http://0.0.0.0:5000/photo/' + photo['folder'] + '/' + photo['filename'] }}" width="25%">
-            <br/>
-            <strong>{{ photo['title'] }}</strong>
-            <br/>
-            {{ photo['description']}}</p>
-        </div></div>
-    {% endfor %}
-    </div>#}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"

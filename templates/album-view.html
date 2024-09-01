@@ -197,7 +197,7 @@
         });
         if (removedPhotos.length > 0) {
             $.ajax({
-                url: "http://192.168.0.10:5000/albums/remove-photos/",
+                url: "/albums/remove-photos/",
                 method: "POST",
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
@@ -227,7 +227,7 @@
 
     $("#btn-shuffle-photo").on("click", function() {
         const albumPath = $(this).attr("data-album-path");
-        const URL = "http://192.168.0.10:5000/albums/view/" + albumPath + "?sort=shuffle";
+        const URL = "/albums/view/" + albumPath + "?sort=shuffle";
         fetch(URL, {
             method: 'GET'
         }).then(response => {

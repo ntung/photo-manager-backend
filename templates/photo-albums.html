@@ -113,7 +113,7 @@
             albumDescription = $('#description').val();
 
             $.ajax({
-                url: "http://192.168.0.10:5000/albums/update",
+                url: "/albums/update",
                 method: "POST",
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
@@ -151,7 +151,7 @@
         albumTitle = $(this).attr("data-album-title");
         const albumObjectId = $(this).attr("data-album-object-id");
         $.ajax({
-            url: "http://192.168.0.10:5000/albums/delete",
+            url: "/albums/delete",
             method: "POST",
             contentType: "application/json; charset=utf-8",
             dataType: "json",

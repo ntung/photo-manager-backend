@@ -1,7 +1,7 @@
 {% for photo in album['photos_details'] %}
     <div class="row" style="padding-top: 5px">
         <div class="col-5">
-            {% set photo_url = 'http://' + api_svr + ':5000/photo/' + photo['folder'] + '/' + photo['filename'] %}
+            {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
             <a href="{{photo_url}}" title="{{photo['title']}}" data-lightbox="{{album['path']}}">
                 <img src="{{photo_url}}" style="width:25%" alt="{{photo['title']}}"
                      data-photo-object-id="{{photo.get('_id')}}"></a></div>

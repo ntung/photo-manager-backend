@@ -336,9 +336,8 @@ def albums_view(path):
                 view = "_album-view.html"
                 random.shuffle(album["photos_details"])
 
-        api_svr = os.environ.get('API_SERVER')
         return render_template(view, status="FOUND",
-                               album=album, is_empty_album=is_empty_album, api_svr=api_svr)
+                               album=album, is_empty_album=is_empty_album, api_svr=API_SVR)
 
 
 @app.route('/photo/delete', methods=('GET', 'POST'))
@@ -396,9 +395,9 @@ def photo_list():
     # for p in map_photo_album:
     #     print("{}: {}".format(p, map_photo_album[p]))
     # print(_albums)
-    api_svr = os.environ.get('API_SERVER')
+
     return render_template('photo-list.html', albums=_albums,
-                           photos=all_photos, map_photo_album=map_photo_album, api_svr=api_svr)
+                           photos=all_photos, map_photo_album=map_photo_album, api_svr=API_SVR)
 
 
 @app.route('/photo/<path:path>', methods=['GET', 'POST'])
@@ -496,9 +495,8 @@ def photo_view():
 
     # after looping over all_photos as a Cursor, all_photos is empty
     all_photos = PhotoManager.flatten_concatenation(buckets)
-    api_svr = os.environ.get('API_SERVER')
 
-    return render_template('photo-view.html', photos=all_photos, buckets=buckets, api_svr=api_svr)
+    return render_template('photo-view.html', photos=all_photos, buckets=buckets, api_svr=API_SVR)
 
 
 def do_download_image(storage_location, image_url, out_filename=None):
