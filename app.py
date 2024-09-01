@@ -516,34 +516,7 @@ def photo_view():
     # divide 4 because I installed this layout [1]
     # [1] https://www.w3schools.com/howto/howto_js_image_grid.asp
     bucket_size = math.ceil(db.photos.count_documents({}) / 4)
-    buckets = []
-    """
-    counter = 0 -> the last bucket will have less or equal the number of photos than the bucket size
-    counter = 1 -> the first bucket will have less or equal the number of photos than the bucket size
-    """
-    counter = 0
-    bucket = []
-    i = 0
-    b = 1
-    for photo in all_photos:
-        i += 1
-        if counter == bucket_size:
-            # REMEMBER: always adding the last photo to the current bucket!!!
-            bucket.append(photo)
-            buckets.append(bucket)
-            # then reset the bucket and the counters
-            bucket = []
-            counter = 1
-            b += 1
-        else:
-            bucket.append(photo)
-            counter += 1
-
-        # print("Bucket {} - Photo {}: {}".format(b, i, photo["filename"]))
-
-    # append the last bucket regardless of no matter how it has
-    if counter <= bucket_size:
-        buckets.append(bucket)
+    buckets = PhotoManager.create_buckets(all_photos, bucket_size)
 
     # after looping over all_photos as a Cursor, all_photos is empty
     all_photos = PhotoManager.flatten_concatenation(buckets)
