@@ -275,6 +275,7 @@
         const fieldName = $(this).attr("data-field-name");
         console.log(fieldName);
         sortField = fieldName;
+        callServerToSortPhotos();
     });
 
     $('.sort-direction-para').on("click", function () {
@@ -296,6 +297,10 @@
         } else {
             console.log("Sorting by the selected field");
         }
+        callServerToSortPhotos();
+    });
+
+    function callServerToSortPhotos() {
         const URL = "/albums/view/{{album['path']}}?sort=" + sortField + ";" + sortDirection;
         console.log(URL);
         fetch(URL, {
