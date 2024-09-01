@@ -360,15 +360,16 @@ def albums_view(path):
         if not is_empty_album:
             if request.method == "POST":
                 request_json = request.get_json(silent=True)
-                print(request_json)
                 view = request_json['view']
-
-                # array_photos_object_ids = request_json['photos-object-ids']
-                # photos_details = album['photos_details']
+                array_photos_object_ids = request_json['photos-object-ids']
+                photos_details = album['photos_details']
+                buckets = PhotoManager.create_buckets(photos_details,
+                                                      math.ceil(len(array_photos_object_ids) / 3))
+                # TODO: using array_photos_object_ids to get the same orders of photos on the current page
                 # current_ordered_photos = []
                 # for id in array_photos_object_ids:
 
-                return render_template(view, status="FOUND", album=album,
+                return render_template(view, status="FOUND", album=album, buckets=buckets,
                                        is_empty_album=is_empty_album, api_svr=API_SVR)
 
             sort = request.args.get('sort')

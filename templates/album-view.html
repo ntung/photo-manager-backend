@@ -159,7 +159,7 @@
             orgPhotoOrders.push(order);
             i++;
         {% endfor %}
-        console.log(orgPhotoOrders);
+        console.log("Nb. of photos", orgPhotoOrders.length);
         // below is used to set sortable
         $(".photo").sortable({
             cursor: 'move',
@@ -322,7 +322,6 @@
         //console.log(photosObjectIds);
 
         const URL = "/albums/view/{{album['path']}}";
-        console.log(URL);
         fetch(URL, {
             method: 'POST',
             headers: {
