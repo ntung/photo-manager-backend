@@ -1,6 +1,5 @@
 import hashlib
 import json
-import logging
 import math
 import os
 import pathlib
@@ -9,11 +8,11 @@ import uuid
 from datetime import datetime
 from logging.config import dictConfig
 
+import bson
+import bson.json_util
 import pymongo
 import pytz
 import requests
-import bson
-import bson.json_util
 from bson import ObjectId
 from flask import Flask, Response
 from flask import jsonify, render_template, request, url_for, redirect, send_from_directory
@@ -199,7 +198,9 @@ def get_album(path):
     # Sort the list of photos by the date uploaded
     # sorted_photo_details = sorted(photo_details, key=lambda x: x['date_uploaded'], reverse=True)
     # reverse the list of photos to make sure that we display photos of an album in the chronological order
-    photo_details.reverse()
+    # photo_details.reverse()
+    # After implementing the feature: reordering photos, we want to keep the order we have done on UX/UI
+    # Therefore, we need to stop reversing the array of photos.
     first_album["photos_details"] = photo_details  # sorted_photo_details
 
     return first_album
@@ -296,6 +297,31 @@ def albums_delete():
         app.logger.info(result)
 
     return jsonify(message="Deleted successfully")
+
+
+@app.route('/albums/reorder-photos/', methods=('GET', 'POST'))
+def albums_reorder_photos():
+    request_json = request.get_json(silent=True)
+    album_object_id = request_json['album-object-id']
+    array_photo_object_ids = request_json['photos']
+    album = {"message": "Updating the orders of the photos in the album " + album_object_id}
+    cond = album_object_id != "" and len(array_photo_object_ids) > 0
+    if cond:
+        album = db.albums.update_one(
+            {"_id": ObjectId(album_object_id)},
+            {
+                "$set": {
+                    "photos": array_photo_object_ids,
+                    "date_modified": datetime.now(TZ_LONDON)
+                }
+            }, upsert=False
+        )
+        app.logger.info(album)
+        updated_album = db.albums.find_one({"_id": ObjectId(album_object_id)})
+        if updated_album.get("_id") != "":
+            album = {"message": "Updated the orders of the photos in the album " + album_object_id}
+
+    return json.dumps(album)
 
 
 @app.route('/albums/update/', methods=('GET', 'POST'))

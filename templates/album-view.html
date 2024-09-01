@@ -95,7 +95,6 @@
         <div class="row">
             <div class="col-5">
                 <button type="button" class="btn btn-primary" id="btn-reset-order-photo">Reset Order</button>
-                <button type="button" class="btn btn-primary" id="btn-reorder-photo">Reorder</button>
                 <button type="button" class="btn btn-primary" id="btn-sort-photo">Sort</button>
                 <button type="button" class="btn btn-primary" id="btn-shuffle-photo"
                         data-album-object-id="{{album.get("_id")}}"
@@ -199,11 +198,33 @@
             opacity: 0.6,
             scrollSensitivity: 40,
             update: function(event, ui) {
-                event.preventDefault();
                 //$('#message').html('Changes not saved');
-                console.log("Updating the current order...");
-                let productOrder = $(this).sortable('toArray'); //.toString();
-                console.log(productOrder);
+                const photoOrder = $(this).sortable('toArray'); //.toString();
+                // console.log("Updating the current order...", photoOrder);
+                const body = {
+                    "album-object-id": "{{album.get('_id')}}",
+                    "photos": photoOrder
+                }
+                if (photoOrder.length > 0) {
+                    const URL = "/albums/reorder-photos"
+                    fetch(URL, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json; charset=utf-8',
+                            'Content-Type': 'application/json; charset=utf-8'
+                        },
+                        body: JSON.stringify(body)
+                    }).then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response failed!!!');
+                        }
+                        return response.json();
+                    }).then(data => {
+                        console.log(data);
+                    }).catch(error => {
+                        console.error('Error: ', error);
+                    });
+                }
             }
         });
     });
@@ -270,12 +291,6 @@
         }).catch(error => {
             console.error('Error: ', error);
         });
-    });
-
-    $("#btn-reorder-photo").on("click", function() {
-        $(this).removeClass("btn-primary");
-        $(this).addClass("btn-secondary");
-        $(this)[0].innerText = "Complete";
     });
 </script>
 
