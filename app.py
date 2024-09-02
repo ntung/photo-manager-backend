@@ -429,8 +429,7 @@ def photo_list():
         app.logger.debug(result)
         return redirect(url_for('photo_list'))
 
-    photos = db.photos
-    all_photos = photos.find().sort([("date_uploaded", pymongo.DESCENDING)])
+    all_photos = db.photos.find().limit(10).sort([("date_uploaded", pymongo.DESCENDING)])
     all_albums = db.albums.find()
     map_photo_album = {
         "default": {"album-1": "Album 1"}
