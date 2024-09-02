@@ -49,6 +49,7 @@ Progress11/ Sort photos by title, data uploaded, shuffle photos
 Done    12/ After Save photo to album, update "In Albums:"
         13/ handle the date_uploaded and date_modified using datetime.strftime('%Y-%m-%d %H:%M:%S')
 Done    14/ uuid for photos uploaded via browsing files
+        15/ nên hiển thị photos của 1 album theo thứ tự ngược lại: [1, 2, 3] => display 3, 2, 1
 """
 dictConfig({
     "version": 1,
@@ -198,7 +199,7 @@ def get_album(path):
     # Sort the list of photos by the date uploaded
     # sorted_photo_details = sorted(photos_details, key=lambda x: x['date_uploaded'], reverse=True)
     # reverse the list of photos to make sure that we display photos of an album in the chronological order
-    # photo_details.reverse()
+    photo_details.reverse()
     # After implementing the feature: reordering photos, we want to keep the order we have done on UX/UI
     # Therefore, we need to stop reversing the array of photos.
     first_album["photos_details"] = photo_details  # sorted_photo_details
