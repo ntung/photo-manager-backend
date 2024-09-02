@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Photo List & Upload | Photo Manager</title>
+    <title>List & Upload | Photo Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -36,9 +36,13 @@
             <div class="content">
                 <form method="post" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <b><label for="photo-upload" class="form-label">Browse a photo</label></b>
-                        <input type="file" id="photo-upload" name="photo-upload" multiple
-                               class="form-control" accept="image/png,image/jpeg,image/jpg"/>
+                        <div id="drop-area">
+                            <b><label for="photo-upload"
+                                      class="form-label">Browse OR Drag and Drop a photo here</label></b>
+                            <input type="file" id="photo-upload" name="photo-upload" multiple
+                                   class="form-control" accept="image/png,image/jpeg,image/jpg"
+                                   title="Click here to add photos"/>
+                        </div>
                         <br/>
                         <strong><label for="photo-url" class="form-label">Image/Photo URL</label></strong><br/>
                         <input id="photo-url" name="photo-url" type="text" placeholder="Image/Photo URL"
@@ -172,6 +176,8 @@
         crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="{{ url_for('static', filename='js/jquery.dm-uploader.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/fslightbox.js') }}"></script>
 <script>
     $(document).ready(function () {
         toastr.options = {
@@ -409,7 +415,62 @@
             toastr.success("The request has completed : " + JSON.stringify(data));
         });
     });
+
+    /*
+    $("#drop-area").dmUploader({
+        url: '/demo/java-script/upload',
+        maxFileSize: 1024 * 1024 * 3, // 3 Megs max
+        onDragEnter: function(){
+            // Happens when dragging something over the DnD area
+            this.addClass('active');
+        },
+        onDragLeave: function(){
+            // Happens when dragging something OUT of the DnD area
+            this.removeClass('active');
+        },
+        onInit: function(){
+            // Plugin is ready to use
+            ui_add_log('Penguin initialized :)', 'info');
+        },
+        onComplete: function(){
+            // All files in the queue are processed (success or error)
+            ui_add_log('All pending tranfers finished');
+        },
+        onNewFile: function(id, file){
+            // When a new file is added using the file selector or the DnD area
+            ui_add_log('New file added #' + id);
+            ui_multi_add_file(id, file);
+        },
+        onBeforeUpload: function(id){
+            // about tho start uploading a file
+            ui_add_log('Starting the upload of #' + id);
+            ui_multi_update_file_progress(id, 0, '', true);
+            ui_multi_update_file_status(id, 'uploading', 'Uploading...');
+        },
+        onUploadProgress: function(id, percent){
+            // Updating file progress
+            ui_multi_update_file_progress(id, percent);
+        },
+        onUploadSuccess: function(id, data){
+            // A file was successfully uploaded
+            ui_add_log('Server Response for file #' + id + ': ' + JSON.stringify(data));
+            ui_add_log('Upload of file #' + id + ' COMPLETED', 'success');
+            ui_multi_update_file_status(id, 'success', 'Upload Complete');
+            ui_multi_update_file_progress(id, 100, 'success', false);
+        },
+        onUploadError: function(id, xhr, status, message){
+            // Happens when an upload error happens
+            ui_multi_update_file_status(id, 'danger', message);
+            ui_multi_update_file_progress(id, 0, 'danger', false);
+        },
+        onFallbackMode: function(){
+            // When the browser doesn't support this plugin :(
+            ui_add_log('Plugin cant be used here, running Fallback callback', 'danger');
+        },
+        onFileSizeError: function(file){
+            ui_add_log('File \'' + file.name + '\' cannot be added: size excess limit', 'danger');
+        }
+    }); */
 </script>
-<script src="{{url_for('static', filename='js/fslightbox.js')}}"></script>
 </body>
 </html>
