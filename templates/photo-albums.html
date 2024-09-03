@@ -63,7 +63,7 @@
             <div class="row">
                 <div class="col-8">
                     <p id="album-{{ album['path'] }}" style="margin-bottom: 0 !important;">
-                        <a href="http://{{ api_svr }}:5000/albums/view/{{ album['path'] }}"
+                        <a href="/albums/view/{{ album['path'] }}"
                            class="album-title" data-album-path="{{ album['path'] }}"
                            id="link-album-title-{{ album['path'] }}">{{ album['title'] }}</a></p>
                     <p class="album-description" id="album-description-{{ album['path'] }}"

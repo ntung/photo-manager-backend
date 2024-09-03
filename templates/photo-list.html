@@ -269,7 +269,7 @@
             console.log("saving...");
 
             $.ajax({
-                url: "http://192.168.0.10:5000/photo/update",
+                url: "/photo/update",
                 method: "POST",
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
@@ -309,7 +309,7 @@
         const photoFileName = $(this).attr("data-photo-filename");
 
         $.ajax({
-            url: "http://192.168.0.10:5000/photo/delete",
+            url: "/photo/delete",
             method: "POST",
             contentType: "application/json; charset=utf-8",
             dataType: "json",
