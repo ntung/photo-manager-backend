@@ -13,54 +13,9 @@
     <link href="{{ url_for('static', filename='css/lightbox.css') }}"
           rel="stylesheet" crossorigin="anonymous">
     <style>
-
-        .w3s-header {
-            text-align: center;
-        {#padding: 32px;#}
-        }
-
-        .w3s-row {
-            display: -ms-flexbox; /* IE 10 */
-            display: flex;
-            -ms-flex-wrap: wrap; /* IE 10 */
-            flex-wrap: wrap;
-            padding: 0 4px;
-        }
-
-        /* Create two equal columns that sits next to each other */
-        .w3s-column {
-            -ms-flex: 50%; /* IE 10 */
-            flex: 50%;
-            padding: 0 4px;
-        }
-
-        .w3s-column img {
-            margin-top: 8px;
-            vertical-align: middle;
-        }
-
-        /* Style the buttons */
-        .w3s-btn {
-            border: none;
-            outline: none;
-            padding: 10px 16px;
-            background-color: #f1f1f1;
-            cursor: pointer;
-            font-size: 18px;
-        }
-
-        .w3s-btn:hover {
-            background-color: #ddd;
-        }
-
-        .w3s-btn.active {
-            background-color: #666;
-            color: white;
-        }
     </style>
 </head>
 <body>
-{#https://www.w3schools.com/howto/howto_js_image_grid.asp#}
 <div class="container">
     <div class="row">
         <div class="col">
@@ -103,46 +58,6 @@
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
 <script>
-    {#// Get the elements with class="column"
-    const elements = document.getElementsByClassName("w3s-column");
-
-    // Declare a loop variable
-    let i;
-
-    // Full-width images
-    function one() {
-        for (i = 0; i < elements.length; i++) {
-            elements[i].style.msFlex = "100%";  // IE10
-            elements[i].style.flex = "100%";
-        }
-    }
-
-    // Two images side by side
-    function two() {
-        for (i = 0; i < elements.length; i++) {
-            elements[i].style.msFlex = "50%";  // IE10
-            elements[i].style.flex = "50%";
-        }
-    }
-
-    // Four images side by side
-    function four() {
-        for (i = 0; i < elements.length; i++) {
-            elements[i].style.msFlex = "25%";  // IE10
-            elements[i].style.flex = "25%";
-        }
-    }
-
-    // Add active class to the current button (highlight it)
-    const header = document.getElementById("myHeader");
-    const buttons = header.getElementsByClassName("w3s-btn");
-    for (let i = 0; i < buttons.length; i++) {
-        buttons[i].addEventListener("click", function() {
-            const current = document.getElementsByClassName("active");
-            current[0].className = current[0].className.replace(" active", "");
-            this.className += " active";
-        });
-    }#}
     {% if status == "FOUND" %}
     let sortDirection = "down";
     let sortField = "data_uploaded"
@@ -167,9 +82,7 @@
             opacity: 0.6,
             scrollSensitivity: 40,
             update: function (event, ui) {
-                //$('#message').html('Changes not saved');
                 const photoOrder = $(this).sortable('toArray'); //.toString();
-                // console.log("Updating the current order...", photoOrder);
                 const body = {
                     "album-object-id": "{{album.get('_id')}}",
                     "photos": photoOrder
@@ -319,7 +232,6 @@
         $('.photo').children().map((index, element) => {
             photosObjectIds.push($(element).attr('id'));
         });
-        //console.log(photosObjectIds);
 
         const URL = "/albums/view/{{album['path']}}";
         fetch(URL, {
