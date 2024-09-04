@@ -53,20 +53,26 @@
         </div>
     </div>
 
-    <div class="album">
+    <div class="album-list">
+        <div class="row">
+            <div class="col-2"><label for="albums-search"><strong>Search</strong></label></div>
+            <div class="col-10">
+                <input id="albums-search" type="text" class="form-control" onkeyup="searchForAlbums()"
+                       placeholder="Search for albums"></div>
+        </div>
         <div class="row">
             <div class="col-8"><strong>Albums</strong></div>
             <div class="col-4"><strong>Actions</strong></div>
         </div>
         {% for album in albums %}
-            <div class="row">
-                <div class="col-8">
-                    <p id="album-{{ album['path'] }}" style="margin-bottom: 0 !important;">
+            <div class="row album-{{ album['path'] }}">
+                <div class="col-8 title-n-description">
+                    <p id="album-title-{{ album['path'] }}" class="album-title-para" style="margin-bottom: 0 !important;">
                         <a href="/albums/view/{{ album['path'] }}"
                            class="album-title" data-album-path="{{ album['path'] }}"
                            id="link-album-title-{{ album['path'] }}">{{ album['title'] }}</a></p>
                     <p class="album-description" id="album-description-{{ album['path'] }}"
-                       style="font-style: italic">{{ album['description'] }}</p>
+                       style="font-style: italic" data-album-path="{{ album['path'] }}">{{ album['description'] }}</p>
                 </div>
                 <div class="col-4 align-content-center align-self-center">
                     <a id="btn-edit-{{ album['path'] }}" class="btn-edit-album"
@@ -80,8 +86,6 @@
                         <i id="delete-{{ album['path'] }}" class='fa fa-trash-o' style='font-size:24px'></i></a>
 
                 </div>
-
-
             </div>
         {% endfor %}
     </div>
@@ -90,12 +94,43 @@
         src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
         crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/ui/1.14.0/jquery-ui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script>
     let albumPath = "", albumTitle = "";
+    const myMap = new Map();
+
+    $(function() {
+        let path, text;
+        $('.album-title').map((index, title) => {
+            path = $(title).attr("data-album-path");
+            text = $(title).text();
+            myMap.set(path, text);
+        });
+
+        $('.album-description').map((index, desc) => {
+            path = $(desc).attr("data-album-path");
+            text = $(desc).text();
+            myMap.set(path, myMap.get(path) + " " + text);
+        });
+    });
+
+    function searchForAlbums() {
+        let input = document.getElementById('albums-search');
+        let filter = input.value.toUpperCase();
+        let albumInfo;
+        myMap.forEach((value, key) => {
+            albumInfo = value;
+            if (albumInfo.toUpperCase().indexOf(filter) > -1) {
+                $('.album-' + key).show();
+            } else {
+                $('.album-' + key).hide();
+            }
+        });
+    };
 
     $('.btn-edit-album').on("click", function () {
         albumPath = $(this).attr("data-album-path");
