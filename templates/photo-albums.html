@@ -73,7 +73,7 @@
                     <p id="album-title-{{ album['path'] }}" class="album-title-para" style="margin-bottom: 0 !important;">
                         <a href="/albums/view/{{ album['path'] }}"
                            class="album-title" data-album-path="{{ album['path'] }}"
-                           id="link-album-title-{{ album['path'] }}">{{ album['title'] }}</a></p>
+                           id="link-album-title-{{ album['path'] }}">{{ album['title'] }}</a> ({{ nb_photo_dict[album['path']] }})</p>
                     <div class="album-description" id="album-description-{{ album['path'] }}"
                        style="font-style: italic" data-album-path="{{ album['path'] }}">{{ album['description'] }}</div>
                 </div>

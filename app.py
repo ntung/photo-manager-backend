@@ -167,7 +167,13 @@ def photo_albums():
         return redirect(url_for('photo_albums'))
     elif request.method == 'GET':
         all_albums = db.albums.find()
-        return render_template('photo-albums.html', albums=all_albums, api_svr=API_SVR)
+        _albums = bson.json_util.dumps(all_albums)
+        _albums = bson.json_util.loads(_albums)
+        nb_photos_dict = {}
+        for album in _albums:
+            nb_photos_dict[album['path']] = len(album['photos'])
+        return render_template('photo-albums.html', albums=_albums,
+                               nb_photo_dict=nb_photos_dict, api_svr=API_SVR)
 
 
 @app.route('/albums', defaults={'path': None}, methods=('GET', 'POST'))
@@ -354,15 +360,21 @@ def albums_update():
 
 @app.route('/albums/view/<path>', methods=('GET', 'POST'))
 def albums_view(path):
+    status = "FOUND"
     if path is None or path == '':
         return jsonify(message="Path is empty")
     else:
         album = get_album(path)
         if album is None:
-            return render_template('album-view.html', status="NOT_FOUND", message="No such album")
+            status = "NOT_FOUND"
+            return render_template('album-view.html', status=status, message="No such album")
         is_empty_album = not album["photos"]
         view = "album-view.html"
+        nb_photos = 0
         if not is_empty_album:
+            status = "FOUND"
+            nb_photos = len(album["photos_details"])
+
             if request.method == "POST":
                 request_json = request.get_json(silent=True)
                 view = request_json['view']
@@ -374,7 +386,7 @@ def albums_view(path):
                 # current_ordered_photos = []
                 # for id in array_photos_object_ids:
 
-                return render_template(view, status="FOUND", album=album, buckets=buckets,
+                return render_template(view, status=status, album=album, buckets=buckets, nb_photos=nb_photos,
                                        is_empty_album=is_empty_album, api_svr=API_SVR)
 
             sort = request.args.get('sort')
@@ -395,7 +407,8 @@ def albums_view(path):
                     album["photos_details"] = sorted_photos_details
                     view = "_album_view_list.html"
 
-        return render_template(view, status="FOUND", album=album, is_empty_album=is_empty_album, api_svr=API_SVR)
+        return render_template(view, status=status, album=album, nb_photos=nb_photos,
+                               is_empty_album=is_empty_album, api_svr=API_SVR)
 
 
 @app.route('/photo/delete', methods=('GET', 'POST'))
