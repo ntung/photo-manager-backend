@@ -18,6 +18,9 @@
             margin: 10px;
             background-color: #eee;
         }
+        .highlight {
+            background-color: greenyellow;
+        }
     </style>
 </head>
 <body>
@@ -71,8 +74,8 @@
                         <a href="/albums/view/{{ album['path'] }}"
                            class="album-title" data-album-path="{{ album['path'] }}"
                            id="link-album-title-{{ album['path'] }}">{{ album['title'] }}</a></p>
-                    <p class="album-description" id="album-description-{{ album['path'] }}"
-                       style="font-style: italic" data-album-path="{{ album['path'] }}">{{ album['description'] }}</p>
+                    <div class="album-description" id="album-description-{{ album['path'] }}"
+                       style="font-style: italic" data-album-path="{{ album['path'] }}">{{ album['description'] }}</div>
                 </div>
                 <div class="col-4 align-content-center align-self-center">
                     <a id="btn-edit-{{ album['path'] }}" class="btn-edit-album"
@@ -104,33 +107,69 @@
     const myMap = new Map();
 
     $(function() {
-        let path, text;
+        let path, text, albumInfo;
         $('.album-title').map((index, title) => {
             path = $(title).attr("data-album-path");
             text = $(title).text();
-            myMap.set(path, text);
+            myMap.set(path, {"title": text});
         });
 
         $('.album-description').map((index, desc) => {
             path = $(desc).attr("data-album-path");
             text = $(desc).text();
-            myMap.set(path, myMap.get(path) + " " + text);
+            albumInfo = myMap.get(path)["title"] + " " + text;
+            myMap.set(path, {"albumInfo": albumInfo, "title": myMap.get(path)["title"], "description": text});
         });
     });
 
     function searchForAlbums() {
-        let input = document.getElementById('albums-search');
-        let filter = input.value.toUpperCase();
-        let albumInfo;
+        const input = document.getElementById('albums-search');
+        const orgFilter = input.value;
+        let filter = orgFilter.toUpperCase();
+        let albumInfo, title, description;
         myMap.forEach((value, key) => {
-            albumInfo = value;
-            if (albumInfo.toUpperCase().indexOf(filter) > -1) {
+            // Note: key is the album path
+            albumInfo = value["albumInfo"];
+            title = value["title"];
+            description = value["description"];
+            if (albumInfo.toUpperCase().indexOf(filter) >= 0) {
                 $('.album-' + key).show();
+                // highlight the matched text in the title or description
+                const linkTitle = $('#link-album-title-'+key);
+                const orgFilterHighlight = '<span class="highlight">' + orgFilter +'</span>';
+                if (title.toUpperCase().indexOf(filter) >= 0) {
+                    // highlight title, the id: link-album-title-{path}
+                    title = title.replaceAll(orgFilter, orgFilterHighlight);
+                    linkTitle.html(title);
+                } else {
+                    title = title.replaceAll(orgFilterHighlight, filter);
+                    linkTitle.html(title);
+                }
+
+                const desc = $('#album-description-'+key);
+                if (description.toUpperCase().indexOf(filter) >= 0) {
+                    // highlight description, the id: album-description-{path}
+                    description = description.replaceAll(orgFilter, orgFilterHighlight);
+                    desc.html(description);
+                } else {
+                    description = description.replaceAll(orgFilterHighlight, filter);
+                    desc.html(description);
+                }
             } else {
                 $('.album-' + key).hide();
             }
         });
     };
+
+    function highlight(text, element) {
+        const index = element.text.indexOf(text);
+        if (index >= 0) {
+            let innerHTML = element.text.substring(0, index) + "<span class='highlight'>" +
+                element.text.substring(index, index+text.length) + "</span>"
+                + element.text.substring(index + text.length);
+            element.innerHTML = innerHTML;
+        }
+    }
 
     $('.btn-edit-album').on("click", function () {
         albumPath = $(this).attr("data-album-path");
