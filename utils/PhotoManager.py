@@ -1,3 +1,21 @@
+import os
+from collections import defaultdict
+
+MAX_NB_FILES_PER_DIR = 400
+global PHOTO_SUBMISSION_FOLDERS
+
+
+# Function to return a default
+# values for keys that is not present
+
+
+def def_value():
+    return "Not Present"
+
+
+PHOTO_SUBMISSION_FOLDERS = defaultdict(def_value)
+
+
 def hello():
     print("Hello World!")
 
@@ -43,3 +61,41 @@ def create_buckets(all_photos, bucket_size):
         buckets.append(bucket)
 
     return buckets
+
+
+def next_string(s):
+    # aaaa, aaab, aaac, etc.
+    # https://stackoverflow.com/questions/932506/how-can-i-get-the-next-string-in-alphanumeric-ordering-in-python
+    strip_zs = s.rstrip('z')
+    if strip_zs:
+        return strip_zs[:-1] + chr(ord(strip_zs[-1]) + 1) + 'a' * (len(s) - len(strip_zs))
+    else:
+        return 'a' * (len(s) + 1)
+
+
+def calculate_current_submission_folder(upload_folder):
+    default_name = "aaaa"
+    # subfolders = [f.path for f in os.scandir(upload_folder) if f.is_dir()]
+    subfolders = [x[0] for x in os.walk(upload_folder)]
+    subfolders = [d for d in subfolders if d != upload_folder]
+    if len(subfolders) == 0:
+        return default_name
+
+    folder_n_files_dict = dict()
+    for d in subfolders:
+        nb_files = len([name for name in os.listdir(d) if os.path.isfile(os.path.join(d, name))])
+        folder_n_files_dict[os.path.basename(d)] = nb_files
+
+    # sorted_dict = collections.OrderedDict(sorted(folder_n_files_dict.items()))
+    FOLDERS = dict(sorted(folder_n_files_dict.items(), key=lambda item: item[0]))
+    print(FOLDERS)
+    for k in FOLDERS:
+        print(k, FOLDERS[k])
+        if FOLDERS[k] < MAX_NB_FILES_PER_DIR:
+            return k
+    next_value = next_string(k)
+    if next_value != "":
+        return next_value
+    else:
+        # return the default value
+        return default_name

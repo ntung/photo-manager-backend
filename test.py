@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 import hashlib
+import itertools
 import os
 import shutil
 import tempfile
@@ -14,6 +15,8 @@ from pymongo import MongoClient, ReturnDocument
 # import ObjectID from MongoDB's BSON library
 # (use pip3 to install bson)
 from bson import ObjectId
+
+from utils import PhotoManager
 
 
 def download_save_image():
@@ -190,9 +193,37 @@ def get_file_length(_file):
     return {"file-length": file_length, "abs-file-path": temp_file_path}
 
 
+def check_cur_sub_folder():
+    TMP_BM = tempfile.gettempdir() + "/pm/upload"
+    os.makedirs(TMP_BM, exist_ok=True)
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
+    UPLOAD_FOLDER = "/Users/tnguyen/ownCloud/MyBusiness/data/photo-manager"
+    # UPLOAD_FOLDER = "/Users/tnguyen/ownCloud/MyBusiness/data/biomodels"
+    r = PhotoManager.calculate_current_submission_folder(UPLOAD_FOLDER)
+    print(r)
+
+
+def get_series(length=4, characters='abcdefghijklmnopqrstuvwxyz'):
+    # https://stackoverflow.com/questions/16224575/making-string-series-in-python
+    for ss in itertools.product(characters, repeat=length):
+        yield ''.join(ss)
+
+
+def test_get_series():
+    for s in get_series():
+        print(s)
+
+
+def test_next_string():
+    print(PhotoManager.next_string("aaab"))
+
+
 if __name__ == '__main__':
     # update_mongodb_doc()
     # get_date_created_n_modified_then_update_db_photos()
     # download_save_image()
     # check_find_result()
-    copy_and_move_file()
+    # copy_and_move_file()
+    # check_cur_sub_folder()
+    test_get_series()
+    test_next_string()

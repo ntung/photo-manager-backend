@@ -87,6 +87,10 @@ app.config['CORS_HEADERS'] = 'Content-Type: application/json'
 API_SVR = os.environ.get('API_SERVER')
 
 
+sb = PhotoManager.calculate_current_submission_folder(UPLOAD_FOLDER)
+app.logger.info("current submission folder: {}".format(sb))
+
+
 @app.route('/', methods=('GET', 'POST'))
 def index():
     return render_template('index.html')
@@ -541,9 +545,11 @@ def do_download_image(storage_location, image_url, out_filename=None):
 
 
 def do_upload_photo(client_request, file):
+    cur_sub_folder = PhotoManager.calculate_current_submission_folder(app.config['UPLOAD_FOLDER'])
+    app.logger.info("current sub folder ", cur_sub_folder)
     submission_folder = client_request.headers["Submission-Folder"] \
         if ("Submission-Folder" in request.headers
-            and client_request.headers["Submission-Folder"] is not None) else "aaaa"  # TODO: tinh cai nay sau
+            and client_request.headers["Submission-Folder"] is not None) else cur_sub_folder
     UPLOAD_DIR = app.config['UPLOAD_FOLDER'] + "/" + submission_folder
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
