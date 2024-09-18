@@ -89,6 +89,7 @@ def calculate_current_submission_folder(upload_folder):
     # sorted_dict = collections.OrderedDict(sorted(folder_n_files_dict.items()))
     FOLDERS = dict(sorted(folder_n_files_dict.items(), key=lambda item: item[0]))
     print(FOLDERS)
+    k = default_name
     for k in FOLDERS:
         print(k, FOLDERS[k])
         if FOLDERS[k] < MAX_NB_FILES_PER_DIR:

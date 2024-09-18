@@ -563,7 +563,7 @@ def do_upload_photo(client_request, file):
     submission_folder = client_request.headers["Submission-Folder"] \
         if ("Submission-Folder" in request.headers
             and client_request.headers["Submission-Folder"] is not None) else cur_sub_folder
-    UPLOAD_DIR = app.config['UPLOAD_FOLDER'] + "/" + submission_folder
+    UPLOAD_DIR = os.path.join(app.config['UPLOAD_FOLDER'], submission_folder)
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
     if file.filename and file.filename is not None:
@@ -571,8 +571,9 @@ def do_upload_photo(client_request, file):
         # filename = secure_filename(file.filename)
         # filename = file.filename
         os.makedirs(UPLOAD_DIR, exist_ok=True)
-        file.save(os.path.join(UPLOAD_DIR, filename))
-        with open(os.path.join(UPLOAD_DIR, filename), "rb") as f:
+        abs_file_path = os.path.join(str(UPLOAD_DIR), filename)
+        file.save(abs_file_path)
+        with open(abs_file_path, "rb") as f:
             hash_md5 = hashlib.md5(f.read()).hexdigest()
     else:
         # download the image from the provided image URL
@@ -591,10 +592,11 @@ def do_upload_photo(client_request, file):
     col_photos = db.photos
     docs = col_photos.find_one({"hash_md5": hash_md5})
     if docs is not None:
+        app.logger.debug("Photo exists in DB!")
         # move or delete the photo to another folder
-        abs_file_path = os.path.join(UPLOAD_DIR, filename)
+        abs_file_path = os.path.join(str(UPLOAD_DIR), filename)
         # https://stackoverflow.com/a/59185523/865603
-        pathlib.Path(str(abs_file_path)).unlink(missing_ok=True)
+        pathlib.Path(abs_file_path).unlink(missing_ok=True)
         # TODO: figure out how to use the returned json below on the view
         return jsonify(message="EXISTED", submission_folder=submission_folder)
     else:
