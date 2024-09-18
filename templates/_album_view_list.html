@@ -1,11 +1,11 @@
 {% for photo in album['photos_details'] %}
     <div class="row" style="padding-top: 5px" id="{{ photo.get('_id') }}">
-        <div class="col-5">
+        <div class="col-4">
             {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
             <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
                 <img src="{{ photo_url }}" style="width:25%" alt="{{ photo['title'] }}"
                      data-photo-object-id="{{ photo.get('_id') }}"></a></div>
-        <div class="col-5">
+        <div class="col-6">
             <strong>{{ photo['title'] }}</strong>
             <br/>
             {{ photo['description'] }}
