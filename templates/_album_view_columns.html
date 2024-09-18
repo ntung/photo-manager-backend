@@ -1,0 +1,53 @@
+<!-- use jquery-ui sortable -->
+<style>
+    #photo-gallery {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+    }
+
+    #photo-gallery div {
+        margin: 0 4px 4px 4px;
+        padding: 0.4em;
+        display: inline-block;
+    }
+
+    .photo-item {
+        border: 1px solid #fff;
+        width: 200px;
+    }
+</style>
+<div id="photo-gallery" class="my-gallery">
+    {% for photo in album['photos_details'] %}
+        <div class="photo-item">
+            {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
+            <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
+                <img src="{{ photo_url }}" alt="{{ photo['title'] }}" class="img-item"
+                     data-photo-object-id="{{ photo.get('_id') }}" style="width: 50%"></a>
+        </div>
+    {% endfor %}
+</div>
+
+
+<script>
+    $(function () {
+        $("#photo-gallery").sortable({
+            update: (event, ui) => {
+                saveUpdateAlbum();
+            }
+        });
+    });
+
+    function saveUpdateAlbum() {
+        const values = [];
+        $('.img-item').each(function (index) {
+            values.push($(this).attr("data-photo-object-id"));
+        });
+        const body = {
+            "album-object-id": "{{album.get('_id')}}",
+            "photos": values
+        }
+
+        updateOrder(body);
+    }
+</script>

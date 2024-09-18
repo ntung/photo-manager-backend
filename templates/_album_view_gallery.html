@@ -2,7 +2,7 @@
 <!-- https://mdbootstrap.com/docs/standard/extended/image-grid/ -->
 <div class="row">
     {% for bucket in buckets %}
-    <div class="col-lg-4 col-md-12 mb-4 mb-lg-0">
+    <div class="col-lg-4 col-md-12 mb-4 mb-lg-0 my-gallery">
     {% for photo in bucket %}
     {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
         <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
@@ -12,3 +12,9 @@
     </div>
     {% endfor %}
 </div>
+<script>
+    $(function () {
+        $(".my-gallery").sortable();
+        $(".my-gallery").disableSelection();
+    });
+</script>

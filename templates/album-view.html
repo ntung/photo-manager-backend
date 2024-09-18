@@ -88,28 +88,36 @@
                     "photos": photoOrder
                 }
                 if (photoOrder.length > 0) {
-                    const URL = "/albums/reorder-photos"
-                    fetch(URL, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json; charset=utf-8',
-                            'Content-Type': 'application/json; charset=utf-8'
-                        },
-                        body: JSON.stringify(body)
-                    }).then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response failed!!!');
-                        }
-                        return response.json();
-                    }).then(data => {
-                        console.log(data);
-                    }).catch(error => {
-                        console.error('Error: ', error);
-                    });
+                    updateOrder(body);
                 }
             }
         });
     });
+
+    function updateOrder(body) {
+        console.log(body);
+        if (body["photos"].length > 0) {
+            const URL = "/albums/reorder-photos"
+            fetch(URL, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json; charset=utf-8',
+                    'Content-Type': 'application/json; charset=utf-8'
+                },
+                body: JSON.stringify(body)
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response failed!!!');
+                }
+                return response.json();
+            }).then(data => {
+                console.log(data);
+            }).catch(error => {
+                console.error('Error: ', error);
+            });
+        }
+    }
+
     $('#btn-remove-photo').on("click", function () {
         const albumPath = $(this).attr("data-album-path");
         const checkBoxes = $('.cls-chk-remove-photo');
@@ -261,8 +269,12 @@
             $(this).removeClass("fa-th-list");
             $(this).addClass("fa-th-large");
             viewStyle = "_album_view_gallery.html";
-        } else {
+        } else if ($(this).hasClass("fa-th-large")) {
             $(this).removeClass("fa-th-large");
+            $(this).addClass("fa-columns");
+            viewStyle = "_album_view_columns.html";
+        } else if ($(this).hasClass("fa-columns")) {
+            $(this).removeClass("fa-columns");
             $(this).addClass("fa-th-list");
             viewStyle = "_album_view_list.html";
         }
