@@ -1,0 +1,24 @@
+{% for album in albums %}
+    <div class="row album-{{ album['path'] }}">
+        <div class="col-10 title-n-description">
+            <p id="album-title-{{ album['path'] }}" class="album-title-para" style="margin-bottom: 0 !important;">
+                <a href="/albums/view/{{ album['path'] }}"
+                   class="album-title" data-album-path="{{ album['path'] }}"
+                   id="link-album-title-{{ album['path'] }}">{{ album['title'] }}</a> ({{ nb_photo_dict[album['path']] }})</p>
+            <div class="album-description" id="album-description-{{ album['path'] }}"
+                 style="font-style: italic" data-album-path="{{ album['path'] }}">{{ album['description'] }}</div>
+        </div>
+        <div class="col-2 align-content-center align-self-center">
+            <a id="btn-edit-{{ album['path'] }}" class="btn-edit-album"
+               data-album-path="{{ album['path'] }}"
+               data-album-title="{{ album['title'] }}">
+                <i id="edit-{{ album['path'] }}" class="fa fa-pencil-square-o" style="font-size:24px"></i></a>
+            <a id="btn-delete-{{ album['path'] }}" class="btn-delete-album"
+               data-album-object-id="{{ album.get('_id') }}"
+               data-album-path="{{ album['path'] }}"
+               data-album-title="{{ album['title'] }}">
+                <i id="delete-{{ album['path'] }}" class='fa fa-trash-o' style='font-size:24px'></i></a>
+
+        </div>
+    </div>
+{% endfor %}

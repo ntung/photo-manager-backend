@@ -55,42 +55,44 @@
             </div>
         </div>
     </div>
+    <div class="row align-items-center">
+        <div class="col-2"><label for="albums-search"><strong>Search</strong></label></div>
+        <div class="col-10">
+            <input id="albums-search" type="text" class="form-control" onkeyup="searchForAlbums()"
+                   placeholder="Search for albums"></div>
+    </div>
+    <div class="row align-items-center">
+        <div class="col-2 align-self-center"><strong>Albums</strong></div>
+        <div class="col-8 align-self-center"><strong>Sort</strong>
+            &nbsp;&nbsp;
+            <span style="font-size: 26px" id="sort-direction-block" class="sort-direction-para">
+                    <i class="fa fa-arrow-circle-down" aria-hidden="true" id="sort-direction-icon"></i>
+                </span>
+            &nbsp;
+            <button type="button" class="btn btn-danger" id="btn-sort">Sort</button>
+            &nbsp;
+            <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" data-field-name="title">Title</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item" data-field-name="amount_photos">Amount Photos</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item" data-field-name="date_modified">Modified Date</a></li>
+                <li><a class="dropdown-item" data-field-name="date_created">Created Date</a></li>
+            </ul>
 
+        </div>
+        <div class="col-2 align-self-center"><strong>Actions</strong></div>
+    </div>
     <div class="album-list">
-        <div class="row">
-            <div class="col-2"><label for="albums-search"><strong>Search</strong></label></div>
-            <div class="col-10">
-                <input id="albums-search" type="text" class="form-control" onkeyup="searchForAlbums()"
-                       placeholder="Search for albums"></div>
-        </div>
-        <div class="row">
-            <div class="col-8"><strong>Albums</strong></div>
-            <div class="col-4"><strong>Actions</strong></div>
-        </div>
-        {% for album in albums %}
-            <div class="row album-{{ album['path'] }}">
-                <div class="col-8 title-n-description">
-                    <p id="album-title-{{ album['path'] }}" class="album-title-para" style="margin-bottom: 0 !important;">
-                        <a href="/albums/view/{{ album['path'] }}"
-                           class="album-title" data-album-path="{{ album['path'] }}"
-                           id="link-album-title-{{ album['path'] }}">{{ album['title'] }}</a> ({{ nb_photo_dict[album['path']] }})</p>
-                    <div class="album-description" id="album-description-{{ album['path'] }}"
-                       style="font-style: italic" data-album-path="{{ album['path'] }}">{{ album['description'] }}</div>
-                </div>
-                <div class="col-4 align-content-center align-self-center">
-                    <a id="btn-edit-{{ album['path'] }}" class="btn-edit-album"
-                       data-album-path="{{ album['path'] }}"
-                       data-album-title="{{ album['title'] }}">
-                        <i id="edit-{{ album['path'] }}" class="fa fa-pencil-square-o" style="font-size:24px"></i></a>
-                    <a id="btn-delete-{{ album['path'] }}" class="btn-delete-album"
-                       data-album-object-id="{{ album.get('_id') }}"
-                       data-album-path="{{ album['path'] }}"
-                       data-album-title="{{ album['title'] }}">
-                        <i id="delete-{{ album['path'] }}" class='fa fa-trash-o' style='font-size:24px'></i></a>
-
-                </div>
-            </div>
-        {% endfor %}
+        {% include('_albums-list.html') %}
     </div>
 </div>
 <script
@@ -255,6 +257,59 @@
             toastr.success("The request has completed : " + JSON.stringify(data));
         });
     });
+
+    let sortDirection = "down";
+    let sortField = "date_created";
+
+    $('.dropdown-menu a').on("click", function () {
+        $('button[data-toggle="dropdown"]').text($(this).text());
+        const selected = $(this).text();
+        $('#btn-sort').text(selected);
+        sortField = $(this).attr("data-field-name");
+        callServerToSortAlbums();
+    });
+
+    function callServerToSortAlbums() {
+        const URL = "/photo/albums?sort=" + sortField + ";" + sortDirection;
+        console.log(URL);
+        fetch(URL, {
+            method: 'GET'
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Network response failed!!!');
+            }
+            return response.text();
+        }).then(data => {
+            {#window.location.reload();#}
+            {#console.log(data);#}
+            $(".album-list").html(data);
+        }).catch(error => {
+            console.error('Error: ', error);
+        });
+    }
+
+    $('.sort-direction-para').on("click", function () {
+        const sortDirectionIcon = $('#sort-direction-icon');
+        if (sortDirectionIcon.hasClass("fa-arrow-circle-down")) {
+            sortDirectionIcon.removeClass("fa-arrow-circle-down");
+            sortDirectionIcon.addClass("fa-arrow-circle-up");
+            sortDirection = "up";
+        } else {
+            sortDirectionIcon.removeClass("fa-arrow-circle-up");
+            sortDirectionIcon.addClass("fa-arrow-circle-down");
+            sortDirection = "down";
+        }
+        const btnSort = $("#btn-sort");
+        if (btnSort.text() === "Sort") {
+            // if the sort field hasn't been selected, set 'Uploaded' the default sort field
+            btnSort.text("Date Created");
+            sortField = "date_created";
+        } else {
+            console.log("Sorting by the selected field");
+        }
+        callServerToSortAlbums();
+    });
+
 </script>
 </body>
 </html>

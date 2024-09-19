@@ -129,6 +129,7 @@ def save_metadata(_submission_folder, _filename, _title, _description, _courtesy
 @app.route('/photo/albums', methods=('GET', 'POST'))
 def photo_albums():
     app.logger.info("You've accessed photo albums")
+    view = 'photo-albums.html'
     if request.method == 'POST':
         file = request.files['cover']
         if file.content_length > 0:
@@ -172,7 +173,27 @@ def photo_albums():
         nb_photos_dict = {}
         for album in _albums:
             nb_photos_dict[album['path']] = len(album['photos'])
-        return render_template('photo-albums.html', albums=_albums,
+
+        sort = request.args.get('sort')
+        # if sort is None:
+        #     sort = "date_modified;down"
+        sorted_albums = _albums
+
+        if sort is not None:
+            s_opts = sort.split(";")
+            sort_field = s_opts[0]
+            sort_direction = s_opts[1]
+            if sort_field in ["title",  "amount_photos", "date_created", "date_modified"]:
+                is_reverse = not (sort_direction == "down")
+                if sort_field == "amount_photos":
+                    sorted_albums = sorted(_albums, key=lambda x: len(x['photos']), reverse=is_reverse)
+                else:
+                    sorted_albums = sorted(_albums, key=lambda x: x[sort_field], reverse=is_reverse)
+                view = '_albums-list.html'
+        else:
+            sorted_albums = sorted(_albums, key=lambda x: len(x['photos']), reverse=True)
+
+        return render_template(view, albums=sorted_albums,
                                nb_photo_dict=nb_photos_dict, api_svr=API_SVR)
 
 

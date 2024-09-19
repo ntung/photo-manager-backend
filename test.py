@@ -105,6 +105,26 @@ def update_mongodb_doc():
     #     print("found doc:", find_result)
 
 
+def update_albums():
+    # create a client instance of the MongoClient class
+    mongo_client = MongoClient('mongodb://localhost:27017')
+
+    # create database and collection instances
+    db = mongo_client.flask_db
+    albums = db["albums"]
+
+    try:
+        for doc in albums.find():
+            if 'date_created' not in doc:
+                doc['date_created'] = doc['date_modified']
+                db["albums"].update_one({"_id": ObjectId(doc.get("_id"))}, {"$set": doc}, upsert=True)
+
+    except NameError as err:
+        find_result = None
+        print(err, "-- Use pip3 to install bson")
+        print("Import the 'ObjectId' class from the 'bson' library")
+
+
 def pretty(d, indent=0):
     for key, value in d.items():
         print('\t' * indent + str(key))
@@ -227,3 +247,5 @@ if __name__ == '__main__':
     # check_cur_sub_folder()
     test_get_series()
     test_next_string()
+    update_albums()
+
