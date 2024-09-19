@@ -1,4 +1,5 @@
 import os
+import logging
 from collections import defaultdict
 
 MAX_NB_FILES_PER_DIR = 400
@@ -96,6 +97,14 @@ def calculate_current_submission_folder(upload_folder):
             return k
     next_value = next_string(k)
     if next_value != "":
+        try:
+            os.mkdirs(os.path.join(upload_folder, next_value), exist_ok=True)
+        except FileExistsError as e:
+            logging.error("Folder Exists! Use It!" + str(e))
+        except FileNotFoundError as e:
+            logging.error("404: Folder Not Found" + str(e))
+        except OSError as error:
+            logging.error("Directory '%s' can not be created due to '%s'."(next_value, str(error)))
         return next_value
     else:
         # return the default value
