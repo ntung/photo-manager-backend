@@ -3,6 +3,7 @@ __pycache__
 venv
 
 # files
+.DS_Store
 .env
 .env.*
 .flaskenv
