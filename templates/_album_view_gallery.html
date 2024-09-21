@@ -5,7 +5,7 @@
     <div class="col-lg-4 col-md-12 mb-4 mb-lg-0 my-gallery">
     {% for photo in bucket %}
     {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
-        <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
+        <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album_path }}">
             <img src="{{ photo_url }}" alt="{{ photo['title'] }}" class="w-100 shadow-1-strong rounded mb-4"
                  data-photo-object-id="{{ photo.get('_id') }}"></a>
     {% endfor %}
@@ -14,7 +14,8 @@
 </div>
 <script>
     $(function () {
-        $(".my-gallery").sortable();
-        $(".my-gallery").disableSelection();
+        const $myGallery = $(".my-gallery");
+        $myGallery.sortable();
+        $myGallery.disableSelection();
     });
 </script>

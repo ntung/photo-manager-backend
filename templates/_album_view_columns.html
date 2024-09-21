@@ -18,10 +18,10 @@
     }
 </style>
 <div id="photo-gallery" class="my-gallery">
-    {% for photo in album['photos_details'] %}
+    {% for photo in photos %}
         <div class="photo-item">
             {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
-            <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album['path'] }}">
+            <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album_path }}">
                 <img src="{{ photo_url }}" alt="{{ photo['title'] }}" class="img-item"
                      data-photo-object-id="{{ photo.get('_id') }}" style="width: 50%"></a>
         </div>
@@ -44,7 +44,7 @@
             values.push($(this).attr("data-photo-object-id"));
         });
         const body = {
-            "album-object-id": "{{album.get('_id')}}",
+            "album-object-id": "{{album_object_id}}",
             "photos": values
         }
 

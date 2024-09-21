@@ -25,7 +25,7 @@
     {% if status == "FOUND" %}
         <div class="row">
             <div class="col">
-                <h1>View Album {{ album['title'] }} ({{ nb_photos }})</h1>
+                <h1>View Album {{ album_title }} ({{ nb_photos }})</h1>
                 <hr/>
             </div>
         </div>
@@ -66,7 +66,7 @@
     $(function () {
         // below is used to drag
         let i = 1;
-        {% for photo in album['photos_details'] %}
+        {% for photo in photos %}
             {#$("#{{photo.get('_id')}}").sortable();#}
             order = {
                 "{{photo.get('_id')}}": i
@@ -84,7 +84,7 @@
             update: function (event, ui) {
                 const photoOrder = $(this).sortable('toArray'); //.toString();
                 const body = {
-                    "album-object-id": "{{album.get('_id')}}",
+                    "album-object-id": "{{album_object_id}}",
                     "photos": photoOrder
                 }
                 if (photoOrder.length > 0) {
@@ -218,7 +218,7 @@
     });
 
     function callServerToSortPhotos() {
-        const URL = "/albums/view/{{album['path']}}?sort=" + sortField + ";" + sortDirection;
+        const URL = "/albums/view/{{album_path}}?sort=" + sortField + ";" + sortDirection;
         fetch(URL, {
             method: 'GET',
         }).then(response => {
@@ -241,7 +241,7 @@
             photosObjectIds.push($(element).attr('id'));
         });
 
-        const URL = "/albums/view/{{album['path']}}";
+        const URL = "/albums/view/{{album_path}}";
         fetch(URL, {
             method: 'POST',
             headers: {

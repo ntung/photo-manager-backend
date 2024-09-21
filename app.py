@@ -192,8 +192,10 @@ def photo_albums():
                 view = '_albums-list.html'
         else:
             sorted_albums = sorted(_albums, key=lambda x: len(x['photos']), reverse=True)
-
-        return render_template(view, albums=sorted_albums,
+        unclassified = {"title": "Unclassified",
+                        "description": "Unclassified photos - not belonged to any albums yet.",
+                        "amount_photos": 1}
+        return render_template(view, albums=sorted_albums, unclassified=unclassified,
                                nb_photo_dict=nb_photos_dict, api_svr=API_SVR)
 
 
@@ -381,6 +383,13 @@ def albums_update():
 
 @app.route('/albums/view/<path>', methods=('GET', 'POST'))
 def albums_view(path):
+    if path == "unclassified":
+        _photos = photo_unclassified()
+        nb_photos = len(_photos)
+        is_empty_album = nb_photos == 0
+        return render_template('album-view.html', album_path='unclassified',
+                               album_title='Unclassified', status="FOUND", photos=_photos, album_object_id="unclassified",
+                               nb_photos=nb_photos, is_empty_album=is_empty_album, api_svr=API_SVR)
     status = "FOUND"
     if path is None or path == '':
         return jsonify(message="Path is empty")
@@ -407,8 +416,9 @@ def albums_view(path):
                 # current_ordered_photos = []
                 # for id in array_photos_object_ids:
 
-                return render_template(view, status=status, album=album, buckets=buckets, nb_photos=nb_photos,
-                                       is_empty_album=is_empty_album, api_svr=API_SVR)
+                return render_template(view, status=status, album=album, album_path=album['path'], album_title=album['title'],
+                                       photos=album['photos_details'], buckets=buckets, nb_photos=nb_photos,
+                                       album_object_id=album.get("_id"), is_empty_album=is_empty_album, api_svr=API_SVR)
 
             sort = request.args.get('sort')
             if sort is not None and sort == "shuffle":
@@ -428,8 +438,31 @@ def albums_view(path):
                     album["photos_details"] = sorted_photos_details
                     view = "_album_view_list.html"
 
-        return render_template(view, status=status, album=album, nb_photos=nb_photos,
-                               is_empty_album=is_empty_album, api_svr=API_SVR)
+        return render_template(view, status=status, album=album, album_object_id=album.get("_id"),
+                               photos=album['photos_details'], album_title=album['title'],
+                               album_path=album['path'], nb_photos=nb_photos, is_empty_album=is_empty_album,
+                               api_svr=API_SVR)
+
+
+def photo_unclassified():
+    _albums = db.albums.find()
+    _albums = bson.json_util.dumps(_albums)
+    _albums = bson.json_util.loads(_albums)
+
+    _photos = db.photos.find()
+    _photos = bson.json_util.dumps(_photos)
+    _photos = bson.json_util.loads(_photos)
+
+    _unclassified = []
+    for photo in _photos:
+        found = False
+        for album in _albums:
+            if str(photo.get("_id")) in album['photos']:
+                found = True
+                break
+        if not found:
+            _unclassified.append(photo)
+    return _unclassified
 
 
 @app.route('/photo/delete', methods=('GET', 'POST'))
