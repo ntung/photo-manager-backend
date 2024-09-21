@@ -4,17 +4,59 @@ from collections import defaultdict
 
 MAX_NB_FILES_PER_DIR = 400
 global PHOTO_SUBMISSION_FOLDERS
+PHOTO_SUBMISSION_FOLDERS = defaultdict()
+
+
+class InitPM:
+    def __init__(self, upload_folder, default_name):
+        self.upload_folder = upload_folder
+        self.default_name = default_name
+
+    def submission_folder_dict(self):
+        default_name = "aaaa"
+        subfolders = [x[0] for x in os.walk(self.upload_folder)]
+        subfolders = [d for d in subfolders if d != self.upload_folder]
+        if len(subfolders) == 0:
+            return dict({default_name: 0})
+
+        folder_dict = dict()
+        for d in subfolders:
+            nb_files = len([name for name in os.listdir(d) if os.path.isfile(os.path.join(d, name))])
+            folder_dict[os.path.basename(d)] = nb_files
+        # push the smallest amount of photos in the submission folder up the top
+        FOLDERS = dict(sorted(folder_dict.items(), key=lambda item: item[0]))
+        return FOLDERS
+
+    def infer_current_submission_folder(self, folders_dict):
+        k = self.default_name
+        if len(folders_dict) == 0:
+            return k
+        for k in folders_dict:
+            print(k, folders_dict[k])
+            if folders_dict[k] < MAX_NB_FILES_PER_DIR:
+                return k
+        # Otherwise, it is starting a new series folder
+        next_value = next_string(k)
+        if next_value != "":
+            try:
+                os.mkdirs(os.path.join(self.upload_folder, next_value), exist_ok=True)
+                folders_dict[next_value] = 0
+            except FileExistsError as e:
+                logging.error("Folder Exists! Use It!" + str(e))
+            except FileNotFoundError as e:
+                logging.error("404: Folder Not Found" + str(e))
+            except OSError as error:
+                logging.error("Directory %s can not be created due to %s." % (next_value, str(error)))
+            return next_value
+        else:
+            # return the default value
+            return self.default_name
 
 
 # Function to return a default
 # values for keys that is not present
-
-
 def def_value():
     return "Not Present"
-
-
-PHOTO_SUBMISSION_FOLDERS = defaultdict(def_value)
 
 
 def hello():
@@ -72,40 +114,3 @@ def next_string(s):
         return strip_zs[:-1] + chr(ord(strip_zs[-1]) + 1) + 'a' * (len(s) - len(strip_zs))
     else:
         return 'a' * (len(s) + 1)
-
-
-def calculate_current_submission_folder(upload_folder):
-    default_name = "aaaa"
-    # subfolders = [f.path for f in os.scandir(upload_folder) if f.is_dir()]
-    subfolders = [x[0] for x in os.walk(upload_folder)]
-    subfolders = [d for d in subfolders if d != upload_folder]
-    if len(subfolders) == 0:
-        return default_name
-
-    folder_n_files_dict = dict()
-    for d in subfolders:
-        nb_files = len([name for name in os.listdir(d) if os.path.isfile(os.path.join(d, name))])
-        folder_n_files_dict[os.path.basename(d)] = nb_files
-
-    # sorted_dict = collections.OrderedDict(sorted(folder_n_files_dict.items()))
-    FOLDERS = dict(sorted(folder_n_files_dict.items(), key=lambda item: item[0]))
-    print(FOLDERS)
-    k = default_name
-    for k in FOLDERS:
-        print(k, FOLDERS[k])
-        if FOLDERS[k] < MAX_NB_FILES_PER_DIR:
-            return k
-    next_value = next_string(k)
-    if next_value != "":
-        try:
-            os.mkdirs(os.path.join(upload_folder, next_value), exist_ok=True)
-        except FileExistsError as e:
-            logging.error("Folder Exists! Use It!" + str(e))
-        except FileNotFoundError as e:
-            logging.error("404: Folder Not Found" + str(e))
-        except OSError as error:
-            logging.error("Directory '%s' can not be created due to '%s'."(next_value, str(error)))
-        return next_value
-    else:
-        # return the default value
-        return default_name

@@ -17,6 +17,7 @@ from pymongo import MongoClient, ReturnDocument
 from bson import ObjectId
 
 from utils import PhotoManager
+from utils.PhotoManager import InitPM
 
 
 def download_save_image():
@@ -219,8 +220,10 @@ def check_cur_sub_folder():
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
     UPLOAD_FOLDER = "/Users/tnguyen/ownCloud/MyBusiness/data/photo-manager"
     # UPLOAD_FOLDER = "/Users/tnguyen/ownCloud/MyBusiness/data/biomodels"
-    r = PhotoManager.calculate_current_submission_folder(UPLOAD_FOLDER)
-    print(r)
+    pm_init = PhotoManager.InitPM(UPLOAD_FOLDER, "aaaa")
+    submission_folders_dict = pm_init.submission_folder_dict()
+    r = pm_init.infer_current_submission_folder(submission_folders_dict)
+    print("current submission folder: {}".format(r))
 
 
 def get_series(length=4, characters='abcdefghijklmnopqrstuvwxyz'):

@@ -21,6 +21,7 @@ from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
 
 from utils import PhotoManager
+from utils import PhotoManager
 
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
@@ -85,10 +86,21 @@ cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type: application/json'
 
 API_SVR = os.environ.get('API_SERVER')
+pm_init = PhotoManager.InitPM(UPLOAD_FOLDER, "aaaa")
+submission_folders = pm_init.submission_folder_dict()
 
 
-sb = PhotoManager.calculate_current_submission_folder(UPLOAD_FOLDER)
-app.logger.info("current submission folder: {}".format(sb))
+def infer_submission_folder():
+    location = pm_init.infer_current_submission_folder(submission_folders)
+    if location in submission_folders:
+        submission_folders[location] += 1
+    else:
+        submission_folders[location] = 1
+    app.logger.info("current submission folder: {}".format(location))
+    return location
+
+
+
 
 
 @app.route('/', methods=('GET', 'POST'))
@@ -493,7 +505,6 @@ def photo_delete():
 
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
-    PhotoManager.hello()
     if request.method == 'POST':
         file = request.files['photo-upload']
         result = do_upload_photo(request, file)
@@ -612,11 +623,9 @@ def do_download_image(storage_location, image_url, out_filename=None):
 
 
 def do_upload_photo(client_request, file):
-    cur_sub_folder = PhotoManager.calculate_current_submission_folder(app.config['UPLOAD_FOLDER'])
-    app.logger.info("current sub folder ", cur_sub_folder)
     submission_folder = client_request.headers["Submission-Folder"] \
         if ("Submission-Folder" in request.headers
-            and client_request.headers["Submission-Folder"] is not None) else cur_sub_folder
+            and client_request.headers["Submission-Folder"] is not None) else infer_submission_folder()
     UPLOAD_DIR = os.path.join(app.config['UPLOAD_FOLDER'], submission_folder)
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
