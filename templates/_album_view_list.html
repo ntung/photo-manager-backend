@@ -1,10 +1,11 @@
 {% for photo in photos %}
-    <div class="row" style="padding-top: 5px" id="{{ photo.get('_id') }}">
+    {% set photo_id = photo.get("_id") %}
+    <div class="row" style="padding-top: 5px; border-bottom: 1.5px #38A169 solid;" id="{{ photo_id }}">
         <div class="col-4">
             {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
             <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album_path }}">
                 <img src="{{ photo_url }}" style="width:25%" alt="{{ photo['title'] }}"
-                     data-photo-object-id="{{ photo.get('_id') }}"></a></div>
+                     data-photo-object-id="{{ photo_id }}"></a></div>
         <div class="col-6">
             <strong>{{ photo['title'] }}</strong>
             <br/>
@@ -16,8 +17,7 @@
             {% if "date_modified" in photo %}
                 <span>| Updated {{ photo['date_modified'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
             {% endif %}
-            <br/>
-            Credit:
+            | Credit:
             {% if photo['courtesy'].startswith('http') %}
                 {% if 'facebook.com' in photo['courtesy'] %}
                     {% set source = "Facebook" %}
@@ -28,13 +28,19 @@
             {% else %}
                 {{ photo['courtesy'] }}
             {% endif %}
+            {% if photo['other_albums'] %}
+            <br/>Other albums:
+            {% for album in photo['other_albums'] %}
+                <a href="/albums/view/{{ album['path'] }}">{{ album['title'] }}</a>,
+            {% endfor %}
+            {% endif %}
         </div>
         <div class="col-2">
             <div class="form-check">
                 <input class="form-check-input cls-chk-remove-photo"
                        type="checkbox" id="chk-remove-{{ photo['filename'] }}"
                        name="chk-remove-{{ photo['filename'] }}"
-                       data-photo-object-id="{{ photo.get('_id') }}"
+                       data-photo-object-id="{{ photo_id }}"
                        data-photo-folder="{{ photo['folder'] }}"
                        data-photo-filename="{{ photo['filename'] }}">
                 <label class="form-check-label" for="chk-remove-{{ photo['filename'] }}"></label>

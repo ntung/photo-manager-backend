@@ -6,6 +6,7 @@ import pathlib
 import tempfile
 import uuid
 from datetime import datetime
+from collections import defaultdict
 from logging.config import dictConfig
 
 import bson
@@ -449,11 +450,16 @@ def albums_view(path):
                     sorted_photos_details = sorted(photos_details, key=lambda x: x[sort_field], reverse=is_reverse)
                     album["photos_details"] = sorted_photos_details
                     view = "_album_view_list.html"
+            tt = dict_photos_albums(album["photos_details"], album["path"])
+            for photo in album["photos_details"]:
+                photo_id = str(photo.get("_id"))
+                if photo_id in tt:
+                    photo['other_albums'] = tt[photo_id]
 
         return render_template(view, status=status, album=album, album_object_id=album.get("_id"),
                                photos=album['photos_details'], album_title=album['title'],
                                album_path=album['path'], nb_photos=nb_photos, is_empty_album=is_empty_album,
-                               api_svr=API_SVR)
+                               other_albums=tt, api_svr=API_SVR)
 
 
 def photo_unclassified():
@@ -681,3 +687,18 @@ def do_upload_photo(client_request, file):
     save_metadata(submission_folder, filename, title, description, origin, hash_md5)
     return {'submission_folder': submission_folder, 'filename': filename,
             'title': title, 'description': description, 'origin': origin, 'hash_md5': hash_md5}
+
+def dict_photos_albums(list_photos, album_path):
+    _albums = db.albums.find()
+    _albums = bson.json_util.dumps(_albums)
+    _albums = bson.json_util.loads(_albums)
+    other_albums_dict = dict()
+    for photo in list_photos:
+        for album in _albums:
+            photo_id = str(photo.get("_id"))
+            if photo_id in album['photos'] and album['path'] != album_path:
+                if photo_id in other_albums_dict:
+                    other_albums_dict[photo_id].append({"path": album['path'], "title": album['title']})
+                else:
+                    other_albums_dict[photo_id] = [{"path": album['path'], "title": album['title']}]
+    return other_albums_dict
