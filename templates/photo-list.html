@@ -67,7 +67,7 @@
                         <input id="photo-courtesy" name="courtesy" type="text" placeholder="Credit or Courtesy"
                                class="form-control"/>
                     </div>
-                    <div class="mb-3">
+                    <!--<div class="mb-3">
                         <strong><label for="photo-hashtags" class="form-label">Hashtags</label></strong><br/>
                         <input id="photo-hashtags" name="hashtags" type="text" placeholder="Hashtags"
                                class="form-control"/>
@@ -76,7 +76,7 @@
                         <strong><label for="photo-keywords" class="form-label">Keywords</label></strong><br/>
                         <input id="photo-keywords" name="keywords" type="text" placeholder="Keywords"
                                class="form-control"/>
-                    </div>
+                    </div>-->
                     <div class="mb-3" id="action-button">
                         <button type="submit" class="btn btn-primary">Upload</button>
                     </div>
@@ -208,7 +208,7 @@
         photoObjectId = $(this).attr("data-photo-object-id");
         photoFolder = $(this).attr("data-photo-folder");
         photoFileName = $(this).attr("data-photo-filename");
-        {#const select2Data = $('#' + imageFilename).select2('data');#}
+        // const select2Data = $('#' + imageFilename).select2('data');
 
         $.ajax({
             url: "/albums/add-photo",
