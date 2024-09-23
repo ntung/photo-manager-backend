@@ -58,9 +58,10 @@
 <body>
 {#https://www.w3schools.com/howto/howto_js_image_grid.asp#}
 <div class="container">
+    {% include '_menu-bar.html' %}
+    <div class="main">
     <div class="row">
         <div class="col">
-            {% include '_menu-bar.html' %}
             <h1>Photo View</h1>
             <hr/>
         </div>
@@ -85,6 +86,7 @@
                 {% endfor %}
             </div>
         {% endfor %}
+    </div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

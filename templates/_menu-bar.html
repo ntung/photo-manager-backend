@@ -1,2 +1,40 @@
-<p style="padding-top: 10px"><a href="/">Home</a> | <a href="/photo/list">List</a> | <a href="/photo/view">View</a>
-    | <a href="/photo/albums">Albums</a> | <a href="/todo/list">ToDo List</a></p>
+<div class="row pm-menubar">
+    <div class="col">
+<p> <a href="/">Home</a>
+    <a href="/photo/list">List</a>
+    <a href="/photo/view">View</a>
+    <a href="/photo/albums">Albums</a>
+    <a href="/todo/list">ToDo List</a></p>
+</div></div>
+<style>
+    /* The navigation bar */
+.pm-menubar {
+  overflow: hidden;
+  background-color: #333;
+  position: fixed; /* Set the pm-menubar to fixed position */
+  top: 0; /* Position the pm-menubar at the top of the page */
+  width: 100%; /* Full width */
+}
+
+/* Links inside the pm-menubar */
+.pm-menubar a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* Change background on mouse-over */
+.pm-menubar a:hover {
+  background: #ddd;
+  color: black;
+}
+
+.main {
+    padding: 16px;
+    margin-top: 45px;
+    /* height: 1500px; Used in this example to enable scrolling */
+}
+</style>

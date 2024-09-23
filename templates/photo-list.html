@@ -28,9 +28,10 @@
 </head>
 <body>
 <div class="container">
+    {% include '_menu-bar.html' %}
+    <div class="main">
     <div class="row">
         <div class="col">
-            {% include '_menu-bar.html' %}
             <h1>Photo Manager</h1>
             <hr/>
             <div class="content">
@@ -83,6 +84,7 @@
                 <hr/>
             </div>
         </div>
+    </div>
     </div>
 
     {% for photo in photos %}

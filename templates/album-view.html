@@ -17,11 +17,8 @@
 </head>
 <body>
 <div class="container">
-    <div class="row">
-        <div class="col">
-            {% include '_menu-bar.html' %}
-        </div>
-    </div>
+    {% include '_menu-bar.html' %}
+    <div class="main">
     {% if status == "FOUND" %}
         <div class="row">
             <div class="col">
@@ -50,6 +47,7 @@
             </div>
         </div>
     {% endif %}
+    </div>
 </div>
 <!-- JavaScript -->
 <script src="{{ url_for('static', filename='js/lightbox-plus-jquery.js') }}"></script>

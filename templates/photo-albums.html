@@ -12,22 +12,13 @@
           href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css">
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <style>
-        .todo {
-            padding: 20px;
-            margin: 10px;
-            background-color: #eee;
-        }
-        .highlight {
-            background-color: greenyellow;
-        }
-    </style>
 </head>
 <body>
 <div class="container">
+    {% include '_menu-bar.html' %}
+    <div class="main">
     <div class="row">
         <div class="col">
-            {% include '_menu-bar.html' %}
             <h1 id="heading">Albums | Photo Manager</h1>
             <hr/>
             <div class="content">
@@ -94,7 +85,7 @@
     <div class="album-list">
         {% include('_albums-list.html') %}
     </div>
-</div>
+</div></div>
 <script
         src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
