@@ -45,6 +45,7 @@
 
 
 <script>
+    const selectedPhotoSet = new Set();
     $(function () {
         $("#photo-gallery").sortable({
             update: (event, ui) => {
@@ -65,4 +66,15 @@
 
         updateOrder(body);
     }
+
+    $('.selection-checkbox').on("click", function() {
+        const photoObjectId = $(this).attr("data-photo-object-id");
+        if ($(this).is(':checked')) {
+            //console.log("checked");
+            selectedPhotoSet.add(photoObjectId);
+        } else {
+            //console.log("unchecked");
+            selectedPhotoSet.delete(photoObjectId);
+        }
+    });
 </script>
