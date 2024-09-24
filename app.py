@@ -139,6 +139,34 @@ def save_metadata(_submission_folder, _filename, _title, _description, _courtesy
                           'hash_md5': _hash_md5})
 
 
+@app.route('/album/add', methods=('GET', 'POST'))
+def album_add():
+    request_json = request.get_json(silent=True)
+    _albums = request_json['albums']
+    _photos = request_json['photos']
+    for photo_id in _photos:
+        for album in _albums:
+            album_doc = db.albums.find_one({'path': album['path']})
+            if album_doc:
+                photo_set = album_doc['photos']
+                if photo_set is None:
+                    photo_set = [photo_id]
+                elif photo_id not in photo_set:
+                    photo_set.append(photo_id)
+                if photo_set:
+                    db.albums.update_one(
+                        {"_id": ObjectId(album_doc.get("_id"))},
+                        {"$set": {
+                                'photos': photo_set,
+                                'date_modified': datetime.now(TZ_LONDON)
+                            }
+                        },
+                        upsert=False
+                    )
+    result = {"message": "Building the service"}
+    return json.dumps(result)
+
+
 @app.route('/photo/albums', methods=('GET', 'POST'))
 def photo_albums():
     app.logger.info("You've accessed photo albums")
@@ -292,7 +320,7 @@ def save_photo_to_albums():
 def albums_add_photo():
     all_albums = db.albums.find()
     # When the client clicks on Add to album button, is will render a select box and a Save button
-    return render_template('select_option_albums.html',
+    return render_template('select_option_albums.html', view=request.json['view'],
                            filename=request.json['photo-filename'], albums=all_albums)
 
 

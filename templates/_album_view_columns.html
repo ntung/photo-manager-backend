@@ -43,9 +43,39 @@
     {% endfor %}
 </div>
 
+<div class="pm-dialog-add-to-albums">
+    <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#pm-dialog-add-to-albums"
+            data-bs-whatever="@mdo">Open modal for @mdo</button>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#pm-dialog-add-to-albums"
+            data-bs-whatever="@fat">Open modal for @fat</button>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#pm-dialog-add-to-albums"
+            data-bs-whatever="@getbootstrap">Open modal for @getbootstrap</button> -->
 
+    <div class="modal fade" id="pm-dialog-add-to-albums" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Add to Albums</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="recipient-name" class="col-form-label">Search for albums:</label>
+                            <p class="list-albums"></p>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="btn-add-to-albums">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
-    const selectedPhotoSet = new Set();
+    let selectedPhotoSet = new Set();
     $(function () {
         $("#photo-gallery").sortable({
             update: (event, ui) => {
@@ -86,8 +116,10 @@
         if (selectedPhotoSet.size > 0) {
             // console.log("Some photos have been selected.");
             if (!menuBarNameSet.has(newMenuItemName)) {
-                $menuBar.append('<a href="javascript:void(0)" ' +
-                    'class="btn btn-primary add-to-albums" id="btn-add-to-albums">' + newMenuItemName + '</a>');
+                const btn = '<a href="javascript:void(0)" class="btn btn-primary add-to-albums" id="btn-open-dialog-add-to-albums" ' +
+                    'data-bs-toggle="modal" data-bs-target="#pm-dialog-add-to-albums" ' +
+                    'data-bs-whatever="@mdo">' + newMenuItemName + '</a>';
+                $menuBar.append(btn);
             }
         } else {
             // console.log("None of photos have been selected.");
@@ -95,5 +127,79 @@
                 $menuBar.children(".add-to-albums").remove();
             }
         }
+    });
+
+    $("#pm-para-menubar").on("click", "#btn-open-dialog-add-to-albums", function () {
+        console.log("please implement me!");
+        console.log(selectedPhotoSet.size);
+        // 0. load all albums to the popup
+        $.ajax({
+            url: "/albums/add-photo",
+            method: "POST",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify({
+                "photo-folder": "aaaa",
+                "photo-filename": "dummy",
+                "view": "album-view"
+            }),
+            dataType: "html",
+            success: function (data) {
+                $('.list-albums').html(data);
+
+                $('.choose-albums').select2({
+                    theme: 'bootstrap-5',
+                    width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
+                    placeholder: $(this).data('placeholder'),
+                    closeOnSelect: false,
+                    allowClear: true,
+                });
+            }
+        });
+        // 1. show the popup
+
+        // 2. add the selected photos to selected albums
+    });
+
+    $("#btn-add-to-albums").on("click", function () {
+        const select2Data = $('.select2-selection__choice');
+        let albums = [];
+        $.each(select2Data, (index, object) => {
+            const albumTitle = object.innerText;
+            const lastChildId = object.lastChild.id;
+            // the id of the lastChild looks like the sample below. It is patterned like
+            // "select2-{filename}-container-choice-xxxx-{album-path}
+            // id="select2-759b75a8-3bbb-4750-b5a7-b9f80d16c184jpg-container-choice-5ua6-pretties-girls-and-ladies"
+            const startPos = lastChildId.lastIndexOf("container-choice");
+            const albumPath = lastChildId.substring(startPos + "container-choice-".length + 5);
+            albums.push({"path": albumPath, "title": albumTitle, "photo_object_id": "will-update-this-value"});
+        });
+        if (albums.length === 0) {
+            toastr.warning("No album selected!");
+            return;
+        }
+        console.log(selectedPhotoSet);
+        const URL = "/album/add";
+        const body = {
+            "albums": albums,
+            "photos": Array.from(selectedPhotoSet)
+        }
+        fetch(URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Accept': 'application/json; charset=utf-8'
+            },
+            body: JSON.stringify(body)
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Network response failed!!!');
+            }
+            return response.json();
+        }).then(data => {
+            //selectedPhotoSet = new Set();
+            console.log("Added successfully!", data);
+        }).catch(error => {
+            console.error('Error: ', error);
+        });
     });
 </script>
