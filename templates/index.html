@@ -1,19 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <title>Homepage | Photo Manager</title>
-    <style>
-        .todo {
-            padding: 20px;
-            margin: 10px;
-            background-color: #eee;
-        }
-    </style>
+    {% include('_head.html') %}
 </head>
 <body>
-<h1>Photo Manager</h1>
-{% include '_menu-bar.html' %}
+<div class="container">
+    {% include '_menu-bar.html' %}
+    <div class="main">
+        <div class="row">
+            <h1>Photo Manager</h1>
+        </div>
+    </div>
+</div>
 </body>
 </html>
