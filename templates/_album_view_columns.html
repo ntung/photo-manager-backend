@@ -33,7 +33,7 @@
             <span class="align-items-center">
             <label>
             <input type="checkbox" class="form-check-input selection-checkbox"
-                   data-photo-object-id="{{ photo.get('_id') }}"/>
+                   data-photo-object-id="{{ photo.get('_id') }}" id="{{ photo.get('_id') }}"/>
             </label></span>
             <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album_path }}">
                 <img src="{{ photo_url }}" alt="{{ photo['title'] }}" class="img-item"
@@ -119,6 +119,8 @@
                     'data-bs-toggle="modal" data-bs-target="#pm-dialog-add-to-albums" ' +
                     'data-bs-whatever="@mdo">' + newMenuItemName + '</a>';
                 $menuBar.append(btn);
+                const btnDeselect = '<a href="javascript:void(0)" class="btn btn-primary add-to-albums" id="btn-deselect-photos">Deselect</a>';
+                $menuBar.append(btnDeselect);
             }
         } else {
             // console.log("None of photos have been selected.");
@@ -129,8 +131,8 @@
     });
 
     $("#pm-para-menubar").on("click", "#btn-open-dialog-add-to-albums", function () {
-        console.log("please implement me!");
-        console.log(selectedPhotoSet.size);
+        // console.log("please implement me!");
+        // console.log(selectedPhotoSet.size);
         // 0. load all albums to the popup
         $.ajax({
             url: "/albums/add-photo",
@@ -176,7 +178,7 @@
             toastr.warning("No album selected!");
             return;
         }
-        console.log(selectedPhotoSet);
+        //console.log(selectedPhotoSet);
         const URL = "/album/add";
         const body = {
             "albums": albums,
@@ -197,8 +199,25 @@
         }).then(data => {
             //selectedPhotoSet = new Set();
             console.log("Added successfully!", data);
+            deselect();
         }).catch(error => {
             console.error('Error: ', error);
         });
     });
+
+    $("#pm-para-menubar").on("click", "#btn-deselect-photos", function () {
+        deselect();
+    });
+
+    $("#pm-dialog-add-to-albums").on("hidden.bs.modal", function () {
+        deselect();
+    });
+
+    function deselect() {
+        $.each(Array.from(selectedPhotoSet), (index, photo_id) => {
+            let $element = $("input[id='" + photo_id + "']");
+            $element.prop("checked", false);
+        });
+        $("#pm-para-menubar").children(".add-to-albums").remove();
+    }
 </script>
