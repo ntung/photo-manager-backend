@@ -76,5 +76,24 @@
             //console.log("unchecked");
             selectedPhotoSet.delete(photoObjectId);
         }
+        const $menuBar = $("#pm-para-menubar");
+        const menuBarNameSet = new Set();
+        $.each($menuBar.children(), (key, child) => {
+            menuBarNameSet.add($(child).text());
+        });
+        const newMenuItemName = "Add to Albums";
+        // Keep the following console.log statements supporting debugging
+        if (selectedPhotoSet.size > 0) {
+            // console.log("Some photos have been selected.");
+            if (!menuBarNameSet.has(newMenuItemName)) {
+                $menuBar.append('<a href="javascript:void(0)" ' +
+                    'class="btn btn-primary add-to-albums" id="btn-add-to-albums">' + newMenuItemName + '</a>');
+            }
+        } else {
+            // console.log("None of photos have been selected.");
+            if (menuBarNameSet.has(newMenuItemName)) {
+                $menuBar.children(".add-to-albums").remove();
+            }
+        }
     });
 </script>
