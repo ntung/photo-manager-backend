@@ -196,7 +196,7 @@ def photo_albums():
             s_opts = sort.split(";")
             sort_field = s_opts[0]
             sort_direction = s_opts[1]
-            if sort_field in ["title",  "amount_photos", "date_created", "date_modified"]:
+            if sort_field in ["title", "amount_photos", "date_created", "date_modified"]:
                 is_reverse = not (sort_direction == "down")
                 if sort_field == "amount_photos":
                     sorted_albums = sorted(_albums, key=lambda x: len(x['photos']), reverse=is_reverse)
@@ -401,7 +401,8 @@ def albums_view(path):
         nb_photos = len(_photos)
         is_empty_album = nb_photos == 0
         return render_template('album-view.html', album_path='unclassified',
-                               album_title='Unclassified', status="FOUND", photos=_photos, album_object_id="unclassified",
+                               album_title='Unclassified', status="FOUND", photos=_photos,
+                               album_object_id="unclassified",
                                nb_photos=nb_photos, is_empty_album=is_empty_album, api_svr=API_SVR)
     status = "FOUND"
     if path is None or path == '':
@@ -419,6 +420,7 @@ def albums_view(path):
             nb_photos = len(album["photos_details"])
 
             if request.method == "POST":
+                # it is invoked when changing layout/view style
                 request_json = request.get_json(silent=True)
                 view = request_json['view']
                 array_photos_object_ids = request_json['photos-object-ids']
@@ -429,7 +431,8 @@ def albums_view(path):
                 # current_ordered_photos = []
                 # for id in array_photos_object_ids:
 
-                return render_template(view, status=status, album=album, album_path=album['path'], album_title=album['title'],
+                return render_template(view, status=status, album=album, album_path=album['path'],
+                                       album_title=album['title'],
                                        photos=album['photos_details'], buckets=buckets, nb_photos=nb_photos,
                                        album_object_id=album.get("_id"), is_empty_album=is_empty_album, api_svr=API_SVR)
 
@@ -517,7 +520,7 @@ def photo_list():
         app.logger.debug(result)
         return redirect(url_for('photo_list'))
 
-    all_photos = db.photos.find().limit(10).sort([("date_uploaded", pymongo.DESCENDING)])
+    all_photos = db.photos.find().sort([("date_uploaded", pymongo.DESCENDING)]).limit(10)
     all_albums = db.albums.find()
     map_photo_album = {
         "default": {"album-1": "Album 1"}
