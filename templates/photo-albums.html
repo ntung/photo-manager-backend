@@ -12,6 +12,11 @@
           href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css">
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        .pm-highlight {
+            background-color: yellow;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -129,7 +134,7 @@
                 $('.album-' + key).show();
                 // highlight the matched text in the title or description
                 const linkTitle = $('#link-album-title-'+key);
-                const orgFilterHighlight = '<span class="highlight">' + orgFilter +'</span>';
+                const orgFilterHighlight = '<span class="pm-highlight">' + orgFilter +'</span>';
                 if (title.toUpperCase().indexOf(filter) >= 0) {
                     // highlight title, the id: link-album-title-{path}
                     title = title.replaceAll(orgFilter, orgFilterHighlight);
@@ -153,16 +158,6 @@
             }
         });
     };
-
-    function highlight(text, element) {
-        const index = element.text.indexOf(text);
-        if (index >= 0) {
-            let innerHTML = element.text.substring(0, index) + "<span class='highlight'>" +
-                element.text.substring(index, index+text.length) + "</span>"
-                + element.text.substring(index + text.length);
-            element.innerHTML = innerHTML;
-        }
-    }
 
     $('.btn-edit-album').on("click", function () {
         albumPath = $(this).attr("data-album-path");
