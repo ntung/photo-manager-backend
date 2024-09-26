@@ -433,6 +433,7 @@ def albums_view(path):
                                album_object_id="unclassified",
                                nb_photos=nb_photos, is_empty_album=is_empty_album, api_svr=API_SVR)
     status = "FOUND"
+    tt = None
     if path is None or path == '':
         return jsonify(message="Path is empty")
     else:
