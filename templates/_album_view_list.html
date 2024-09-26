@@ -7,9 +7,11 @@
                 <img src="{{ photo_url }}" style="width:25%" alt="{{ photo['title'] }}"
                      data-photo-object-id="{{ photo_id }}"></a></div>
         <div class="col-6">
-            <strong>{{ photo['title'] }}</strong>
+            <a href="javascript:void(0)" class="photo-row-title" id="photo-title-{{ photo.get('_id')}}" data-photo-object-id="{{ photo.get('_id')}}"
+               data-bs-toggle="modal" data-bs-target="#photo-edit-modal-form"><strong>{{ photo['title'] }}</strong></a>
+               <!-- /photo/edit/{{ photo.get('_id')}} -->
             <br/>
-            {{ photo['description'] }}
+            <span id="photo-description-{{ photo.get('_id')}}">{{ photo['description'] }}</span>
             <br/>
             {% if "date_uploaded" in photo %}
                 <span>Uploaded {{ photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
@@ -24,7 +26,7 @@
                 {% else %}
                     {% set source = "Other" %}
                 {% endif %}
-                <a href="{{ photo['courtesy'] }}" target="_blank">{{ source }}</a>
+                <a href="{{ photo['courtesy'] }}" target="_blank" id="original-photo-courtesy-{{ photo.get('_id')}}">{{ source }}</a>
             {% else %}
                 {{ photo['courtesy'] }}
             {% endif %}
@@ -48,3 +50,57 @@
         </div>
     </div>
 {% endfor %}
+
+{% include('_photo-edit-modal-form.html') %}
+
+<script>
+    $('.photo-row-title').on("click", function() {
+        // Change the name of Upload to Save button
+        $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
+        const photoObjectId = $(this).attr("data-photo-object-id");
+        const photoTitle = $('#photo-title-' + photoObjectId)[0].innerText;
+        $("#photo-title").val(photoTitle);
+        const photoDescription = $('#photo-description-' + photoObjectId)[0].innerHTML;
+        $("#photo-description").val(photoDescription);
+        const photoCourtesy = $('#original-photo-courtesy-' + photoObjectId)[0];
+        $("#photo-courtesy").val(photoCourtesy);
+
+        $("#btn-save").on("click", function () {
+            console.log("saving...");
+            
+            $.ajax({
+                url: "/photo/update",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "photo-object-id": photoObjectId,
+                    "photo-title": $("#photo-title").val(),
+                    "photo-description": $("#photo-description").val(),
+                    "photo-courtesy": $("#photo-courtesy").val()
+                }),
+                beforeSend: function (xhr) {
+                    console.log("Sending data to server...");
+                },
+                success: function (data) {
+                    toastr.success("Updated successfully! The page is refreshing within 1 second.");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                    // alternatively, reload the album using jQuery without refreshing the page
+                },
+                error: function () {
+
+                }
+            }).done(function (data) {
+                console.log("Done! - Data: ", data);
+            }).fail(function (jqXHR, textStatus) {
+                console.log(textStatus, ": ", JSON.stringify(jqXHR));
+            }).always(function (data) {
+                console.log("The request has completed: ", data);
+                toastr.success("The request has completed : " + JSON.stringify(data));
+            });
+        });
+    });
+    
+</script>

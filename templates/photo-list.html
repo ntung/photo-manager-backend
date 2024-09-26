@@ -30,52 +30,7 @@
             <h1>Photo Manager</h1>
             <hr/>
             <div class="content">
-                <form method="post" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <div id="drop-area">
-                            <b><label for="photo-upload"
-                                      class="form-label">Browse OR Drag and Drop a photo here</label></b>
-                            <input type="file" id="photo-upload" name="photo-upload" multiple
-                                   class="form-control" accept="image/png,image/jpeg,image/jpg"
-                                   title="Click here to add photos"/>
-                        </div>
-                        <br/>
-                        <strong><label for="photo-url" class="form-label">Image/Photo URL</label></strong><br/>
-                        <input id="photo-url" name="photo-url" type="text" placeholder="Image/Photo URL"
-                               class="form-control"/>
-
-                    </div>
-
-                    <div class="mb-3">
-                        <strong><label for="photo-title" class="form-label">Title</label></strong><br/>
-                        <input id="photo-title" name="title" type="text" placeholder="Title of photo"
-                               class="form-control"/>
-                    </div>
-                    <div class="mb-3">
-                        <strong><label for="photo-description" class="form-label">Description</label></strong><br/>
-                        <textarea id="photo-description" name="description" type="textarea"
-                                  placeholder="Provide a description"
-                                  class="form-control"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <strong><label for="photo-courtesy" class="form-label">Credit/Courtesy</label></strong><br/>
-                        <input id="photo-courtesy" name="courtesy" type="text" placeholder="Credit or Courtesy"
-                               class="form-control"/>
-                    </div>
-                    <!--<div class="mb-3">
-                        <strong><label for="photo-hashtags" class="form-label">Hashtags</label></strong><br/>
-                        <input id="photo-hashtags" name="hashtags" type="text" placeholder="Hashtags"
-                               class="form-control"/>
-                    </div>
-                    <div class="mb-3">
-                        <strong><label for="photo-keywords" class="form-label">Keywords</label></strong><br/>
-                        <input id="photo-keywords" name="keywords" type="text" placeholder="Keywords"
-                               class="form-control"/>
-                    </div>-->
-                    <div class="mb-3" id="action-button">
-                        <button type="submit" class="btn btn-primary">Upload</button>
-                    </div>
-                </form>
+                {% include('_photo-upload-form.html') %}
                 <hr/>
             </div>
         </div>
