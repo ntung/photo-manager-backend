@@ -39,7 +39,7 @@ class InitPM:
         next_value = next_string(k)
         if next_value != "":
             try:
-                os.mkdirs(os.path.join(self.upload_folder, next_value), exist_ok=True)
+                os.makedirs(os.path.join(self.upload_folder, next_value), exist_ok=True)
                 folders_dict[next_value] = 0
             except FileExistsError as e:
                 logging.error("Folder Exists! Use It!" + str(e))
