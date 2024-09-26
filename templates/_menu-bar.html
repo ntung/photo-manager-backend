@@ -1,11 +1,11 @@
 <div class="row pm-menubar">
     <div class="col">
 <p id="pm-para-menubar">
-    <a href="/">Home</a>
-    <a href="/photo/list" id="pm-menubar-list">List</a>
-    <a href="/photo/view" id="pm-menubar-view">View</a>
-    <a href="/photo/albums" id="pm-menubar-albums">Albums</a>
-    <a href="/todo/list" id="pm-menubar-todo-list">ToDo List</a></p>
+    <a href="/" id="pm-menubar-home" class="menubar-item active">Home</a>
+    <a href="/photo/list" id="pm-menubar-list" class="menubar-item">List</a>
+    <a href="/photo/view" id="pm-menubar-view" class="menubar-item">View</a>
+    <a href="/photo/albums" id="pm-menubar-albums" class="menubar-item">Albums</a>
+    <a href="/photo/todo-list" id="pm-menubar-todo-list" class="menubar-item">ToDo List</a></p>
 </div></div>
 <style>
     /* The navigation bar */
@@ -38,7 +38,51 @@
     margin-top: 45px;
     /* height: 1500px; Used in this example to enable scrolling */
 }
+
+.active {
+  background-color: lightcoral
+}
 </style>
 <script>
+  const menus = [{"/albums": "Albums"}, {"/": "Home"}, {"/list": "List"}, {"/view": "View"}, {"/todo-list": "ToDo List"}];
+  $('.menubar-item').removeClass("active");
+  const href = window.location.href;
+  let path = href.substring(href.lastIndexOf("/"));
+  if (path === "/") {
+    path = "home";
+  } else {
+    path = path.substring(1);
+  }
+  $('#pm-para-menubar a[id="pm-menubar-' + path + '"]').addClass('active');
+
+//   $(function() {
+//     $('#pm-para-menubar a').on("click", function() {
+//       //alert($('.menubar-item').length);
+//       $('.menubar-item').removeClass("active");
+//       $(this).addClass('active');
+//       /*
+//       const url = window.location.pathname, 
+//       urlRegExp = new RegExp(url.replace(/\/$/,'') + "$"); // create regexp to match current url pathname and remove trailing slash if present as it could collide with the link in navigation in case trailing slash wasn't present there
+//       // now grab every link from the navigation
+//       $('#pm-para-menu a').each(function(){
+//           // and test its normalized href against the url pathname regexp
+//           if (urlRegExp.test(this.href.replace(/\/$/,''))){
+//               $(this).addClass('active');
+//           }
+//       });
+//       */
+//     });
+//   });
+  
+//   $(document).ready(function () {
+//     var url = window.location;
+//     // Will only work if string in href matches with location
+//     $('#pm-para-menubar a[href="' + url + '"]').parent().addClass('active');
+
+//     // Will also work for relative and absolute hrefs
+//     //$('#navbar .navbar-nav li a').filter(function () {
+//     //  return this.href == url;
+//     //}).parent().addClass('active').parent().parent().addClass('active');
+// });
 
 </script>

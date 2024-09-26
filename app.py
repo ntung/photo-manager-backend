@@ -109,8 +109,8 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/todo/list', methods=('GET', 'POST'))
-def todo_list():
+@app.route('/photo/todo-list', methods=('GET', 'POST'))
+def photo_todo_list():
     app.logger.info("You've accessed TODO List")
     if request.method == 'POST':
         content = request.form['content']
