@@ -318,7 +318,7 @@ def save_photo_to_albums():
 @app.route('/albums/add-photo', methods=['GET', 'POST'])
 @app.route('/albums/add-photo/', methods=['POST'])
 def albums_add_photo():
-    all_albums = db.albums.find()
+    all_albums = db.albums.find().sort([("date_modified", pymongo.DESCENDING)])
     # When the client clicks on Add to album button, is will render a select box and a Save button
     return render_template('select_option_albums.html', view=request.json['view'],
                            filename=request.json['photo-filename'], albums=all_albums)
