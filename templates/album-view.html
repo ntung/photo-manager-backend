@@ -12,6 +12,10 @@
     <script>
         // the following variable is used in the columns view to select and add multiple photos to many albums
         let selectedPhotoSet = new Set();
+        let sortDirection = "down";
+        let sortField = "date_uploaded"
+        let orgPhotoOrders = [];
+        let order;
     </script>
 </head>
 <body>
@@ -58,10 +62,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script>
     {% if status == "FOUND" %}
-    let sortDirection = "down";
-    let sortField = "date_uploaded"
 
-    $('#btn-remove-photo').on("click", function () {
+        $('#btn-remove-photo').on("click", function () {
         const albumPath = $(this).attr("data-album-path");
         const checkBoxes = $('.cls-chk-remove-photo');
         console.log("Nb. of checkboxes: ", checkBoxes.length);
