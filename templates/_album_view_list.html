@@ -1,3 +1,8 @@
+<style>
+    .original {
+        white-space: pre-line;
+    }
+</style>
 <div id="photo-gallery" class="my-gallery">
 {% for photo in photos %}
     {% set photo_id = photo.get("_id") %}
@@ -10,9 +15,8 @@
         <div class="col-6">
             <a href="javascript:void(0)" class="photo-row-title" id="photo-title-{{ photo.get('_id')}}" data-photo-object-id="{{ photo.get('_id')}}"
                data-bs-toggle="modal" data-bs-target="#photo-edit-modal-form"><strong>{{ photo['title'] }}</strong></a>
-               <!-- /photo/edit/{{ photo.get('_id')}} -->
             <br/>
-            <span id="photo-description-{{ photo.get('_id')}}">{{ photo['description'] }}</span>
+            <div class="photo-description original" id="photo-description-{{ photo.get('_id')}}">{{ photo['description'] }}</div>
             <br/>
             {% if "date_uploaded" in photo %}
                 <span>Uploaded {{ photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
@@ -86,6 +90,10 @@
                 }
             }
         });
+
+        // load and show the photo description as it was stored in MongoDB with \r\n characters
+        const value = loadLocalStorageHowToViewPhotoDescription("#btn-view-original-description");
+        toggleViewPhotoOriginalDescription(value);
     });
 
     function updateOrder(body) {
@@ -111,7 +119,49 @@
             });
         }
     }
-{% endif %}
+
+    $("#btn-view-original-description").on("click", function() {
+        console.log("clicked me!");
+        const value = updateLocalStorageHowToViewPhotoDescription(this);
+        toggleViewPhotoOriginalDescription(value);
+    });
+
+    function updateLocalStorageHowToViewPhotoDescription(element) {
+        let currentValue = localStorage.getItem("view-photo-original-description");
+        let value;
+        if (currentValue === null) {
+            // set true as the default
+            value = "true";
+        } else {
+            value = currentValue === "true" ? false : true;
+        }
+        currentValue = value.toString()
+        $(element).prop("checked", value);
+        localStorage.setItem("view-photo-original-description", currentValue);
+        return value;
+    }
+
+    function loadLocalStorageHowToViewPhotoDescription(element) {
+        let currentValue = localStorage.getItem("view-photo-original-description");
+        let value;
+        if (currentValue === null) {
+            // set true as the default
+            value = true;
+        } else {
+            value = currentValue === "true";
+        }
+        $(element).prop("checked", value);
+        return value;
+    }
+
+    function toggleViewPhotoOriginalDescription(value) {
+        if (value) {
+            $("div[id^='photo-description-']").addClass("original");
+        } else {
+            $("div[id^='photo-description-']").removeClass("original");
+        }
+    }
+
     $('.photo-row-title').on("click", function() {
         // Change the name of Upload to Save button
         $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
@@ -160,5 +210,5 @@
             });
         });
     });
-    
+{% endif %}
 </script>
