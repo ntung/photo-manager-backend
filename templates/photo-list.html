@@ -149,6 +149,11 @@
     let photoObjectId = "", photoFolder = "", photoFileName = "";
 
     $('input[name=add-to-album]').on("click", function () {
+        const $albumList = $('.album-list');
+        if ($albumList.html() !== '') {
+            $albumList.html("");
+            return true;
+        }
         photoObjectId = $(this).attr("data-photo-object-id");
         photoFolder = $(this).attr("data-photo-folder");
         photoFileName = $(this).attr("data-photo-filename");
@@ -165,7 +170,7 @@
             }),
             dataType: "html",
             success: function (data) {
-                $('.album-list').html("");
+                $albumList.html("");
                 const id_selector = photoFileName.substring(0, photoFileName.lastIndexOf("."));
                 $('#' + id_selector).html(data);
 
