@@ -85,7 +85,7 @@
                           data-photo-folder="{{ photo['folder'] }}"
                           data-photo-filename="{{ photo['filename'] }}"/>
                     &nbsp;
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#select-albums-modal-form">
                         Add to albums (Open a modal)
                     </button>
                     &nbsp;
@@ -116,7 +116,7 @@
     </div>
 
 </div>
-{% include('select_album.html') %}
+{% include('_albums-select2-modal-form.html') %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
@@ -179,21 +179,10 @@
             }
         });
     });
-    $('.choose-albums').select2({
-        theme: 'bootstrap-5',
-        width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
-        placeholder: $(this).data('placeholder'),
-        closeOnSelect: false,
-        allowClear: true,
-    });
-    $("#myModal").on("hidden.bs.modal", function () {
+
+    $("#select-albums-modal-form").on("hidden.bs.modal", function () {
         // put your default event here
         //console.log("you've closed the modal");
-    });
-
-    $("#btn-add2album").on("click", function () {
-        // put your default event here
-        console.log("you've clicked on the Add button on the modal");
     });
 
     $(".btn-edit-photo").on("click", function () {
