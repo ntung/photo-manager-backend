@@ -232,10 +232,10 @@
                     console.log("Sending data to server...");
                 },
                 success: function (data) {
-                    toastr.success("Updated successfully! The page is refreshing within 3 seconds.");
+                    toastr.success("Updated successfully! The page is refreshing within one second.");
                     setTimeout(() => {
                         window.location.reload();
-                    }, 3000);
+                    }, 1000);
                     // alternatively, reload the album using jQuery without refreshing the page
                 },
                 error: function () {
