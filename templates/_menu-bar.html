@@ -1,12 +1,19 @@
 <div class="row pm-menubar">
-    <div class="col">
+    <div class="col-9">
 <p id="pm-para-menubar">
     <a href="/" id="pm-menubar-home" class="menubar-item active">Home</a>
     <a href="/photo/list" id="pm-menubar-list" class="menubar-item">List</a>
     <a href="/photo/view" id="pm-menubar-view" class="menubar-item">View</a>
     <a href="/photo/albums" id="pm-menubar-albums" class="menubar-item">Albums</a>
     <a href="/photo/todo-list" id="pm-menubar-todo-list" class="menubar-item">ToDo List</a></p>
-</div></div>
+</div>
+<div class="col-3">
+    <p id="pm-para-right-menubar">
+        <a href="javascript:void(0)" id="pm-right-menubar-link-upload-a-photo">Upload a photo</a>
+    </p>
+</div>
+</div>
+{% include('_photo-edit-modal-form.html') %}
 <style>
     /* The navigation bar */
 .pm-menubar {
@@ -54,6 +61,13 @@
     path = path.substring(1);
   }
   $('#pm-para-menubar a[id="pm-menubar-' + path + '"]').addClass('active');
+
+  $(document).ready(function() {
+      const $btnUpload = $("#pm-right-menubar-link-upload-a-photo");
+      $btnUpload.on("click", function() {
+          $("#photo-edit-modal-form").modal('show');
+      });
+  });
 
 //   $(function() {
 //     $('#pm-para-menubar a').on("click", function() {
