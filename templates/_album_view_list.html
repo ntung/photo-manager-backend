@@ -36,10 +36,23 @@
                 {{ photo['courtesy'] }}
             {% endif %}
             {% if photo['other_albums'] %}
-            <br/>Other albums:
+            <p id="in-albums-{{ photo.get('_id') }}">Other albums:
             {% for album in photo['other_albums'] %}
                 <a href="/albums/view/{{ album['path'] }}">{{ album['title'] }}</a>,
-            {% endfor %}
+            {% endfor %}</p><p>
+                <a href="javascript:void(0)" class="btn btn-info add-to-other-albums" id="btn-add-other-albums"
+                   data-bs-toggle="modal" data-bs-target="#select-albums-modal-form"
+                   data-photo-object-id="{{ photo.get('_id') }}"
+                   data-photo-folder="{{ photo['folder'] }}"
+                   data-photo-filename="{{ photo['filename'] }}">Add to other albums</a></p>
+            {% else %}
+                <p id="in-albums-{{ photo.get('_id') }}">Other albums:</p>
+                <p>
+                <a href="javascript:void(0)" class="btn btn-info add-to-other-albums" id="btn-add-other-albums"
+                   data-bs-toggle="modal" data-bs-target="#select-albums-modal-form"
+                   data-photo-object-id="{{ photo.get('_id') }}"
+                   data-photo-folder="{{ photo['folder'] }}"
+                   data-photo-filename="{{ photo['filename'] }}">Add to other albums</a></p>
             {% endif %}
         </div>
         <div class="col-2">
@@ -60,9 +73,12 @@
 </div>
 
 {% include('_photo-edit-modal-form.html') %}
-
+{% include('_albums-select2-modal-form.html') %}
 <script>
 {% if status == "FOUND" %}
+    orgPhotoOrders = [];
+    order = null;
+
     $(function () {
         // below is used to drag
         let i = 1;
@@ -211,6 +227,14 @@
                 toastr.success("The request has completed : " + JSON.stringify(data));
             });
         });
+    });
+
+    $(".add-to-other-albums").on("click", function() {
+        console.log("clicked me!!!");
+        // this will initialise the following global variables which are being used in the modal form
+        photoObjectId = $(this).attr("data-photo-object-id");
+        photoFolder = $(this).attr("data-photo-folder");
+        photoFileName = $(this).attr("data-photo-filename");
     });
 {% endif %}
 </script>

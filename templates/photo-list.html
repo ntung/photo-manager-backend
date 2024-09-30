@@ -80,12 +80,16 @@
                         {% endfor %}
                     {% endif %}
                 </p>
-                <p><input type="button" value="Add to album" class="btn btn-primary" name="add-to-album"
+                <p><input type="button" value="Add to albums" class="btn btn-primary" name="add-to-album"
                           data-photo-object-id="{{ photo.get('_id') }}"
                           data-photo-folder="{{ photo['folder'] }}"
                           data-photo-filename="{{ photo['filename'] }}"/>
                     &nbsp;
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#select-albums-modal-form">
+                    <button type="button" class="btn btn-primary select-albums-modal-form"
+                            data-bs-toggle="modal" data-bs-target="#select-albums-modal-form"
+                            data-photo-object-id="{{ photo.get('_id') }}"
+                            data-photo-folder="{{ photo['folder'] }}"
+                            data-photo-filename="{{ photo['filename'] }}">
                         Add to albums (Open a modal)
                     </button>
                     &nbsp;
@@ -125,6 +129,8 @@
 <script src="{{ url_for('static', filename='js/jquery.dm-uploader.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/fslightbox.js') }}"></script>
 <script>
+    let photoObjectId = "", photoFolder = "", photoFileName = "";
+
     $(document).ready(function () {
         toastr.options = {
             "closeButton": false,
@@ -146,7 +152,6 @@
     });
 </script>
 <script>
-    let photoObjectId = "", photoFolder = "", photoFileName = "";
 
     $('input[name=add-to-album]').on("click", function () {
         const $albumList = $('.album-list');
@@ -185,9 +190,10 @@
         });
     });
 
-    $("#select-albums-modal-form").on("hidden.bs.modal", function () {
-        // put your default event here
-        //console.log("you've closed the modal");
+    $(".select-albums-modal-form").on("click", function() {
+        photoObjectId = $(this).attr("data-photo-object-id");
+        photoFolder = $(this).attr("data-photo-folder");
+        photoFileName = $(this).attr("data-photo-filename");
     });
 
     $(".btn-edit-photo").on("click", function () {

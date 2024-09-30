@@ -43,17 +43,33 @@
 
     $("#btn-add2album").on("click", function() {
         console.log("clicked me - modal form!");
+
+        // retrieves the existing albums which the photo in question has been added
+        const inAlbumsSelector = $('#in-albums-' + photoObjectId)[0];
+        let existingAlbums = [];
+        $.map(inAlbumsSelector.children, (child, index) => {
+            existingAlbums.push(child.innerHTML);
+        });
+
         const select2Data = $('.select2-selection__choice');
         let albums = [];
         $.each(select2Data, (index, object) => {
             const albumTitle = object.innerText;
             const lastChildId = object.lastChild.id;
-            // the id of the lastChild looks like the sample below. It is patterned like
-            // "select2-{filename}-container-choice-xxxx-{album-path}
-            // id="select2-759b75a8-3bbb-4750-b5a7-b9f80d16c184jpg-container-choice-5ua6-pretties-girls-and-ladies"
-            const startPos = lastChildId.lastIndexOf("container-choice");
-            const albumPath = lastChildId.substring(startPos + "container-choice-".length + 5);
-            albums.push({"path": albumPath, "title": albumTitle, "photo_object_id": photoObjectId});
+            /**
+             * the id of the lastChild looks like the sample below. It is patterned like
+             * id="select2-all-albums-container-choice-y4ag-{'_id': ObjectId('66c7684c00a564d63c6608be'),
+             * 'path': 'zhao-zhi', 'title': 'Zhao Zhi',
+             * 'description': 'Zhao Zhi - the sexiest AI model I have ever seen!',
+             * 'photos': ['66ec83e0a200000e7cb376dd',...
+            */
+            const parts = lastChildId.split(", ");
+            let paths = parts[1];
+            // see https://www.codeproject.com/Questions/1258002/Want-to-remove-single-quote-from-items-inside-json
+            paths = paths.replace(/\'/gi,'');
+            paths = paths.split(": ");
+            const path = paths[1];
+            albums.push({"path": path, "title": albumTitle, "photo_object_id": photoObjectId});
         });
 
         $.ajax({
