@@ -47,10 +47,19 @@
 <script>
     $(".photo-courtesy").on("focusout", function() {
         let value = $(this).val();
-        if (value.includes("facebook.com") && value.includes("idorvanity")) {
-            // sample: https://www.facebook.com/photo/?fbid=939173604889879&set=gm.2374139532977440&idorvanity=1316017315456339
-            let sanitized = value.substring(0, value.lastIndexOf("idorvanity") - 1);
-            $(this).val(sanitized);
+        if (value.includes("facebook.com")) {
+            if (value.includes("idorvanity")) {
+                // sample: https://www.facebook.com/photo/?fbid=939173604889879&set=gm.2374139532977440&idorvanity=1316017315456339
+                let sanitized = value.substring(0, value.lastIndexOf("idorvanity") - 1);
+                $(this).val(sanitized);
+            } else if (value.includes("&__cft__[0]=")) {
+                // sample: https://www.facebook.com/photo/?fbid=421035673604303&set=a.308446338196571&__cft__[0]=
+                // AZWZJnJc6XKMl4KSiT2DV0mDUbD2pqFEQXSpS70XQcUmfe0Tj6qz7QnbgVzkPtiLkSaqurQxT59UakbgtYoJSi6chjBLDPlLiRQZ
+                // aMg6fzndlSWMBAV8RvLvdMbud9DntQH-Doy-Y3sQG2mbk0WD46ng9VVz9rBTdv1du9Kon6p4GMym_8zxy5NAkB5wsAOSjrqDHXP
+                // OOvrm68LUjo7pzJYoPVWIJYIyLDsXMhnt-JP7kw&__tn__=EH-y-R
+                let sanitized = value.substring(0, value.lastIndexOf("&__cft__[0]=") - 1);
+                $(this).val(sanitized);
+            }
         }
     });
 </script>
