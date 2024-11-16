@@ -23,7 +23,7 @@ from slugify import slugify
 
 from utils import PhotoManager
 from utils import PhotoManager
-
+import pprint
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
@@ -697,7 +697,9 @@ def do_upload_photo(client_request, file):
     col_photos = db.photos
     docs = col_photos.find_one({"hash_md5": hash_md5})
     if docs is not None:
-        app.logger.debug("Photo exists in DB!")
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(docs)
+        app.logger.debug("Photo exists in DB! The photo can be found. ")
         # move or delete the photo to another folder
         abs_file_path = os.path.join(str(UPLOAD_DIR), filename)
         # https://stackoverflow.com/a/59185523/865603
