@@ -1,5 +1,9 @@
 # folders
+.idea
 __pycache__
+log
+logs
+tmp
 venv
 
 # files
