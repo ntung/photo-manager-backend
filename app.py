@@ -3,10 +3,12 @@ import json
 import math
 import os
 import pathlib
+import re
 import tempfile
 import uuid
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime, timedelta
+from functools import wraps
 from logging.config import dictConfig
 
 import bson
@@ -14,10 +16,11 @@ import bson.json_util
 import pymongo
 import pytz
 import requests
-from bson import ObjectId
+from bson import ObjectId, json_util
 from flask import Flask, Response
 from flask import jsonify, render_template, request, url_for, redirect, send_from_directory
 from flask_cors import CORS
+from flask_socketio import SocketIO
 from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
 
@@ -49,9 +52,10 @@ Done    8/ Check md5 to avoid repeating images
         10/ Set album profile/cover photo
 Progress11/ Sort photos by title, data uploaded, shuffle photos
 Done    12/ After Save photo to album, update "In Albums:"
-        13/ handle the date_uploaded and date_modified using datetime.strftime('%Y-%m-%d %H:%M:%S')
+Done    13/ handle the date_uploaded and date_modified using datetime.strftime('%Y-%m-%d %H:%M:%S')
 Done    14/ uuid for photos uploaded via browsing files
-        15/ nên hiển thị photos của 1 album theo thứ tự ngược lại: [1, 2, 3] => display 3, 2, 1
+Done    15/ nên hiển thị photos của 1 album theo thứ tự ngược lại: [1, 2, 3] => display 3, 2, 1
+        16/ Khi sort thì nên nhớ view style hiện tại là gallery hay list
 """
 dictConfig({
     "version": 1,
@@ -85,6 +89,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type: application/json'
+socketio = SocketIO(app)
 
 API_SVR = os.environ.get('API_SERVER')
 pm_init = PhotoManager.InitPM(UPLOAD_FOLDER, "aaaa")
@@ -101,7 +106,25 @@ def infer_submission_folder():
     return location
 
 
+# https://www.linkedin.com/advice/0/what-some-best-practices-managing-flask-session-expiration
+# https://www.maskaravivek.com/post/how-to-add-http-cachecontrol-headers-in-flask/
+# https://stackoverflow.com/questions/704561/ns-binding-aborted-shown-in-firefox-with-httpfox
+def do_cache(minutes=5, content_type='application/json; charset=utf-8'):
+    """ Flask decorator that allow to set Expire and Cache headers. """
 
+    def fwrap(f):
+        @wraps(f)
+        def wrapped_f(*args, **kwargs):
+            r = f(*args, **kwargs)
+            then = datetime.now() + timedelta(minutes=minutes)
+            rsp = Response(r, content_type=content_type)
+            rsp.headers.add('Expires', then.strftime("%a, %d %b %Y %H:%M:%S GMT"))
+            rsp.headers.add('Cache-Control', 'public,max-age=%d' % int(60 * minutes))
+            return rsp
+
+        return wrapped_f
+
+    return fwrap
 
 
 @app.route('/', methods=('GET', 'POST'))
@@ -423,6 +446,7 @@ def albums_update():
 
 
 @app.route('/albums/view/<path>', methods=('GET', 'POST'))
+@do_cache(minutes=5, content_type='text/html;utf-8')
 def albums_view(path):
     _albums = []
     for album in db.albums.find():
@@ -480,12 +504,15 @@ def albums_view(path):
                 s_opts = sort.split(";")
                 sort_field = s_opts[0]
                 sort_direction = s_opts[1]
+                photos_details = album["photos_details"]
                 if sort_field in ["title", "date_uploaded", "date_modified"]:
-                    photos_details = album["photos_details"]
                     is_reverse = sort_direction == "down"
                     sorted_photos_details = sorted(photos_details, key=lambda x: x[sort_field], reverse=is_reverse)
                     album["photos_details"] = sorted_photos_details
-                    view = "_album_view_list.html"
+                else:
+                    pass
+                print(sort_field)
+                view = "_album_view_list.html"
             tt = dict_photos_albums(album["photos_details"], album["path"])
             for photo in album["photos_details"]:
                 photo_id = str(photo.get("_id"))
@@ -548,12 +575,18 @@ def photo_delete():
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
     if request.method == 'POST':
-        file = request.files['photo-upload']
-        result = do_upload_photo(request, file)
+        if 'photo-upload' in request.files:
+            file = request.files['photo-upload']
+            app.logger.info("Upload file via form")
+            result = do_upload_photo(request, file)
+        else:
+            app.logger.info("Upload file via postman or terminal")
+            result = do_upload_photo(request)
+            return result
         app.logger.debug(result)
         return redirect(url_for('photo_list'))
 
-    all_photos = db.photos.find().sort([("date_uploaded", pymongo.DESCENDING)]).limit(10)
+    all_photos = db.photos.find().sort([("date_uploaded", pymongo.DESCENDING)]).limit(20)
     all_albums = db.albums.find()
     map_photo_album = {
         "default": {"album-1": "Album 1"}
@@ -572,7 +605,13 @@ def photo_list():
     # for p in map_photo_album:
     #     print("{}: {}".format(p, map_photo_album[p]))
     # print(_albums)
-
+    pattern = r'\?'  # regular expression pattern to match the query parameters section
+    parts = re.split(pattern, request.url)
+    if len(parts) == 2:
+        return {"albums": json.loads(json_util.dumps(_albums)),
+                "photos": json.loads(json_util.dumps(all_photos)),
+                "photo_map": json.loads(json_util.dumps(map_photo_album))
+                }
     return render_template('photo-list.html', albums=_albums,
                            photos=all_photos, map_photo_album=map_photo_album, api_svr=API_SVR)
 
@@ -580,7 +619,7 @@ def photo_list():
 @app.route('/photo/<path:path>', methods=['GET', 'POST'])
 def photo_read(path):
     try:
-        return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True)
+        return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True, max_age=86400)
     except FileNotFoundError as exception:
         app.logger.error("404: File Not Found " + str(exception))
 
@@ -664,14 +703,15 @@ def do_download_image(storage_location, image_url, out_filename=None):
     return {"filename": out_filename, "hash_md5": hash_md5}
 
 
-def do_upload_photo(client_request, file):
+def do_upload_photo(client_request, file = None):
     submission_folder = client_request.headers["Submission-Folder"] \
         if ("Submission-Folder" in request.headers
             and client_request.headers["Submission-Folder"] is not None) else infer_submission_folder()
     UPLOAD_DIR = os.path.join(app.config['UPLOAD_FOLDER'], submission_folder)
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
-    if file.filename and file.filename is not None:
+    if file:
+        # file.filename and file.filename is not None:
         app.logger.info("uploading a local photo...")
         # filename = secure_filename(file.filename)
         # filename = file.filename
@@ -699,33 +739,49 @@ def do_upload_photo(client_request, file):
     if docs is not None:
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(docs)
+        app.logger.debug(docs)
         app.logger.debug("Photo exists in DB! The photo can be found. ")
         # move or delete the photo to another folder
         abs_file_path = os.path.join(str(UPLOAD_DIR), filename)
         # https://stackoverflow.com/a/59185523/865603
         pathlib.Path(abs_file_path).unlink(missing_ok=True)
         # TODO: figure out how to use the returned json below on the view
-        return jsonify(message="EXISTED", submission_folder=submission_folder)
+        return jsonify(message="EXISTED", submission_folder=submission_folder, 
+                       filename=docs["filename"])
     else:
         app.logger.info("{} is a new photo.".format(filename))
 
     # save the file's metadata into MongoDB
-    title = client_request.headers["Title"] \
-        if ("Title" in request.headers
-            and client_request.headers["Title"] is not None) else client_request.form['title']
-    title = title if title is not None else filename
-    description = client_request.headers["Description"] \
-        if ("Description" in request.headers
-            and client_request.headers["Description"] is not None) else client_request.form['description']
-    description = description if description is not None else filename
-    origin = client_request.headers["Photo-Courtesy"] \
-        if ("Photo-Courtesy" in request.headers
-            and client_request.headers["Photo-Courtesy"] is not None) else client_request.form['courtesy']
-    origin = origin if origin is not None else "Unknown"
+    title = infer_param(client_request, "title", "Untitled")
+    description = infer_param(client_request, "description", filename)
+    origin = infer_param(client_request, "courtesy", "Unknown")
     save_metadata(submission_folder, filename, title, description, origin, hash_md5)
     return {'submission_folder': submission_folder, 'filename': filename,
             'title': title, 'description': description, 'origin': origin, 'hash_md5': hash_md5}
 
+
+@app.route('/file/upload', methods=['GET', 'POST'])
+def file_upload():
+    file = request.files['file']
+    # file.read() is the same as file.stream.read()
+    img_key = hashlib.md5(file.read()).hexdigest()
+    print(img_key)
+
+
+def infer_param(client_request, attr, default="Unknown"):
+    """
+    Infer the value of a given attribute from the request
+    """
+    value = default
+    if (attr.capitalize() in request.headers
+        and client_request.headers[attr.capitalize()] is not None):
+        value = client_request.headers[attr]
+    elif (attr in client_request.form and
+          client_request.form[attr] is not None):
+        value = client_request.form[attr]
+    return value
+
+    
 def dict_photos_albums(list_photos, album_path):
     _albums = db.albums.find()
     _albums = bson.json_util.dumps(_albums)
@@ -740,3 +796,7 @@ def dict_photos_albums(list_photos, album_path):
                 else:
                     other_albums_dict[photo_id] = [{"path": album['path'], "title": album['title']}]
     return other_albums_dict
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5500, debug=True, threaded=False)

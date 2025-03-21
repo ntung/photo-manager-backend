@@ -8,6 +8,7 @@ import tempfile
 
 import requests
 import uuid
+import random
 
 # import the MongoClient class of the PyMongo library
 from pymongo import MongoClient, ReturnDocument
@@ -241,14 +242,57 @@ def test_next_string():
     print(PhotoManager.next_string("aaab"))
 
 
+def test_local_biomodels():
+    # URL = "https://wwwdev.ebi.ac.uk/biomodels/model/identifiers?format=json"
+    # response = requests.get(URL)
+    # dict_data = response.json()
+    # print(dict_data['models'])
+    sample = ["MODEL0000000031", "BIOMD0000000100"]
+    for m_id in sample:
+        # URL = "https://www.ebi.ac.uk/biomodels/" + m_id
+        URL = "http://localhost:8080/biomodels/" + m_id
+        headers = {
+            "Content-Type": "text/html"
+        }
+        params = {"format": "html"}
+        response = requests.get(URL, headers=headers, params=params)
+        print("{}\t{}".format(m_id, response.status_code))
+
+
+def test_biomodels():
+    URL = "https://www.ebi.ac.uk/biomodels/model/identifiers?format=json"
+    # URL = "https://wwwdev.ebi.ac.uk/biomodels/model/identifiers?format=json"
+    response = requests.get(URL)
+    dict_data = response.json()
+    # print(dict_data['models'])
+    sample = random.sample(dict_data['models'], 100)
+    for m_id in sample:
+        URL = "https://www.ebi.ac.uk/biomodels/" + m_id
+        # URL = "https://wwwdev.ebi.ac.uk/biomodels/" + m_id
+        headers = {
+            "Content-Type": "text/html"
+            # "Content-Type": "application/json"
+        }
+        params = {"format": "html"}
+        response = requests.get(URL, headers=headers, params=params)
+        print("{}\t{}".format(m_id, response.status_code))
+
+
+def test_photo_manager_class():
+    pm = InitPM("/Users/tnguyen/ownCloud/MyBusiness/photo-manager")
+    print(pm.upload_folder)
+
+
 if __name__ == '__main__':
     # update_mongodb_doc()
     # get_date_created_n_modified_then_update_db_photos()
     # download_save_image()
     # check_find_result()
     # copy_and_move_file()
-    # check_cur_sub_folder()
-    test_get_series()
-    test_next_string()
-    update_albums()
-
+    check_cur_sub_folder()
+    # test_get_series()
+    # test_next_string()
+    # test_biomodels()
+    # test_local_biomodels()
+    # update_albums()
+    # test_photo_manager_class()

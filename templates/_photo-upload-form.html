@@ -49,7 +49,8 @@
         let value = $(this).val();
         if (value.includes("facebook.com")) {
             if (value.includes("idorvanity")) {
-                // sample: https://www.facebook.com/photo/?fbid=939173604889879&set=gm.2374139532977440&idorvanity=1316017315456339
+                // sample: https://www.facebook.com/photo/?fbid=939173604889879&set=
+                // gm.2374139532977440&idorvanity=1316017315456339
                 let sanitized = value.substring(0, value.lastIndexOf("idorvanity") - 1);
                 $(this).val(sanitized);
             } else if (value.includes("&__cft__[0]=")) {
