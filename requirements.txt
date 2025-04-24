@@ -4,6 +4,7 @@ requests
 flask-cors
 flask-socketio
 gunicorn
+pyopenssl
 python-dotenv
 python-slugify
 pytz

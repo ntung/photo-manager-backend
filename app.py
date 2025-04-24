@@ -21,6 +21,7 @@ from flask import Flask, Response
 from flask import jsonify, render_template, request, url_for, redirect, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO
+from gunicorn.sock import ssl_context
 from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
 
@@ -799,4 +800,4 @@ def dict_photos_albums(list_photos, album_path):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5500, debug=True, threaded=False)
+    app.run(host='0.0.0.0', port=5500, debug=True, threaded=False, ssl_context='adhoc')
