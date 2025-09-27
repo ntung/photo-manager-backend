@@ -350,13 +350,17 @@
             error: function () {
 
             }
-        }).done(function (data) {
+        })
+        .done(function (data) {
             console.log("Done! - Data: ", data);
-        }).fail(function (jqXHR, textStatus) {
+            toastr.success("Added the photo to the selected albums successfully!");
+        })
+        .fail(function (jqXHR, textStatus) {
             console.log(textStatus, ": ", JSON.stringify(jqXHR));
-        }).always(function (data) {
+        })
+        .always(function (data) {
             console.log("The request has completed: ", data);
-            toastr.success("The request has completed : " + JSON.stringify(data));
+            toastr.success("The request has completed!");
         });
     });
 </script>
