@@ -32,8 +32,8 @@ class InitPM:
         if len(folders_dict) == 0:
             return k
         for k in folders_dict:
-            print(k, folders_dict[k])
             if folders_dict[k] < MAX_NB_FILES_PER_DIR:
+                logging.info(f"Directory {k} has  {folders_dict[k]} photos.")
                 return k
         # Otherwise, it is starting a new series folder
         next_value = next_string(k)
