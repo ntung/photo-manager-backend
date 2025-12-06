@@ -741,14 +741,20 @@ def do_upload_photo(client_request, file = None):
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(docs)
         app.logger.debug(docs)
-        app.logger.debug("Photo exists in DB! The photo can be found. ")
+        col_albums = []
+        all_albums = db.albums.find()
+        for album in all_albums:
+            _photos = album['photos']
+            if str(docs["_id"]) in _photos:
+                col_albums.append(album['path'])
+        app.logger.debug("Photo exists in DB! The photo can be found in the albums: " + ",".join(col_albums))
         # move or delete the photo to another folder
         abs_file_path = os.path.join(str(UPLOAD_DIR), filename)
         # https://stackoverflow.com/a/59185523/865603
         pathlib.Path(abs_file_path).unlink(missing_ok=True)
         # TODO: figure out how to use the returned json below on the view
         return jsonify(message="EXISTED", submission_folder=submission_folder, 
-                       filename=docs["filename"])
+                filename=docs["filename"], exist_in_albums=",".join(col_albums))
     else:
         app.logger.info("{} is a new photo.".format(filename))
 
