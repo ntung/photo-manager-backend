@@ -6,7 +6,6 @@ import pathlib
 import re
 import tempfile
 import uuid
-from collections import defaultdict
 from datetime import datetime, timedelta
 from functools import wraps
 from logging.config import dictConfig
@@ -18,16 +17,17 @@ import pytz
 import requests
 from bson import ObjectId, json_util
 from flask import Flask, Response
-from flask import jsonify, render_template, request, url_for, redirect, send_from_directory
+from flask import jsonify, render_template, request, url_for
+from flask import redirect, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO
-from gunicorn.sock import ssl_context
+# from gunicorn.sock import ssl_context
 from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
 
 from utils import PhotoManager
-from utils import PhotoManager
 import pprint
+
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
@@ -40,24 +40,27 @@ TZ_LONDON = pytz.timezone("Europe/London")
 
 """
 TODO LIST
-        0/ Calculate aaaa, aaab, aaac... submission folders
-Done    1/ Delete photos and albums: will delete physical photos and albums too.
-Progress2/ Add/edit,remove photos to/out albums
-        3/ Improve the views by allowing zoom, click open a single photo
-Progress4/ Improve adding photos: add tags, hashtags, keywords, etc.
-        5/ Loading more data when scrolling or pagination, do not load all once.
-Done    6/ View photos by albums
-Done    7/ Add/Edit an album: edit title, description; add more photos...
-Done    8/ Check md5 to avoid repeating images
-        9/ Favourite/Highlight
-        10/ Set album profile/cover photo
-Progress11/ Sort photos by title, data uploaded, shuffle photos
-Done    12/ After Save photo to album, update "In Albums:"
-Done    13/ handle the date_uploaded and date_modified using datetime.strftime('%Y-%m-%d %H:%M:%S')
-Done    14/ uuid for photos uploaded via browsing files
-Done    15/ nên hiển thị photos của 1 album theo thứ tự ngược lại: [1, 2, 3] => display 3, 2, 1
-        16/ Khi sort thì nên nhớ view style hiện tại là gallery hay list
+     0/ Calculate aaaa, aaab, aaac... submission folders
+Done 1/ Delete photos and albums: will delete physical photos and albums too.
+Prog 2/ Add/edit,remove photos to/out albums
+     3/ Improve the views by allowing zoom, click open a single photo
+Prog 4/ Improve adding photos: add tags, hashtags, keywords, etc.
+     5/ Loading more data when scrolling or pagination, do not load all once.
+Done 6/ View photos by albums
+Done 7/ Add/Edit an album: edit title, description; add more photos...
+Done 8/ Check md5 to avoid repeating images
+     9/ Favourite/Highlight
+     10/ Set album profile/cover photo
+Prog 11/ Sort photos by title, data uploaded, shuffle photos
+Done 12/ After Save photo to album, update "In Albums:"
+Done 13/ handle the date_uploaded and date_modified using
+         datetime.strftime('%Y-%m-%d %H:%M:%S')
+Done 14/ uuid for photos uploaded via browsing files
+Done 15/ nên hiển thị photos của 1 album theo thứ tự ngược lại:
+         [1, 2, 3] => display 3, 2, 1
+     16/ Khi sort thì nên nhớ view style hiện tại là gallery hay list
 """
+
 dictConfig({
     "version": 1,
     "formatters": {
@@ -119,8 +122,10 @@ def do_cache(minutes=5, content_type='application/json; charset=utf-8'):
             r = f(*args, **kwargs)
             then = datetime.now() + timedelta(minutes=minutes)
             rsp = Response(r, content_type=content_type)
-            rsp.headers.add('Expires', then.strftime("%a, %d %b %Y %H:%M:%S GMT"))
-            rsp.headers.add('Cache-Control', 'public,max-age=%d' % int(60 * minutes))
+            v = then.strftime("%a, %d %b %Y %H:%M:%S GMT")
+            rsp.headers.add('Expires', v)
+            v = 'public,max-age=%d' % int(60 * minutes)
+            rsp.headers.add('Cache-Control', v)
             return rsp
 
         return wrapped_f
@@ -146,17 +151,17 @@ def photo_todo_list():
     return render_template('todo-list.html', todos=all_todos)
 
 
-def save_metadata(_submission_folder, _filename, _title, _description, _courtesy, _hash_md5):
+def save_metadata(_sub_folder, _filename, _title, _desc, _courtesy, _hash_md5):
     if not _title:
         _title = "Untitled"
-    if not _description:
-        _description = _filename
+    if not _desc:
+        _desc = _filename
     if not _courtesy:
         _courtesy = "Unknown"
-    db.photos.insert_one({'folder': _submission_folder,
+    db.photos.insert_one({'folder': _sub_folder,
                           'filename': _filename,
                           'title': _title,
-                          'description': _description,
+                          'description': _desc,
                           'courtesy': _courtesy,
                           'date_uploaded': datetime.now(TZ_LONDON),
                           'date_modified': datetime.now(TZ_LONDON),
@@ -179,14 +184,17 @@ def album_add():
                     photo_set.append(photo_id)
                 if photo_set:
                     db.albums.update_one(
-                        {"_id": ObjectId(album_doc.get("_id"))},
-                        {"$set": {
+                        {
+                            "_id": ObjectId(album_doc.get("_id"))
+                        },
+                        {
+                            "$set":
+                            {
                                 'photos': photo_set,
                                 'date_modified': datetime.now(TZ_LONDON)
                             }
-                        },
-                        upsert=False
-                    )
+                        }, upsert=False)
+
     result = {"message": "Building the service"}
     return json.dumps(result)
 
@@ -286,7 +294,6 @@ def get_album(path):
 
     photos = first_album['photos']
     photo_details = []
-    sorted_photo_details = []
     for photo_id in photos:
         photo_doc = db.photos.find_one({"_id": ObjectId(photo_id)})
         if photo_doc is not None:
@@ -585,6 +592,7 @@ def photo_list():
             result = do_upload_photo(request)
             return result
         app.logger.debug(result)
+        # return jsonify(message="will handle this later")
         return redirect(url_for('photo_list'))
 
     all_photos = db.photos.find().sort([("date_uploaded", pymongo.DESCENDING)]).limit(20)
@@ -594,7 +602,10 @@ def photo_list():
     }
     _albums = []
     for album in all_albums:
-        _albums.append({"path": album, "title": album['title'], "description": album['description']})
+        _albums.append({
+            "path": album, "title": album['title'],
+            "description": album['description']
+        })
         album_detail = get_album(album['path'])
         for photo in album_detail['photos_details']:
             if photo['filename'] in map_photo_album:
@@ -602,11 +613,14 @@ def photo_list():
                 if album['path'] is not dict_albums:
                     dict_albums[album['path']] = album['title']
             else:
-                map_photo_album[photo['filename']] = {album['path']: album['title']}
+                map_photo_album[photo['filename']] = {
+                    album['path']: album['title']
+                }
     # for p in map_photo_album:
     #     print("{}: {}".format(p, map_photo_album[p]))
     # print(_albums)
-    pattern = r'\?'  # regular expression pattern to match the query parameters section
+    # regular expression pattern to match the query parameters section
+    pattern = r'\?'
     parts = re.split(pattern, request.url)
     if len(parts) == 2:
         return {"albums": json.loads(json_util.dumps(_albums)),
@@ -753,8 +767,9 @@ def do_upload_photo(client_request, file = None):
         # https://stackoverflow.com/a/59185523/865603
         pathlib.Path(abs_file_path).unlink(missing_ok=True)
         # TODO: figure out how to use the returned json below on the view
-        return jsonify(message="EXISTED", submission_folder=submission_folder, 
-                filename=docs["filename"], exist_in_albums=",".join(col_albums))
+        return jsonify(message="EXISTED", submission_folder=submission_folder,
+                filename=docs["filename"],
+                exist_in_albums=",".join(col_albums))
     else:
         app.logger.info("{} is a new photo.".format(filename))
 
@@ -788,7 +803,7 @@ def infer_param(client_request, attr, default="Unknown"):
         value = client_request.form[attr]
     return value
 
-    
+  
 def dict_photos_albums(list_photos, album_path):
     _albums = db.albums.find()
     _albums = bson.json_util.dumps(_albums)
