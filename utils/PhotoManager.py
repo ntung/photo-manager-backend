@@ -21,9 +21,11 @@ class InitPM:
 
         folder_dict = dict()
         for d in subfolders:
-            nb_files = len([name for name in os.listdir(d) if os.path.isfile(os.path.join(d, name))])
+            nb_files = len([name for name in os.listdir(d) if
+                            os.path.isfile(os.path.join(d, name))])
             folder_dict[os.path.basename(d)] = nb_files
-        # push the smallest amount of photos in the submission folder up the top
+        # push the smallest amount of photos in the submission folder up
+        # the top
         FOLDERS = dict(sorted(folder_dict.items(), key=lambda item: item[0]))
         return FOLDERS
 
@@ -39,14 +41,17 @@ class InitPM:
         next_value = next_string(k)
         if next_value != "":
             try:
-                os.makedirs(os.path.join(self.upload_folder, next_value), exist_ok=True)
+                os.makedirs(os.path.join(self.upload_folder, next_value),
+                            exist_ok=True)
                 folders_dict[next_value] = 0
             except FileExistsError as e:
                 logging.error("Folder Exists! Use It!" + str(e))
             except FileNotFoundError as e:
                 logging.error("404: Folder Not Found" + str(e))
             except OSError as error:
-                logging.error("Directory %s can not be created due to %s." % (next_value, str(error)))
+                msg = "Directory %s can not be created due to %s." % (
+                    next_value, str(error))
+                logging.error(msg)
             return next_value
         else:
             # return the default value
@@ -75,8 +80,10 @@ def flatten_concatenation(matrix):
 def create_buckets(all_photos, bucket_size):
     buckets = []
     """
-    counter = 0 -> the last bucket will have less or equal the number of photos than the bucket size
-    counter = 1 -> the first bucket will have less or equal the number of photos than the bucket size
+    counter = 0 -> the last bucket will have less or equal the number of
+    photos than the bucket size
+    counter = 1 -> the first bucket will have less or equal the number of
+    photos than the bucket size
     """
     counter = 0
     bucket = []
@@ -108,9 +115,11 @@ def create_buckets(all_photos, bucket_size):
 
 def next_string(s):
     # aaaa, aaab, aaac, etc.
-    # https://stackoverflow.com/questions/932506/how-can-i-get-the-next-string-in-alphanumeric-ordering-in-python
+    # https://stackoverflow.com/a/932536/865603
     strip_zs = s.rstrip('z')
     if strip_zs:
-        return strip_zs[:-1] + chr(ord(strip_zs[-1]) + 1) + 'a' * (len(s) - len(strip_zs))
+        p1 = chr(ord(strip_zs[-1]) + 1)
+        p2 = 'a' * (len(s) - len(strip_zs))
+        return strip_zs[:-1] + p1 + p2
     else:
         return 'a' * (len(s) + 1)

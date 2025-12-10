@@ -211,10 +211,8 @@ def photo_albums():
             title = request.form['title']
         else:
             title = "Untitled"
-        if request.form['description'] is not None or not request.form['description']:
-            description = request.form['description']
-        else:
-            description = 'My new album'
+        desc = request.form['description']
+        description = desc if desc else 'My new album'
         if title == "Untitled":
             all_untitled_albums = db.albums.find({
                 "title": {'$regex': '^Untitled'}}
@@ -256,20 +254,35 @@ def photo_albums():
             s_opts = sort.split(";")
             sort_field = s_opts[0]
             sort_direction = s_opts[1]
-            if sort_field in ["title", "amount_photos", "date_created", "date_modified"]:
+            fields = [
+                "title", "amount_photos", "date_created", "date_modified"
+            ]
+            if sort_field in fields:
                 is_reverse = not (sort_direction == "down")
                 if sort_field == "amount_photos":
-                    sorted_albums = sorted(_albums, key=lambda x: len(x['photos']), reverse=is_reverse)
+                    sorted_albums = sorted(_albums,
+                                           key=lambda x: len(x['photos']),
+                                           reverse=is_reverse)
                 else:
-                    sorted_albums = sorted(_albums, key=lambda x: x[sort_field], reverse=is_reverse)
+                    sorted_albums = sorted(_albums,
+                                           key=lambda x: x[sort_field],
+                                           reverse=is_reverse)
                 view = '_albums-list.html'
         else:
-            sorted_albums = sorted(_albums, key=lambda x: len(x['photos']), reverse=True)
-        unclassified = {"title": "Unclassified",
-                        "description": "Unclassified photos - not belonged to any albums yet.",
-                        "amount_photos": 1}
-        return render_template(view, albums=sorted_albums, unclassified=unclassified,
-                               nb_photo_dict=nb_photos_dict, api_svr=API_SVR)
+            sorted_albums = sorted(_albums,
+                                   key=lambda x: len(x['photos']),
+                                   reverse=True)
+        unclassified = {
+            "title": "Unclassified",
+            "description": "Unclassified photos - not in any albums yet.",
+            "amount_photos": 1
+        }
+        return render_template(view,
+                               albums=sorted_albums,
+                               unclassified=unclassified,
+                               nb_photo_dict=nb_photos_dict,
+                               api_svr=API_SVR)
+    return None
 
 
 @app.route('/albums', defaults={'path': None}, methods=('GET', 'POST'))
@@ -302,10 +315,13 @@ def get_album(path):
             app.logger.info("Photo object id {} was removed.".format(photo_id))
 
     # Sort the list of photos by the date uploaded
-    # sorted_photo_details = sorted(photos_details, key=lambda x: x['date_uploaded'], reverse=True)
-    # reverse the list of photos to make sure that we display photos of an album in the chronological order
+    # sorted_photo_details = sorted(photos_details,
+    # key=lambda x: x['date_uploaded'], reverse=True)
+    # reverse the list of photos to make sure that
+    # we display photos of an album in the chronological order
     photo_details.reverse()
-    # After implementing the feature: reordering photos, we want to keep the order we have done on UX/UI
+    # After implementing the feature: reordering photos,
+    # we want to keep the order we have done on UX/UI
     # Therefore, we need to stop reversing the array of photos.
     first_album["photos_details"] = photo_details  # sorted_photo_details
 
@@ -327,7 +343,8 @@ def save_photo_to_albums():
         updated_photo_list = []
         if album is not None:
             updated_photo_list: object = album["photos"]
-            if (photo_object_id != "") and (photo_object_id not in updated_photo_list):
+            if ((photo_object_id != "") and
+                    (photo_object_id not in updated_photo_list)):
                 updated_photo_list.append(photo_object_id)
 
         r = db.albums.find_one_and_update(
@@ -341,8 +358,12 @@ def save_photo_to_albums():
         if r.get('_id') is not None:
             updated_albums.append({"path": r['path'], "title": r['title']})
 
-    result = {"updated-albums": updated_albums, "photo-object-id": photo_object_id,
-              "photo-folder": photo_folder, "photo-filename": photo_filename}
+    result = {
+        "updated-albums": updated_albums,
+        "photo-object-id": photo_object_id,
+        "photo-folder": photo_folder,
+        "photo-filename": photo_filename
+    }
     return Response(json.dumps(result), mimetype='application/json')
 
 
@@ -350,9 +371,12 @@ def save_photo_to_albums():
 @app.route('/albums/add-photo/', methods=['POST'])
 def albums_add_photo():
     all_albums = db.albums.find().sort([("date_modified", pymongo.DESCENDING)])
-    # When the client clicks on Add to album button, is will render a select box and a Save button
-    return render_template('select_option_albums.html', view=request.json['view'],
-                           filename=request.json['photo-filename'], albums=all_albums)
+    # When the client clicks on Add to album button, is will render a select
+    # box and a Save button
+    return render_template('select_option_albums.html',
+                           view=request.json['view'],
+                           filename=request.json['photo-filename'],
+                           albums=all_albums)
 
 
 @app.route('/albums/remove-photos', methods=['GET', 'POST'])
@@ -410,7 +434,10 @@ def albums_reorder_photos():
     request_json = request.get_json(silent=True)
     album_object_id = request_json['album-object-id']
     array_photo_object_ids = request_json['photos']
-    album = {"message": "Updating the orders of the photos in the album " + album_object_id}
+    album = {
+        "message": ("Updating the orders of the photos in the album " +
+                    album_object_id)
+    }
     cond = album_object_id != "" and len(array_photo_object_ids) > 0
     if cond:
         album = db.albums.update_one(
@@ -425,7 +452,10 @@ def albums_reorder_photos():
         app.logger.info(album)
         updated_album = db.albums.find_one({"_id": ObjectId(album_object_id)})
         if updated_album.get("_id") != "":
-            album = {"message": "Updated the orders of the photos in the album " + album_object_id}
+            album = {
+                "message": ("Updated the orders of the photos in the album "
+                            + album_object_id)
+            }
 
     return json.dumps(album)
 
@@ -449,7 +479,11 @@ def albums_update():
             }, upsert=False
         )
         app.logger.info(album)
-    retval = {"message": "Updated completely", "title": album_title, "description": album_description}
+    retval = {
+        "message": "Updated completely",
+        "title": album_title,
+        "description": album_description
+    }
     return Response(json.dumps(retval), mimetype='application/json')
 
 
@@ -458,16 +492,26 @@ def albums_update():
 def albums_view(path):
     _albums = []
     for album in db.albums.find():
-        _albums.append({"path": album, "title": album['title'], "description": album['description']})
+        _albums.append({
+            "path": album,
+            "title": album['title'],
+            "description": album['description']
+        })
 
     if path == "unclassified":
         _photos = photo_unclassified()
         nb_photos = len(_photos)
         is_empty_album = nb_photos == 0
-        return render_template('album-view.html', album_path='unclassified',
-                               album_title='Unclassified', status="FOUND", photos=_photos,
-                               album_object_id="unclassified", albums=_albums,
-                               nb_photos=nb_photos, is_empty_album=is_empty_album, api_svr=API_SVR)
+        return render_template('album-view.html',
+                               album_path='unclassified',
+                               album_title='Unclassified',
+                               status="FOUND",
+                               photos=_photos,
+                               album_object_id="unclassified",
+                               albums=_albums,
+                               nb_photos=nb_photos,
+                               is_empty_album=is_empty_album,
+                               api_svr=API_SVR)
     status = "FOUND"
     tt = None
     if path is None or path == '':
@@ -476,7 +520,8 @@ def albums_view(path):
         album = get_album(path)
         if album is None:
             status = "NOT_FOUND"
-            return render_template('album-view.html', status=status, message="No such album")
+            return render_template('album-view.html',
+                                   status=status, message="No such album")
         is_empty_album = not album["photos"]
         view = "album-view.html"
         nb_photos = 0
@@ -490,16 +535,22 @@ def albums_view(path):
                 view = request_json['view']
                 array_photos_object_ids = request_json['photos-object-ids']
                 photos_details = album['photos_details']
-                buckets = PhotoManager.create_buckets(photos_details,
-                                                      math.ceil(len(array_photos_object_ids) / 3))
-                # TODO: using array_photos_object_ids to get the same orders of photos on the current page
+                bz = math.ceil(len(array_photos_object_ids) / 3)
+                buckets = PhotoManager.create_buckets(photos_details, bz)
+                # TODO: using array_photos_object_ids to get the same orders
+                #  of photos on the current page
                 # current_ordered_photos = []
                 # for id in array_photos_object_ids:
 
-                return render_template(view, status=status, album=album, album_path=album['path'],
-                                       album_title=album['title'], albums=_albums,
-                                       photos=album['photos_details'], buckets=buckets, nb_photos=nb_photos,
-                                       album_object_id=album.get("_id"), is_empty_album=is_empty_album, api_svr=API_SVR)
+                return render_template(view, status=status, album=album,
+                                       album_path=album['path'],
+                                       album_title=album['title'],
+                                       albums=_albums,
+                                       photos=album['photos_details'],
+                                       buckets=buckets, nb_photos=nb_photos,
+                                       album_object_id=album.get("_id"),
+                                       is_empty_album=is_empty_album,
+                                       api_svr=API_SVR)
 
             sort = request.args.get('sort')
             if sort is not None and sort == "shuffle":
@@ -515,7 +566,9 @@ def albums_view(path):
                 photos_details = album["photos_details"]
                 if sort_field in ["title", "date_uploaded", "date_modified"]:
                     is_reverse = sort_direction == "down"
-                    sorted_photos_details = sorted(photos_details, key=lambda x: x[sort_field], reverse=is_reverse)
+                    sorted_photos_details = sorted(photos_details,
+                                                   key=lambda x: x[sort_field],
+                                                   reverse=is_reverse)
                     album["photos_details"] = sorted_photos_details
                 else:
                     pass
@@ -527,9 +580,12 @@ def albums_view(path):
                 if photo_id in tt:
                     photo['other_albums'] = tt[photo_id]
 
-        return render_template(view, status=status, album=album, album_object_id=album.get("_id"),
-                               photos=album['photos_details'], album_title=album['title'], albums=_albums,
-                               album_path=album['path'], nb_photos=nb_photos, is_empty_album=is_empty_album,
+        return render_template(view, status=status, album=album,
+                               album_object_id=album.get("_id"),
+                               photos=album['photos_details'],
+                               album_title=album['title'], albums=_albums,
+                               album_path=album['path'], nb_photos=nb_photos,
+                               is_empty_album=is_empty_album,
                                other_albums=tt, api_svr=API_SVR)
 
 
@@ -595,7 +651,10 @@ def photo_list():
         # return jsonify(message="will handle this later")
         return redirect(url_for('photo_list'))
 
-    all_photos = db.photos.find().sort([("date_uploaded", pymongo.DESCENDING)]).limit(20)
+    all_photos = (db
+                  .photos
+                  .find()
+                  .sort([("date_uploaded", pymongo.DESCENDING)]).limit(20))
     all_albums = db.albums.find()
     map_photo_album = {
         "default": {"album-1": "Album 1"}
@@ -623,20 +682,28 @@ def photo_list():
     pattern = r'\?'
     parts = re.split(pattern, request.url)
     if len(parts) == 2:
-        return {"albums": json.loads(json_util.dumps(_albums)),
-                "photos": json.loads(json_util.dumps(all_photos)),
-                "photo_map": json.loads(json_util.dumps(map_photo_album))
-                }
-    return render_template('photo-list.html', albums=_albums,
-                           photos=all_photos, map_photo_album=map_photo_album, api_svr=API_SVR)
+        return {
+            "albums": json.loads(json_util.dumps(_albums)),
+            "photos": json.loads(json_util.dumps(all_photos)),
+            "photo_map": json.loads(json_util.dumps(map_photo_album))
+        }
+    else:
+        tpl_name = 'photo_list.html'
+        return render_template(template_name_or_list=tpl_name,
+                               albums=_albums,
+                               photos=all_photos,
+                               map_photo_album=map_photo_album,
+                               api_svr=API_SVR)
 
 
 @app.route('/photo/<path:path>', methods=['GET', 'POST'])
 def photo_read(path):
     try:
-        return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True, max_age=86400)
+        return send_from_directory(UPLOAD_FOLDER, path,
+                                   as_attachment=True, max_age=86400)
     except FileNotFoundError as exception:
         app.logger.error("404: File Not Found " + str(exception))
+        return None
 
 
 @app.route('/photo/update', methods=('GET', 'POST'))
@@ -668,11 +735,13 @@ def photo_upload():
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
-            return jsonify(message="File to be uploaded not found!")
+            message = "File to be uploaded not found!"
+            return jsonify(message=message)
         file = request.files['file']
 
         if file.filename == '':
-            return jsonify(message="File to be uploaded not found or incomplete operation!")
+            message = "File to be uploaded not found or incomplete operation!"
+            return jsonify(message=message)
         if file:
             filename = file.filename
             result = do_upload_photo(request, file)
@@ -686,7 +755,8 @@ def photo_upload():
                 title=result['title'],
                 courtesy=result['origin'])
 
-    return jsonify(message="Under construction or operation is not supported!")
+    message = "Under construction or operation is not supported!"
+    return jsonify(message=message)
 
 
 @app.route('/photo/view', methods=['GET', 'POST'])
@@ -700,7 +770,8 @@ def photo_view():
     # after looping over all_photos as a Cursor, all_photos is empty
     all_photos = PhotoManager.flatten_concatenation(buckets)
 
-    return render_template('photo-view.html', photos=all_photos, buckets=buckets, api_svr=API_SVR)
+    return render_template('photo-view.html',
+                           photos=all_photos, buckets=buckets, api_svr=API_SVR)
 
 
 def do_download_image(storage_location, image_url, out_filename=None):
@@ -718,10 +789,11 @@ def do_download_image(storage_location, image_url, out_filename=None):
     return {"filename": out_filename, "hash_md5": hash_md5}
 
 
-def do_upload_photo(client_request, file = None):
+def do_upload_photo(client_request, file=None):
     submission_folder = client_request.headers["Submission-Folder"] \
         if ("Submission-Folder" in request.headers
-            and client_request.headers["Submission-Folder"] is not None) else infer_submission_folder()
+            and client_request.headers["Submission-Folder"] is not None) \
+        else infer_submission_folder()
     UPLOAD_DIR = os.path.join(app.config['UPLOAD_FOLDER'], submission_folder)
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
@@ -738,12 +810,15 @@ def do_upload_photo(client_request, file = None):
     else:
         # download the image from the provided image URL
         app.logger.info("Downloading a photo from a remote location...")
-        image_url = client_request.headers["Image-URL"] \
-            if ("Image-URL" in request.headers
-                and client_request.headers["Image-URL"] is not None) else client_request.form['photo-url']
+        if ("Image-URL" in request.headers
+                and client_request.headers["Image-URL"] is not None):
+            image_url = client_request.headers["Image-URL"]
+        else:
+            image_url = client_request.form['photo-url']
         if image_url is None or image_url == '':
             app.logger.error("Image URL not found!")
-            return render_template('photo-list.html', message="Image URL not found!")
+            return render_template('photo-list.html',
+                                   message="Image URL not found!")
         result = do_download_image(UPLOAD_DIR, image_url, filename)
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
@@ -761,15 +836,18 @@ def do_upload_photo(client_request, file = None):
             _photos = album['photos']
             if str(docs["_id"]) in _photos:
                 col_albums.append(album['path'])
-        app.logger.debug("Photo exists in DB! The photo can be found in the albums: " + ",".join(col_albums))
+        msg = ("Photo exists in DB! The photo can be found in the albums: "
+               ",".join(col_albums))
+        app.logger.debug(msg)
         # move or delete the photo to another folder
         abs_file_path = os.path.join(str(UPLOAD_DIR), filename)
         # https://stackoverflow.com/a/59185523/865603
         pathlib.Path(abs_file_path).unlink(missing_ok=True)
         # TODO: figure out how to use the returned json below on the view
-        return jsonify(message="EXISTED", submission_folder=submission_folder,
-                filename=docs["filename"],
-                exist_in_albums=",".join(col_albums))
+        return jsonify(message="EXISTED",
+                       submission_folder=submission_folder,
+                       filename=docs["filename"],
+                       exist_in_albums=",".join(col_albums))
     else:
         app.logger.info("{} is a new photo.".format(filename))
 
@@ -777,9 +855,14 @@ def do_upload_photo(client_request, file = None):
     title = infer_param(client_request, "title", "Untitled")
     description = infer_param(client_request, "description", filename)
     origin = infer_param(client_request, "courtesy", "Unknown")
-    save_metadata(submission_folder, filename, title, description, origin, hash_md5)
-    return {'submission_folder': submission_folder, 'filename': filename,
-            'title': title, 'description': description, 'origin': origin, 'hash_md5': hash_md5}
+    save_metadata(submission_folder, filename, title, description, origin,
+                  hash_md5)
+    return {
+        'submission_folder': submission_folder,
+        'filename': filename, 'title': title,
+        'description': description, 'origin': origin,
+        'hash_md5': hash_md5
+    }
 
 
 @app.route('/file/upload', methods=['GET', 'POST'])
@@ -796,14 +879,14 @@ def infer_param(client_request, attr, default="Unknown"):
     """
     value = default
     if (attr.capitalize() in request.headers
-        and client_request.headers[attr.capitalize()] is not None):
+            and client_request.headers[attr.capitalize()] is not None):
         value = client_request.headers[attr]
     elif (attr in client_request.form and
           client_request.form[attr] is not None):
         value = client_request.form[attr]
     return value
 
-  
+
 def dict_photos_albums(list_photos, album_path):
     _albums = db.albums.find()
     _albums = bson.json_util.dumps(_albums)
@@ -814,9 +897,13 @@ def dict_photos_albums(list_photos, album_path):
             photo_id = str(photo.get("_id"))
             if photo_id in album['photos'] and album['path'] != album_path:
                 if photo_id in other_albums_dict:
-                    other_albums_dict[photo_id].append({"path": album['path'], "title": album['title']})
+                    other_albums_dict[photo_id].append({
+                        "path": album['path'], "title": album['title']
+                    })
                 else:
-                    other_albums_dict[photo_id] = [{"path": album['path'], "title": album['title']}]
+                    other_albums_dict[photo_id] = [{
+                        "path": album['path'], "title": album['title']
+                    }]
     return other_albums_dict
 
 
