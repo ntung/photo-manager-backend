@@ -688,7 +688,7 @@ def photo_list():
             "photo_map": json.loads(json_util.dumps(map_photo_album))
         }
     else:
-        tpl_name = 'photo_list.html'
+        tpl_name = 'photo-list.html'
         return render_template(template_name_or_list=tpl_name,
                                albums=_albums,
                                photos=all_photos,
