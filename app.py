@@ -65,7 +65,8 @@ dictConfig({
     "version": 1,
     "formatters": {
         "default": {
-            "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+            "format": "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
         }
     },
     "handlers": {
@@ -826,6 +827,7 @@ def do_upload_photo(client_request, file=None):
             return render_template('photo-list.html',
                                    message="Image URL not found!")
         result = do_download_image(UPLOAD_DIR, image_url, filename)
+        app.logger.debug(f"Download completed! {result}")
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
 
