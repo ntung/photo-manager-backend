@@ -921,4 +921,5 @@ def dict_photos_albums(list_photos, album_path):
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port=5500, debug=True, threaded=False,
     # ssl_context='adhoc')
-    app.run(host='0.0.0.0', port=5050, debug=True, threaded=False)
+    app.run(host='0.0.0.0', port=5500, debug=True, threaded=False,
+            ssl_context=('cert.pem', 'key.pem'))
