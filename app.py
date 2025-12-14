@@ -889,12 +889,23 @@ def infer_param(client_request, attr, default="Unknown"):
     Infer the value of a given attribute from the request
     """
     value = default
-    if (attr.capitalize() in request.headers
-            and client_request.headers[attr.capitalize()] is not None):
+    attr = attr.capitalize()
+    if (attr in client_request.headers
+            and client_request.headers[attr] is not None):
         value = client_request.headers[attr]
     elif (attr in client_request.form and
           client_request.form[attr] is not None):
         value = client_request.form[attr]
+    elif (attr in client_request.json and
+          client_request.json[attr] is not None):
+        value = client_request.json[attr]
+    else:
+        data = client_request.data.decode("utf-8")
+        attr = attr.lower()
+        data = json.loads(data)
+        if attr in data and data[attr] is not None:
+            value = data[attr]
+
     return value
 
 
