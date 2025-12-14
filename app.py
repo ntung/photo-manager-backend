@@ -863,9 +863,9 @@ def do_upload_photo(client_request, file=None):
 
     # save the file's metadata into MongoDB
     title = infer_param(client_request, "title", "Untitled")
-    description = infer_param(client_request, "description", filename)
+    desc = infer_param(client_request, "description", filename)
     origin = infer_param(client_request, "courtesy", "Unknown")
-    save_metadata(submission_folder, filename, title, description, origin,
+    save_metadata(submission_folder, filename, title, desc, origin,
                   hash_md5)
     return {
         'message': message,
@@ -919,4 +919,6 @@ def dict_photos_albums(list_photos, album_path):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5500, debug=True, threaded=False, ssl_context='adhoc')
+    # app.run(host='0.0.0.0', port=5500, debug=True, threaded=False,
+    # ssl_context='adhoc')
+    app.run(host='0.0.0.0', port=5050, debug=True, threaded=False)

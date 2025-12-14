@@ -90,15 +90,18 @@
             if (data !== undefined) {
                 console.log(data);
                 toastr.success(data["message"] ? data["message"] : JSON.stringify(data));
-                // clear all the fields
             } else {
                 toastr.error("No photo provided!");
             }
+            // clear all the fields
             $('#upload-form')[0].reset();
+
+            // check where the upload was requested: from list view or upload view. If it is the list view,
+            // add a new photo placeholder to load the newly uploaded photo
         }).catch(error => {
             console.error('Error: ', error);
         }).finally(() => {
-            console.log("Finished the upload");
+            console.log("Finished the photo upload");
         });
 
         //toggleLockAndUnlockForm(true);

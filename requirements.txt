@@ -5,6 +5,8 @@ flask-cors
 flask-socketio
 gunicorn
 pyopenssl
-python-dotenv
+python-dotenv==1.2.1
 python-slugify
 pytz
+uvicorn
+asgiref
