@@ -4,6 +4,7 @@ requests
 flask-cors
 flask-socketio
 flake8~=7.0
+pylint
 loguru
 gunicorn
 pyopenssl
