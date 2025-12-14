@@ -45,31 +45,58 @@
     </div>
 </form>
 <script>
-    function extractData() {
-        const photoUpload = $("#photo-upload").val();
+    let fileList;
+    let contentType = 'application/json; charset=utf-8';
+    // Listen for the moment the file selection changes (i.e., the user selects files)
+    $('#photo-upload').on('change', function(event) {
+        event.preventDefault();
+        // 'this' inside the handler refers to the native DOM element
+        const fileInput = this;
+
+        // This is where you access the files property
+        fileList = fileInput.files;
+
+        if (fileList && fileList.length > 0) {
+            console.log("Files are now defined and ready:", fileList);
+            // Now you can start reading or uploading them
+        } else {
+            // User may have opened the dialog and clicked cancel
+            console.log("No files selected.");
+        }
+    });
+
+    function extractData(event) {
+        event.preventDefault();
+        
         const photoUrl = $("#photo-url").val();
         const title = $("#photo-title").val();
         const description = $("#photo-description").val();
         const courtesy = $("#photo-courtesy").val();
-        return {
-            'photo-upload': photoUpload,
+
+        const metaData = {
             'photo-url': photoUrl,
             'title': title,
             'description': description,
             'courtesy': courtesy
-        };
+        }
+        const strMetaData = JSON.stringify(metaData);
+        const formData = new FormData();
+        formData.append('metadata', strMetaData);
+        if (fileList !== undefined) {
+            const photoUpload = fileList[0]; // ("#photo-upload").get[0];
+            formData.append('file', photoUpload);
+            contentType = 'multipart/form-data';
+        }
+        return formData;
     }
 
     async function uploadPhoto(data) {
         const URL = "/photo/upload";
-        const params = {
+        let params = {
             method: 'POST',
-            headers: {
-                'Accept': 'application/json; charset=utf-8',
-                'Content-Type': 'application/json; charset=utf-8'
-            },
-            body: JSON.stringify(data)
-        }
+            body: data
+        };
+
         const result = await fetch(URL, params);
         if (!result.ok) {
             throw new Error("HTTP error " + result.status);
@@ -82,10 +109,11 @@
     }
 
     $(".btn-photo-upload").on("click", function(event) {
+        // the statement below is so important.
+        // if it is omitted, we probably see the request hit twice in the logic implementation
         event.preventDefault();
         console.log("you've clicked me!");
-        const uploaded = extractData();
-        console.log(uploaded);
+        const uploaded = extractData(event);
         uploadPhoto(uploaded).then(data => {
             if (data !== undefined) {
                 console.log(data);

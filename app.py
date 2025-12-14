@@ -720,48 +720,21 @@ def photo_update():
 
 @app.route('/photo/upload', methods=('GET', 'POST'))
 def photo_upload():
+    """
+    Upload photos via Form, Postman or Curl
+    """
     if request.method == 'POST':
-        if 'photo-upload' in request.files:
-            file = request.files['photo-upload']
-            app.logger.info("Upload file via form")
-            result = do_upload_photo(request, file)
+        if 'file' in request.files:
+            app.logger.info("Upload the photo via browsing it via form")
         else:
-            app.logger.info("Upload file via postman or terminal")
-            result = do_upload_photo(request)
-            result = result.json if isinstance(result, Response) else result
+            app.logger.info("Upload the photo via postman, terminal or post")
+        result = do_upload_photo(request)
+        result = result.json if isinstance(result, Response) else result
 
         app.logger.debug(result)
         return result
-        # return jsonify(message="will handle this later")
-        # return redirect(url_for('photo_list'))
     else:
         return render_template("photo-upload.html")
-
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            message = "File to be uploaded not found!"
-            return jsonify(message=message)
-        file = request.files['file']
-
-        if file.filename == '':
-            message = "File to be uploaded not found or incomplete operation!"
-            return jsonify(message=message)
-        if file:
-            filename = file.filename
-            result = do_upload_photo(request, file)
-            if "message" in result and result["message"] == "EXISTED":
-                return jsonify(message="File existed!")
-            return jsonify(
-                message="Completed upload files successfully!",
-                submission_folder=result['submission_folder'],
-                original_filename=filename,
-                after_uploaded_filename=filename,
-                title=result['title'],
-                courtesy=result['origin'])
-
-    message = "Under construction or operation is not supported!"
-    return jsonify(message=message)
 
 
 @app.route('/photo/view', methods=['GET', 'POST'])
@@ -794,18 +767,37 @@ def do_download_image(storage_location, image_url, out_filename=None):
     return {"filename": out_filename, "hash_md5": hash_md5}
 
 
-def do_upload_photo(client_request, file=None):
-    submission_folder = client_request.headers["Submission-Folder"] \
-        if ("Submission-Folder" in request.headers
-            and client_request.headers["Submission-Folder"] is not None) \
+def do_upload_photo(req):
+    """
+    Handle the uploading of photos
+    """
+    metadata_string = req.form.get('metadata')
+    if not metadata_string:
+        return jsonify({'message': 'Missing metadata field in form data'}), 400
+    try:
+        # Use Python's built-in JSON library to convert the string back to
+        # a dictionary
+        metadata = json.loads(metadata_string)
+        title = metadata.get('title', 'Untitled')
+        photo_url = metadata.get('photo-url', 'N/A')
+        description = metadata.get('description', 'N/A')
+        courtesy = metadata.get('courtesy', 'Unknown')
+
+    except json.JSONDecodeError:
+        return jsonify({'message': 'Invalid JSON format in the metadata'}), 400
+
+    submission_folder = req.headers["Submission-Folder"] \
+        if ("Submission-Folder" in req.headers
+            and req.headers["Submission-Folder"] is not None) \
         else infer_submission_folder()
     UPLOAD_DIR = os.path.join(app.config['UPLOAD_FOLDER'], submission_folder)
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
-    if file:
+    if 'file' in req.files:
+        file = req.files['file']
         # file.filename and file.filename is not None:
-        app.logger.info("uploading a local photo...")
+        app.logger.info("Uploading a local photo...")
         # filename = secure_filename(file.filename)
         # filename = file.filename
         abs_file_path = os.path.join(str(UPLOAD_DIR), filename)
@@ -815,18 +807,20 @@ def do_upload_photo(client_request, file=None):
     else:
         # download the image from the provided image URL
         app.logger.info("Downloading a photo from a remote location...")
-        if ("Image-URL" in request.headers
-                and client_request.headers["Image-URL"] is not None):
-            image_url = client_request.headers["Image-URL"]
-        elif "photo-url" in request.json:
-            image_url = request.json["photo-url"]
+        if photo_url is not None:
+            pass
+        elif ("Image-URL" in req.headers
+                and req.headers["Image-URL"] is not None):
+            photo_url = req.headers["Image-URL"]
+        elif "photo-url" in req.json:
+            photo_url = req.json["photo-url"]
         else:
-            image_url = client_request.form['photo-url']
-        if image_url is None or image_url == '':
+            photo_url = req.form['photo-url']
+        if photo_url is None or photo_url == '':
             app.logger.error("Image URL not found!")
             return render_template('photo-list.html',
                                    message="Image URL not found!")
-        result = do_download_image(UPLOAD_DIR, image_url, filename)
+        result = do_download_image(UPLOAD_DIR, photo_url, filename)
         app.logger.debug(f"Download completed! {result}")
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
@@ -862,16 +856,13 @@ def do_upload_photo(client_request, file=None):
         app.logger.info(message)
 
     # save the file's metadata into MongoDB
-    title = infer_param(client_request, "title", "Untitled")
-    desc = infer_param(client_request, "description", filename)
-    origin = infer_param(client_request, "courtesy", "Unknown")
-    save_metadata(submission_folder, filename, title, desc, origin,
+    save_metadata(submission_folder, filename, title, description, courtesy,
                   hash_md5)
     return {
         'message': message,
         'submission_folder': submission_folder,
         'filename': filename, 'title': title,
-        'description': desc, 'origin': origin,
+        'description': description, 'origin': courtesy,
         'hash_md5': hash_md5
     }
 
@@ -882,31 +873,6 @@ def file_upload():
     # file.read() is the same as file.stream.read()
     img_key = hashlib.md5(file.read()).hexdigest()
     print(img_key)
-
-
-def infer_param(client_request, attr, default="Unknown"):
-    """
-    Infer the value of a given attribute from the request
-    """
-    value = default
-    attr = attr.capitalize()
-    if (attr in client_request.headers
-            and client_request.headers[attr] is not None):
-        value = client_request.headers[attr]
-    elif (attr in client_request.form and
-          client_request.form[attr] is not None):
-        value = client_request.form[attr]
-    elif (attr in client_request.json and
-          client_request.json[attr] is not None):
-        value = client_request.json[attr]
-    else:
-        data = client_request.data.decode("utf-8")
-        attr = attr.lower()
-        data = json.loads(data)
-        if attr in data and data[attr] is not None:
-            value = data[attr]
-
-    return value
 
 
 def dict_photos_albums(list_photos, album_path):
