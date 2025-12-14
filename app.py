@@ -863,9 +863,9 @@ def do_upload_photo(client_request, file=None):
 
     # save the file's metadata into MongoDB
     title = infer_param(client_request, "title", "Untitled")
-    description = infer_param(client_request, "description", filename)
+    desc = infer_param(client_request, "description", filename)
     origin = infer_param(client_request, "courtesy", "Unknown")
-    save_metadata(submission_folder, filename, title, description, origin,
+    save_metadata(submission_folder, filename, title, desc, origin,
                   hash_md5)
     return {
         'message': message,
