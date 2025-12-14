@@ -33,7 +33,7 @@ os.makedirs(TMP_BM, exist_ok=True)
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
 
 client = MongoClient('localhost', 27017)
-db = client.flask_db
+db = client.photodb
 todos = db.todos
 
 TZ_LONDON = pytz.timezone("Europe/London")
