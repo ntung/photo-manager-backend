@@ -638,19 +638,6 @@ def photo_delete():
 
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
-    if request.method == 'POST':
-        if 'photo-upload' in request.files:
-            file = request.files['photo-upload']
-            app.logger.info("Upload file via form")
-            result = do_upload_photo(request, file)
-        else:
-            app.logger.info("Upload file via postman or terminal")
-            result = do_upload_photo(request)
-            return result
-        app.logger.debug(result)
-        # return jsonify(message="will handle this later")
-        return redirect(url_for('photo_list'))
-
     all_photos = (db
                   .photos
                   .find()
@@ -733,6 +720,23 @@ def photo_update():
 @app.route('/photo/upload', methods=('GET', 'POST'))
 def photo_upload():
     if request.method == 'POST':
+        if 'photo-upload' in request.files:
+            file = request.files['photo-upload']
+            app.logger.info("Upload file via form")
+            result = do_upload_photo(request, file)
+        else:
+            app.logger.info("Upload file via postman or terminal")
+            result = do_upload_photo(request)
+            result = result.json if isinstance(result, Response) else result
+
+        app.logger.debug(result)
+        return result
+        # return jsonify(message="will handle this later")
+        # return redirect(url_for('photo_list'))
+    else:
+        return render_template("photo-upload.html")
+
+    if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
             message = "File to be uploaded not found!"
@@ -795,6 +799,7 @@ def do_upload_photo(client_request, file=None):
             and client_request.headers["Submission-Folder"] is not None) \
         else infer_submission_folder()
     UPLOAD_DIR = os.path.join(app.config['UPLOAD_FOLDER'], submission_folder)
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
     # regenerate a new file for both cases
     filename = str(uuid.uuid4()) + ".jpg"
     if file:
@@ -802,7 +807,6 @@ def do_upload_photo(client_request, file=None):
         app.logger.info("uploading a local photo...")
         # filename = secure_filename(file.filename)
         # filename = file.filename
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
         abs_file_path = os.path.join(str(UPLOAD_DIR), filename)
         file.save(abs_file_path)
         with open(abs_file_path, "rb") as f:
@@ -813,6 +817,8 @@ def do_upload_photo(client_request, file=None):
         if ("Image-URL" in request.headers
                 and client_request.headers["Image-URL"] is not None):
             image_url = client_request.headers["Image-URL"]
+        elif "photo-url" in request.json:
+            image_url = request.json["photo-url"]
         else:
             image_url = client_request.form['photo-url']
         if image_url is None or image_url == '':
@@ -844,12 +850,14 @@ def do_upload_photo(client_request, file=None):
         # https://stackoverflow.com/a/59185523/865603
         pathlib.Path(abs_file_path).unlink(missing_ok=True)
         # TODO: figure out how to use the returned json below on the view
-        return jsonify(message="EXISTED",
+        message = filename + ' exists!'
+        return jsonify(message=message,
                        submission_folder=submission_folder,
                        filename=docs["filename"],
                        exist_in_albums=",".join(col_albums))
     else:
-        app.logger.info("{} is a new photo.".format(filename))
+        message = f"{filename} is a new photo."
+        app.logger.info(message)
 
     # save the file's metadata into MongoDB
     title = infer_param(client_request, "title", "Untitled")
@@ -858,6 +866,7 @@ def do_upload_photo(client_request, file=None):
     save_metadata(submission_folder, filename, title, description, origin,
                   hash_md5)
     return {
+        'message': message,
         'submission_folder': submission_folder,
         'filename': filename, 'title': title,
         'description': description, 'origin': origin,

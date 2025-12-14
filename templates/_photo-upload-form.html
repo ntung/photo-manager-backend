@@ -1,4 +1,4 @@
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" id="upload-form">
     <div class="mb-3">
         <div id="drop-area">
             <b><label for="photo-upload"
@@ -41,10 +41,70 @@
                class="form-control"/>
     </div>-->
     <div class="mb-3" id="action-button">
-        <button type="submit" class="btn btn-primary">Upload</button>
+        <button class="btn btn-primary btn-photo-upload">Upload</button>
     </div>
 </form>
 <script>
+    function extractData() {
+        const photoUpload = $("#photo-upload").val();
+        const photoUrl = $("#photo-url").val();
+        const title = $("#photo-title").val();
+        const description = $("#photo-description").val();
+        const courtesy = $("#photo-courtesy").val();
+        return {
+            'photo-upload': photoUpload,
+            'photo-url': photoUrl,
+            'title': title,
+            'description': description,
+            'courtesy': courtesy
+        };
+    }
+
+    async function uploadPhoto(data) {
+        const URL = "/photo/upload";
+        const params = {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json; charset=utf-8',
+                'Content-Type': 'application/json; charset=utf-8'
+            },
+            body: JSON.stringify(data)
+        }
+        const result = await fetch(URL, params);
+        if (!result.ok) {
+            throw new Error("HTTP error " + result.status);
+        }
+        try {
+            return await result.json();
+        } catch { // Note: ES2019 allows optional `catch` bindings
+            this.dataError = true;
+        }
+    }
+
+    $(".btn-photo-upload").on("click", function(event) {
+        event.preventDefault();
+        console.log("you've clicked me!");
+        const uploaded = extractData();
+        console.log(uploaded);
+        uploadPhoto(uploaded).then(data => {
+            if (data !== undefined) {
+                console.log(data);
+                toastr.success(data["message"] ? data["message"] : JSON.stringify(data));
+                // clear all the fields
+            } else {
+                toastr.error("No photo provided!");
+            }
+            $('#upload-form')[0].reset();
+        }).catch(error => {
+            console.error('Error: ', error);
+        }).finally(() => {
+            console.log("Finished the upload");
+        });
+
+        //toggleLockAndUnlockForm(true);
+    });
+
+
     $(".photo-courtesy").on("focusout", function() {
         let value = $(this).val();
         if (value.includes("facebook.com")) {
