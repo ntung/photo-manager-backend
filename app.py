@@ -871,7 +871,7 @@ def do_upload_photo(client_request, file=None):
         'message': message,
         'submission_folder': submission_folder,
         'filename': filename, 'title': title,
-        'description': description, 'origin': origin,
+        'description': desc, 'origin': origin,
         'hash_md5': hash_md5
     }
 
