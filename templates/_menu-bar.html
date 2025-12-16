@@ -1,20 +1,38 @@
-<div class="row pm-menubar">
-    <div class="col-9">
-<p id="pm-para-menubar">
-    <a href="/" id="pm-menubar-home" class="menubar-item active">Home</a>
-    <a href="/photo/list" id="pm-menubar-list" class="menubar-item">List</a>
-    <a href="/photo/view" id="pm-menubar-view" class="menubar-item">View</a>
-    <a href="/photo/albums" id="pm-menubar-albums" class="menubar-item">Albums</a>
-    <a href="/photo/upload" id="pm-menubar-upload" class="menubar-item">Upload</a>
-    <a href="/photo/todo-list" id="pm-menubar-todo-list" class="menubar-item">ToDo List</a></p>
-</div>
-<div class="col-3">
-    <p id="pm-para-right-menubar">
-        <a href="javascript:void(0)" id="pm-right-menubar-link-upload-a-photo">Upload a photo</a>
-    </p>
-</div>
-</div>
-{#{% include('_photo-edit-modal-form.html') %}#}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">Photo Manager</a>
+
+        <!-- Hamburger button -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Menu items -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/list">List</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/view">View</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/albums">Albums</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/upload">Upload</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/todo-list">ToDoList</a>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+</nav>
 <style>
     /* The navigation bar */
 .pm-menubar {
@@ -41,18 +59,12 @@
   color: black;
 }
 
-.main {
-    padding: 16px;
-    margin-top: 45px;
-    /* height: 1500px; Used in this example to enable scrolling */
-}
-
-.active {
+{#.active {
   background-color: lightcoral
-}
+}#}
 </style>
 <script>
-  const menus = [{"/albums": "Albums"}, {"/": "Home"}, {"/list": "List"}, {"/view": "View"}, {"/todo-list": "ToDo List"}];
+  {#const menus = [{"/albums": "Albums"}, {"/": "Home"}, {"/list": "List"}, {"/view": "View"}, {"/todo-list": "ToDo List"}];
   $('.menubar-item').removeClass("active");
   const href = window.location.href;
   let path = href.substring(href.lastIndexOf("/"));
@@ -68,7 +80,7 @@
       $btnUpload.on("click", function() {
           $("#photo-edit-modal-form").modal('show');
       });
-  });
+  });#}
 
 //   $(function() {
 //     $('#pm-para-menubar a').on("click", function() {

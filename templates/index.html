@@ -1,18 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>Homepage | Photo Manager</title>
     {% include('_head.html') %}
+
 </head>
 <body>
-<div class="container">
+
+<!-- Page Content -->
+<div class="container mt-4">
+    <!-- Sticky Navbar -->
     {% include '_menu-bar.html' %}
     <div class="main">
         <div class="row">
-            <h1>Photo Manager</h1>
+            <div class="col">
+                <h1 class="mb-4">Welcome to My Photo Manager</h1>
+
+                <p>
+                    This is a server-client application to manage your photos. You can call it as Photo Manager.
+                    Using the menubar to navigate the basic functionalities.
+                </p>
+
+                <p>
+                    Enjoy testing it.
+                </p>
+
+                <div style="height: 1200px;"></div>
+            </div>
         </div>
     </div>
 </div>
+
 {% include('_foot.html') %}
 </body>
 </html>
