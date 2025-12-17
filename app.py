@@ -639,6 +639,7 @@ def photo_delete():
 def _serialize_photo(doc):
     return {
         "id": str(doc.get("_id", "")),
+        "_id": str(doc.get("_id", "")),
         # "thumbnail_url": doc.get("thumbnail_url"),
         # "fullsize_url": doc.get("fullsize_url"),
         "title": doc.get("title", ""),
@@ -665,7 +666,7 @@ def _get_photos_page():
     skip = (page - 1) * PAGE_SIZE
 
     cursor = (db.photos
-              .find({}, {"_id": False})
+              .find()
               .skip(skip)
               .sort([("date_uploaded", pymongo.DESCENDING)])
               .limit(PAGE_SIZE))
