@@ -306,9 +306,11 @@ def get_album(path):
     if first_album is None:
         return None
 
-    photos = first_album['photos']
+    photos_in_album = first_album['photos']
     photo_details = []
-    for photo_id in photos:
+    for photo_id in photos_in_album:
+        if photo_id == 'None':
+            continue
         photo_doc = db.photos.find_one({"_id": ObjectId(photo_id)})
         if photo_doc is not None:
             photo_details.append(photo_doc)
