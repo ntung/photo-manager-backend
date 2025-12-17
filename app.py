@@ -695,25 +695,23 @@ def photo_list():
                 map_photo_album[photo['filename']] = {
                     album['path']: album['title']
                 }
-    # for p in map_photo_album:
-    #     print("{}: {}".format(p, map_photo_album[p]))
-    # print(_albums)
+
     # regular expression pattern to match the query parameters section
-    pattern = r'\?'
-    parts = re.split(pattern, request.url)
-    if len(parts) == 2:
-        return {
-            "albums": json.loads(json_util.dumps(_albums)),
-            "photos": json.loads(json_util.dumps(all_photos)),
-            "photo_map": json.loads(json_util.dumps(map_photo_album))
-        }
-    else:
-        tpl_name = 'photo-list.html'
-        return render_template(template_name_or_list=tpl_name,
-                               albums=_albums,
-                               photos=all_photos,
-                               map_photo_album=map_photo_album,
-                               api_svr=API_SVR)
+    # pattern = r'\?'
+    # parts = re.split(pattern, request.url)
+    # if len(parts) == 2:
+    #     return {
+    #         "albums": json.loads(json_util.dumps(_albums)),
+    #         "photos": json.loads(json_util.dumps(all_photos)),
+    #         "photo_map": json.loads(json_util.dumps(map_photo_album))
+    #     }
+    # else:
+    tpl_name = 'photo-list.html'
+    return render_template(template_name_or_list=tpl_name,
+                           albums=_albums,
+                           photos=all_photos,
+                           map_photo_album=map_photo_album,
+                           api_svr=API_SVR)
 
 
 @app.route('/photo/<path:path>', methods=['GET', 'POST'])
