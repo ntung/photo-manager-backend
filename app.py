@@ -636,13 +636,45 @@ def photo_delete():
 
     return jsonify(message="Deleted successfully")
 
+def _serialize_photo(doc):
+    return {
+        "id": str(doc.get("_id", "")),
+        # "thumbnail_url": doc.get("thumbnail_url"),
+        # "fullsize_url": doc.get("fullsize_url"),
+        "title": doc.get("title", ""),
+        "description": doc.get("description", ""),
+        "courtesy": doc.get("courtesy", ""),
+        "folder": doc.get("folder", ""),
+        "filename": doc.get("filename", ""),
+        "date_uploaded": doc.get("date_uploaded", None),
+        "date_updated": doc.get("date_updated", None),
+    }
+
+
+def _get_photos_page():
+    """
+    Gest photos by paging
+    """
+    try:
+        page = int(request.args.get("page", 1))
+        if page < 1:
+            page = 1
+    except ValueError:
+        page = 1
+    PAGE_SIZE = 20
+    skip = (page - 1) * PAGE_SIZE
+
+    cursor = (db.photos
+              .find({}, {"_id": False})
+              .skip(skip)
+              .sort([("date_uploaded", pymongo.DESCENDING)])
+              .limit(PAGE_SIZE))
+    return [_serialize_photo(doc) for doc in cursor]
+
 
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
-    all_photos = (db
-                  .photos
-                  .find()
-                  .sort([("date_uploaded", pymongo.DESCENDING)]).limit(20))
+    all_photos = get_photos()
     all_albums = db.albums.find()
     map_photo_album = {
         "default": {"album-1": "Album 1"}
@@ -893,6 +925,15 @@ def dict_photos_albums(list_photos, album_path):
                         "path": album['path'], "title": album['title']
                     }]
     return other_albums_dict
+
+
+@app.route('/api/v1/photos', methods=['GET'])
+def get_photos():
+    """
+    Get the photos by parameters such as pagination, page size, and sort order
+    """
+    photo_cursor = _get_photos_page()
+    return photo_cursor
 
 
 if __name__ == '__main__':
