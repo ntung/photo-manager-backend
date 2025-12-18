@@ -16,6 +16,7 @@ import pymongo
 import pytz
 import requests
 from bson import ObjectId, json_util
+from dotenv import load_dotenv
 from flask import Flask, Response
 from flask import jsonify, render_template, request, url_for
 from flask import redirect, send_from_directory
@@ -25,8 +26,11 @@ from flask_socketio import SocketIO
 from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
 
+from migration_framework.runner import MigrationRunner
 from utils import PhotoManager
 import pprint
+
+load_dotenv() # loads variables from .env into environment
 
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
@@ -99,6 +103,18 @@ socketio = SocketIO(app)
 API_SVR = os.environ.get('API_SERVER')
 pm_init = PhotoManager.InitPM(UPLOAD_FOLDER, "aaaa")
 submission_folders = pm_init.submission_folder_dict()
+
+@app.cli.command()
+def migrate():
+    """
+    Migrates to the latest version
+    """
+
+    runner = MigrationRunner(
+        uri=os.getenv("MONGODB_URI"),
+        db_name=os.getenv("DB_NAME"),
+    )
+    runner.run()
 
 
 def infer_submission_folder():
