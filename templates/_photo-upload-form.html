@@ -130,6 +130,9 @@
             console.error('Error: ', error);
         }).finally(() => {
             console.log("Finished the photo upload");
+            if (window.location.href.includes("/photo/list")) {
+                window.location.reload();
+            }
         });
 
         //toggleLockAndUnlockForm(true);
