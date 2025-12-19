@@ -23,6 +23,7 @@ from flask import jsonify, render_template, request, url_for
 from flask import redirect, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO
+from jinja2 import FileSystemBytecodeCache
 # from gunicorn.sock import ssl_context
 from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
@@ -99,7 +100,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type: application/json'
 socketio = SocketIO(app)
-
+bcc = FileSystemBytecodeCache('/tmp/jinja_cache', '%s.cache')
+app.jinja_env.bytecode_cache = bcc
 API_SVR = os.environ.get('API_SERVER')
 pm_init = PhotoManager.InitPM(UPLOAD_FOLDER, "aaaa")
 submission_folders = pm_init.submission_folder_dict()
