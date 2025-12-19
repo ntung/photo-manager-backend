@@ -3,7 +3,7 @@ import json
 import math
 import os
 import pathlib
-import re
+import pprint
 import tempfile
 import uuid
 from datetime import datetime, timedelta
@@ -15,7 +15,7 @@ import bson.json_util
 import pymongo
 import pytz
 import requests
-from bson import ObjectId, json_util
+from bson import ObjectId
 from dotenv import load_dotenv
 from flask import Flask, Response
 from flask import jsonify, render_template, request, url_for
@@ -28,7 +28,6 @@ from slugify import slugify
 
 from migration_framework.runner import MigrationRunner
 from utils import PhotoManager
-import pprint
 
 load_dotenv() # loads variables from .env into environment
 
@@ -629,8 +628,20 @@ def photo_unclassified():
     return _unclassified
 
 
-@app.route('/photo/delete', methods=('GET', 'POST'))
-def photo_delete():
+@app.route('/photo/delete/<string:object_id>', methods=('GET', 'POST'))
+def photo_delete(object_id):
+    if request.method == 'GET' and object_id is not None:
+        print(f"deleting the photo object_id={object_id}")
+        if len(object_id) != 24:
+            return jsonify({"error": "photo id must be 24 characters long"})
+        query = {"_id": ObjectId(object_id)}
+        result = db.photos.delete_one(query)
+        app.logger.debug(result)
+        return jsonify({
+            "deleted": True,
+            "object_id": object_id,
+            "size": len(object_id)
+        })
     request_json = request.get_json(silent=True)
     photo_object_id = request_json['photo-object-id']
     query = {"_id": ObjectId(photo_object_id)}
