@@ -837,14 +837,20 @@ def photo_upload():
         return render_template("photo-upload.html")
 
 
-@app.route('/photo/show/<string:hash_md5>', methods=['GET'])
-def photo_show(hash_md5: None):
+@app.route('/photo/show/<string:unique_key>', methods=['GET'])
+def photo_show(unique_key):
     """
-    Shows a photo by hash_md5
+    Shows a photo by hash_md5 or string of the object id
     """
-    if hash_md5 is None:
+    if unique_key is None:
         return render_template("photo-upload.html")
-    docs = db.photos.find({"hash_md5": hash_md5})
+    docs = None
+    if len(unique_key) == 32:
+        # hash_md5
+        docs = db.photos.find({"hash_md5": unique_key})
+    elif len(unique_key) == 24:
+        # string of the object id
+        docs = db.photos.find({"_id": ObjectId(unique_key)})
     if docs is not None:
         return render_template("photo-show.html",
                                photos=docs)
