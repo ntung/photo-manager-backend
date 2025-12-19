@@ -630,20 +630,9 @@ def photo_unclassified():
     return _unclassified
 
 
-@app.route('/photo/delete/<string:object_id>', methods=('GET', 'POST'))
-def photo_delete(object_id):
-    if request.method == 'GET' and object_id is not None:
-        print(f"deleting the photo object_id={object_id}")
-        if len(object_id) != 24:
-            return jsonify({"error": "photo id must be 24 characters long"})
-        query = {"_id": ObjectId(object_id)}
-        result = db.photos.delete_one(query)
-        app.logger.debug(result)
-        return jsonify({
-            "deleted": True,
-            "object_id": object_id,
-            "size": len(object_id)
-        })
+@app.route('/photo/delete/', methods=['POST'])
+@app.route('/photo/delete', methods=['POST'])
+def photo_delete_via_post():
     request_json = request.get_json(silent=True)
     photo_object_id = request_json['photo-object-id']
     query = {"_id": ObjectId(photo_object_id)}
@@ -666,6 +655,24 @@ def photo_delete(object_id):
         do_album_remove_photos(album, tobe_removed_photos)
 
     return jsonify(message="Deleted successfully")
+
+
+@app.route('/photo/delete/<string:object_id>', methods=('GET', 'POST'))
+def photo_delete(object_id):
+    if request.method == 'GET' and object_id is not None:
+        print(f"deleting the photo object_id={object_id}")
+        if len(object_id) != 24:
+            return jsonify({"error": "photo id must be 24 characters long"})
+        query = {"_id": ObjectId(object_id)}
+        result = db.photos.delete_one(query)
+        app.logger.debug(result)
+        return jsonify({
+            "deleted": True,
+            "object_id": object_id,
+            "size": len(object_id)
+        })
+
+    return jsonify({"error": "photo id does not exist"})
 
 
 def _get_pagination_params():
