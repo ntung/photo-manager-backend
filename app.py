@@ -828,6 +828,20 @@ def photo_upload():
         return render_template("photo-upload.html")
 
 
+@app.route('/photo/show/<string:hash_md5>', methods=['GET'])
+def photo_show(hash_md5: None):
+    """
+    Shows a photo by hash_md5
+    """
+    if hash_md5 is None:
+        return render_template("photo-upload.html")
+    docs = db.photos.find({"hash_md5": hash_md5})
+    if docs is not None:
+        return render_template("photo-show.html",
+                               photos=docs)
+    return None
+
+
 @app.route('/photo/view', methods=['GET', 'POST'])
 def photo_view():
     all_photos = db.photos.find().sort([("date_uploaded", pymongo.DESCENDING)])

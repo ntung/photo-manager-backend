@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Gallery | Photo Manager</title>
+    {% include('_head.html') %}
+    <style>
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .photo-card {
+            border: 1px solid #ddd;
+            padding: 8px;
+            border-radius: 6px;
+            background: #fafafa;
+            text-align: center;
+        }
+
+        .photo-card img {
+            max-width: 100%;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+{#https://www.w3schools.com/howto/howto_js_image_grid.asp#}
+<div class="container">
+    {% include '_menu-bar.html' %}
+    <div class="main">
+        <div class="row">
+            <div class="col">
+                <h1>Photo Show</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="gallery"> {% for photo in photos %}
+                    <div class="photo-card">
+{#                        <img src="{{ url_for('photo_show', hash_md5=photo.hash_md5) }}"#}
+{#                                                 alt="Photo {{ loop.index }}">#}
+                        {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
+                        <a href="{{photo_url}}" title="{{photo['title']}}" data-fslightbox="gallery">
+                            <img src="{{photo_url}}" style="width:100%" alt="{{photo['title']}}"></a>
+                        <p>{{ photo.title }}, {{ photo.get("_id") }}</p>
+                    </div> {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% include('_foot.html') %}
+<script src="{{ url_for('static', filename='js/fslightbox.js') }}"></script>
+<script>
+
+</script>
+
+</body>
+</html>
