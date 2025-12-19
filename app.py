@@ -326,7 +326,7 @@ def get_album(path):
     for photo_id in photos_in_album:
         if photo_id == 'None':
             continue
-        photo_doc = db.photos.find_one({"_id": ObjectId(photo_id)})
+        photo_doc = db.photos.find_one({"_id": photo_id})
         if photo_doc is not None:
             photo_details.append(photo_doc)
         else:
@@ -358,23 +358,25 @@ def save_photo_to_albums():
 
     for album in newly_added_albums:
         album = get_album(album['path'])
-        updated_photo_list = []
         if album is not None:
-            updated_photo_list: object = album["photos"]
+            updated_photo_list = album["photos"]
             if ((photo_object_id != "") and
-                    (photo_object_id not in updated_photo_list)):
-                updated_photo_list.append(photo_object_id)
+                    (ObjectId(photo_object_id) not in updated_photo_list)):
+                updated_photo_list.append(ObjectId(photo_object_id))
 
-        r = db.albums.find_one_and_update(
-            {'_id': album.get('_id')},
-            {'$set': {
-                "photos": updated_photo_list,
-                "date_modified": datetime.now(TZ_LONDON)
-            }},
-            return_document=ReturnDocument.AFTER
-        )
-        if r.get('_id') is not None:
-            updated_albums.append({"path": r['path'], "title": r['title']})
+            r = db.albums.find_one_and_update(
+                {'_id': album.get('_id')},
+                {
+                    '$set': {
+                        "photos": updated_photo_list,
+                        "date_modified": datetime.now(TZ_LONDON)}
+                }, return_document=ReturnDocument.AFTER
+            )
+            if r.get('_id') is not None:
+                updated_albums.append({
+                    "path": album['path'],
+                    "title": album['title']
+                })
 
     result = {
         "updated-albums": updated_albums,
@@ -986,8 +988,8 @@ def dict_photos_albums(list_photos, album_path):
     _albums = bson.json_util.loads(_albums)
     other_albums_dict = dict()
     for photo in list_photos:
+        photo_id = str(photo.get("_id"))
         for album in _albums:
-            photo_id = str(photo.get("_id"))
             if photo_id in album['photos'] and album['path'] != album_path:
                 if photo_id in other_albums_dict:
                     other_albums_dict[photo_id].append({

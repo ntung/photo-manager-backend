@@ -45,33 +45,33 @@
                         {% endif %}
                     </span>
             </p>
-            <p id="in-albums-{{ photo.get('_id') }}" style="font-style: italic; color: #9714d0">In Albums:
+            <p id="in-albums-{{ photo['id'] }}" style="font-style: italic; color: #9714d0">In Albums:
                 {% for album in photo['albums'] %}
                     <a href="/albums/view/{{ album['path'] }}">{{ album['title'] }}</a>,
                 {% endfor %}
             </p>
             <p><input type="button" value="Add to albums" class="btn btn-primary" name="add-to-album"
-                      data-photo-object-id="{{ photo.get('_id') }}"
+                      data-photo-object-id="{{ photo['id'] }}"
                       data-photo-folder="{{ photo['folder'] }}"
                       data-photo-filename="{{ photo['filename'] }}"/>
                 &nbsp;
                 <button type="button" class="btn btn-primary select-albums-modal-form"
                         data-bs-toggle="modal" data-bs-target="#select-albums-modal-form"
-                        data-photo-object-id="{{ photo.get('_id') }}"
+                        data-photo-object-id="{{ photo['id'] }}"
                         data-photo-folder="{{ photo['folder'] }}"
                         data-photo-filename="{{ photo['filename'] }}">
                     Add to albums (Open a modal)
                 </button>
                 &nbsp;
                 <button type="button" class="btn btn-primary btn-edit-photo" id="btn-edit-photo"
-                        data-photo-object-id="{{ photo.get('_id') }}"
+                        data-photo-object-id="{{ photo['id'] }}"
                         data-photo-folder="{{ photo['folder'] }}"
                         data-photo-filename="{{ photo['filename'] }}">
                     Edit
                 </button>
                 &nbsp;
                 <button type="button" class="btn btn-primary btn-delete-photo" id="btn-delete-photo"
-                        data-photo-object-id="{{ photo.get('_id') }}"
+                        data-photo-object-id="{{ photo['id'] }}"
                         data-photo-folder="{{ photo['folder'] }}"
                         data-photo-filename="{{ photo['filename'] }}">
                     Delete
