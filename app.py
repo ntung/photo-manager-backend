@@ -978,10 +978,11 @@ def dict_photos_albums(list_photos, album_path):
 @app.route('/api/v1/photos', methods=['GET'])
 def get_photos():
     """
-    Get the photos by parameters such as pagination, page size, and sort order
+    Gets the photos by parameters such as pagination, page size, and sort order.
+    The photos are sanitised and converted to presentation forms.
     """
-    photo_cursor = _get_photos_page()
-    return photo_cursor
+    _photos = _get_photos_page()
+    return _photos
 
 
 if __name__ == '__main__':
