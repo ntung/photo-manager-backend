@@ -418,8 +418,8 @@ def do_album_remove_photos(album, tobe_removed_photos):
         original_photos = album['photos']
         for photo in tobe_removed_photos:
             photo_oid = photo['photo-object-id']
-            if photo_oid in original_photos:
-                original_photos.remove(photo_oid)
+            if ObjectId(photo_oid) in original_photos:
+                original_photos.remove(ObjectId(photo_oid))
 
         r = db.albums.find_one_and_update(
             {'_id': album.get('_id')},
