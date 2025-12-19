@@ -19,10 +19,10 @@
                 <img id="{{ photo['folder'] }}-{{ photo['filename'] }}" src="{{ photo_url }}"
                      style="width:100%" alt="{{ photo['title'] }}"></a></div>
         <div class="col-8 photo-metadata">
-            <h3 id="photo-title-{{ photo.get("_id") }}">{{ photo['title'] }}</h3>
-            <p id="photo-filename-{{ photo.get("_id") }}"><em>{{ photo['filename'] }}</em></p>
-            <p id="photo-description-{{ photo.get("_id") }}">{{ photo['description'] }}</p>
-            <p id="photo-other-metadata-{{ photo.get("_id") }}">
+            <h3 id="photo-title-{{ photo['id'] }}">{{ photo['title'] }}</h3>
+            <p id="photo-filename-{{ photo['id'] }}"><em>{{ photo['filename'] }}</em></p>
+            <p id="photo-description-{{ photo['id'] }}">{{ photo['description'] }}</p>
+            <p id="photo-other-metadata-{{ photo['id'] }}">
                 {% if "date_uploaded" in photo %}
                     <span>Uploaded {{ photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
                 {% endif %}
@@ -30,9 +30,9 @@
                     <span>| Updated {{ photo['date_modified'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
                 {% endif %}
                 | Source:
-                <span id="original-photo-courtesy-{{ photo.get("_id") }}"
+                <span id="original-photo-courtesy-{{ photo['id'] }}"
                       style="display: none">{{ photo['courtesy'] }}</span>
-                <span id="photo-courtesy-{{ photo.get("_id") }}">
+                <span id="photo-courtesy-{{ photo['id'] }}">
                         {% if photo['courtesy'].startswith('http') %}
                             {% if 'facebook.com' in photo['courtesy'] %}
                                 {% set source = "Facebook" %}
