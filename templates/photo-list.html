@@ -182,6 +182,7 @@
                 },
                 success: function (data) {
                     toastr.success("Updated successfully! The page is refreshing within one second.");
+                    $('#upload-form')[0].reset();
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
