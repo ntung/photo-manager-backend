@@ -654,25 +654,10 @@ def photo_delete():
 
     return jsonify(message="Deleted successfully")
 
-def _serialize_photo(doc):
-    return {
-        "id": str(doc.get("_id", "")),
-        "_id": str(doc.get("_id", "")),
-        # "thumbnail_url": doc.get("thumbnail_url"),
-        # "fullsize_url": doc.get("fullsize_url"),
-        "title": doc.get("title", ""),
-        "description": doc.get("description", ""),
-        "courtesy": doc.get("courtesy", ""),
-        "folder": doc.get("folder", ""),
-        "filename": doc.get("filename", ""),
-        "date_uploaded": doc.get("date_uploaded", None),
-        "date_updated": doc.get("date_updated", None),
-    }
 
-
-def _get_photos_page():
+def _get_pagination_params():
     """
-    Gest photos by paging
+    Gets the pagination params
     """
     try:
         page = int(request.args.get("page", 1))
@@ -682,55 +667,101 @@ def _get_photos_page():
         page = 1
     PAGE_SIZE = 20
     skip = (page - 1) * PAGE_SIZE
+    return skip, PAGE_SIZE
+
+
+def _serialize_photo(doc):
+    # Extract album info safely
+    _albums = doc.get("belonged_to_albums", [])
+
+    _photo = {
+        "id": str(doc.get("_id", "")),
+        "title": doc.get("title", ""),
+        "description": doc.get("description", ""),
+        "courtesy": doc.get("courtesy", ""),
+        "folder": doc.get("folder", ""),
+        "filename": doc.get("filename", ""),
+        "date_uploaded": doc.get("date_uploaded"),
+        "date_modified": doc.get("date_modified"),
+
+        # New: Add the joined album data to the output
+        "albums": [
+            {
+                "id": str(a.get("_id")),
+                "title": a.get("title"),
+                "path": a.get("path")
+            } for a in _albums
+        ]
+    }
+    return _photo
+
+
+def _get_photos_page():
+    """
+    Gets the photos by parameters such as pagination, page size, and sort order.
+    The photos are sanitised and converted to presentation forms.
+    """
+    skip, page_size = _get_pagination_params()
 
     cursor = (db.photos
               .find()
               .skip(skip)
               .sort([("date_uploaded", pymongo.DESCENDING)])
-              .limit(PAGE_SIZE))
+              .limit(page_size))
     return [_serialize_photo(doc) for doc in cursor]
+
+
+def _get_latest_photos_with_albums():
+    # Calculate how many documents to skip
+    # Page 1 skips 0, Page 2 skips 20, etc.
+    skip, page_size = _get_pagination_params()
+
+    pipeline = [
+        { "$sort": { "date_uploaded": -1 } },
+        { "$skip": skip },  # Skip the previous pages
+        { "$limit": page_size },   # Limit to current page size
+        {
+            "$lookup": {
+                "from": "albums",
+                "localField": "_id",      # The ID of the photo
+                "foreignField": "photos", # containing the photo IDs
+                "as": "belonged_to_albums"
+            }
+        },
+        {
+            "$project": {
+                # Add all these fields so they aren't deleted!
+                "title": 1,
+                "description": 1,
+                "courtesy": 1,
+                "folder": 1,
+                "filename": 1,
+                "date_uploaded": 1,
+                "date_modified": 1,
+
+                # Keep your album info
+                "belonged_to_albums.path": 1,
+                "belonged_to_albums.title": 1,
+                "belonged_to_albums._id": 1
+            }
+        }
+    ]
+    result  = list(db.photos.aggregate(pipeline))
+    _photos = [_serialize_photo(doc) for doc in result]
+    return _photos
 
 
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
-    all_photos = get_photos()
-    all_albums = db.albums.find()
-    map_photo_album = {
-        "default": {"album-1": "Album 1"}
-    }
-    _albums = []
-    for album in all_albums:
-        _albums.append({
-            "path": album, "title": album['title'],
-            "description": album['description']
-        })
-        album_detail = get_album(album['path'])
-        for photo in album_detail['photos_details']:
-            if photo['filename'] in map_photo_album:
-                dict_albums = map_photo_album[photo['filename']]
-                if album['path'] is not dict_albums:
-                    dict_albums[album['path']] = album['title']
-            else:
-                map_photo_album[photo['filename']] = {
-                    album['path']: album['title']
-                }
+    start_time = time.perf_counter()
+    _photos = _get_latest_photos_with_albums()
+    end_time = time.perf_counter()
+    run_time = end_time - start_time
+    app.logger.info(f"Executed in {run_time:.6f} seconds to load 20 photos")
 
-    # regular expression pattern to match the query parameters section
-    # pattern = r'\?'
-    # parts = re.split(pattern, request.url)
-    # if len(parts) == 2:
-    #     return {
-    #         "albums": json.loads(json_util.dumps(_albums)),
-    #         "photos": json.loads(json_util.dumps(all_photos)),
-    #         "photo_map": json.loads(json_util.dumps(map_photo_album))
-    #     }
-    # else:
     tpl_name = 'photo-list.html'
     return render_template(template_name_or_list=tpl_name,
-                           albums=_albums,
-                           photos=all_photos,
-                           map_photo_album=map_photo_album,
-                           api_svr=API_SVR)
+                           photos=_photos, api_svr=API_SVR)
 
 
 @app.route('/photo/<path:path>', methods=['GET', 'POST'])

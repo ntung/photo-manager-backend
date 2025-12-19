@@ -1,3 +1,14 @@
+<style>
+    .photo-block {
+        border: 2px solid #9714d0;
+        margin-bottom: 2px;
+    }
+
+    .photo-metadata {
+        padding-top: 3px;
+        margin-bottom: 0 !important;
+    }
+</style>
 {% for photo in photos %}
     {% set id_image = photo['filename'][:-4] %}
     {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
@@ -35,13 +46,9 @@
                     </span>
             </p>
             <p id="in-albums-{{ photo.get('_id') }}" style="font-style: italic; color: #9714d0">In Albums:
-                {% if photo['filename'] in map_photo_album %}
-                    {% set dict_album = map_photo_album[photo['filename']] %}
-                    {% set dict_album_values = dict_album.values() %}
-                    {% for path, title in dict_album.items() %}
-                        <a href="/albums/view/{{ path }}">{{ title }}</a>,
-                    {% endfor %}
-                {% endif %}
+                {% for album in photo['albums'] %}
+                    <a href="/albums/view/{{ album['path'] }}">{{ album['title'] }}</a>,
+                {% endfor %}
             </p>
             <p><input type="button" value="Add to albums" class="btn btn-primary" name="add-to-album"
                       data-photo-object-id="{{ photo.get('_id') }}"
