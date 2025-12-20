@@ -44,8 +44,6 @@
 <script src="{{ url_for('static', filename='js/jquery.dm-uploader.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/fslightbox.js') }}"></script>
 <script>
-    let photoObjectId = "", photoFolder = "", photoFileName = "";
-
     $(document).ready(function () {
         toastr.options = {
             "closeButton": false,
@@ -66,8 +64,8 @@
         };
         $('#upload-form')[0].reset();
     });
-</script>
-<script>
+
+    let photoObjectId = "", photoFolder = "", photoFileName = "";
     let currentPage = 1;
     let isLoading = false;
     let hasMore = true;
@@ -94,6 +92,7 @@
                 }
 
                 $("#photo-list").append(response.content);
+                // TODO: change the page=currentPage in the current URI without reloading the page
                 currentPage++;
                 isLoading = false;
             },
@@ -103,7 +102,8 @@
         });
     }
 
-    $(document).on("click", 'input[name=add-to-album]', function () {
+    $(document).on("click", 'input[name=add-to-album]', function (event) {
+        event.preventDefault();
         const $albumList = $('.album-list');
         if ($albumList.html() !== '') {
             $albumList.html("");
@@ -140,13 +140,15 @@
         });
     });
 
-    $(document).on("click", ".select-albums-modal-form", function() {
+    $(document).on("click", ".select-albums-modal-form", function(event) {
+        event.preventDefault();
         photoObjectId = $(this).attr("data-photo-object-id");
         photoFolder = $(this).attr("data-photo-folder");
         photoFileName = $(this).attr("data-photo-filename");
     });
 
-    $(document).on("click", ".btn-edit-photo", function () {
+    $(document).on("click", ".btn-edit-photo", function (event) {
+        event.preventDefault();
         const photoObjectId = $(this).attr("data-photo-object-id");
         const photoTitle = $('#photo-title-' + photoObjectId)[0].innerText;
         $("#photo-title").val(photoTitle);
@@ -199,7 +201,8 @@
         });
     });
 
-    $(document).on("click", ".btn-delete-photo", function () {
+    $(document).on("click", ".btn-delete-photo", function (event) {
+        event.preventDefault();
         const photoObjectId = $(this).attr("data-photo-object-id");
         const photoFolder = $(this).attr("data-photo-folder");
         const photoFileName = $(this).attr("data-photo-filename");
