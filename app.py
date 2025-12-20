@@ -27,6 +27,7 @@ from jinja2 import FileSystemBytecodeCache
 # from gunicorn.sock import ssl_context
 from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
+from urllib3.connection import HTTPSConnection
 
 from migration_framework.runner import MigrationRunner
 from utils import PhotoManager
@@ -105,6 +106,8 @@ app.jinja_env.bytecode_cache = bcc
 API_SVR = os.environ.get('API_SERVER')
 pm_init = PhotoManager.InitPM(UPLOAD_FOLDER, "aaaa")
 submission_folders = pm_init.submission_folder_dict()
+nb_downloads = 0
+
 
 @app.cli.command()
 def migrate():
@@ -970,7 +973,14 @@ def do_upload_photo(req):
             app.logger.error("Image URL not found!")
             return render_template('photo-list.html',
                                    message="Image URL not found!")
-        result = do_download_image(UPLOAD_DIR, photo_url, filename)
+        global nb_downloads
+        try:
+            result = do_download_image(UPLOAD_DIR, photo_url, filename)
+            nb_downloads += 1
+        except HTTPSConnection as e:
+            msg = f"The number of downloads the remote photo: {nb_downloads}"
+            app.logger.error(msg)
+            return jsonify({'message': str(e)}), 500
         app.logger.debug(f"Download completed! {result}")
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
