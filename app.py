@@ -851,7 +851,7 @@ def photo_update():
     return Response(json.dumps(retval), mimetype='application/json')
 
 
-@app.route('/photo/upload', methods=('GET', 'POST'))
+@app.route('/photo/upload', methods=['GET', 'POST'])
 def photo_upload():
     """
     Upload photos via Form, Postman or Curl

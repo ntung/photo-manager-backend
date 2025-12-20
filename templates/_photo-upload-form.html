@@ -112,7 +112,6 @@
         // the statement below is so important.
         // if it is omitted, we probably see the request hit twice in the logic implementation
         event.preventDefault();
-        console.log("you've clicked me!");
         const uploaded = extractData(event);
         uploadPhoto(uploaded).then(data => {
             if (data !== undefined) {
