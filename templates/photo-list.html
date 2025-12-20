@@ -98,6 +98,7 @@
                 }
 
                 $("#photo-list").append(response.content);
+                refreshFsLightbox();
                 // TODO: change the page=currentPage in the current URI without reloading the page
                 currentPage++;
                 isLoading = false;
