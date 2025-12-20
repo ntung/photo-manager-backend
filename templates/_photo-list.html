@@ -8,7 +8,7 @@
                 <img id="{{ photo['folder'] }}-{{ photo['filename'] }}" src="{{ photo_url }}"
                      style="width:100%" alt="{{ photo['title'] }}"></a></div>
         <div class="col-8 photo-metadata">
-            <h3 id="photo-title-{{ photo['id'] }}">{{ photo['title'] }}</h3>
+            <h3 id="photo-title-{{ photo['id'] }}" class="photo-title">{{ photo['title'] }}</h3>
             <p id="photo-filename-{{ photo['id'] }}"><em>{{ photo['filename'] }}</em></p>
             <p id="photo-description-{{ photo['id'] }}">{{ photo['description'] }}</p>
             <p id="photo-other-metadata-{{ photo['id'] }}">

@@ -18,6 +18,12 @@
             padding-top: 3px;
             margin-bottom: 0 !important;
         }
+        .editing {
+            outline: 2px solid #4a90e2;
+            background: #eef6ff;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
     </style>
 </head>
 <body>
@@ -317,6 +323,25 @@
             console.log("The request has completed: ", data);
             toastr.success("The request has completed!");
         });
+    });
+
+    $(document).on("click", ".photo-title", function (event) {
+        event.preventDefault();
+        if ($(this).length === 0) { return; }
+        const firstChild = $(this)[0];
+        let val = firstChild.innerText;
+        console.log(val);
+        // ex: A sample of the id: photo-title--6945e21d8f15586b7f0aa018
+        const length = -(firstChild.id.length - "photo-title".length - 1);
+        const pObjId = firstChild.id.slice(length);
+        console.log(pObjId);
+        $(this).attr("contenteditable", "true") .addClass("editing") .focus();
+    });
+
+    $(document).on("blur", ".photo-title", function (event) {
+        event.preventDefault();
+        if ($(this).length === 0) { return; }
+        $(this).attr("contenteditable", "false").removeClass("editing");
     });
 </script>
 </body>
