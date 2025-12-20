@@ -8,6 +8,17 @@
           href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"/>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"/>
+    <style>
+        .photo-block {
+            border: 2px solid #9714d0;
+            margin-bottom: 2px;
+        }
+
+        .photo-metadata {
+            padding-top: 3px;
+            margin-bottom: 0 !important;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -22,8 +33,9 @@
         </div>
     </div>
     </div>
-
+    <div id="photo-list">
     {% include('_photo-list.html') %}
+    </div>
 
 </div>
 {% include('_albums-select2-modal-form.html') %}
@@ -81,7 +93,7 @@
                     return;
                 }
 
-                $('#items-container').append(response.html);
+                $("#photo-list").append(response.content);
                 currentPage++;
                 isLoading = false;
             },
@@ -91,7 +103,7 @@
         });
     }
 
-    $('input[name=add-to-album]').on("click", function () {
+    $(document).on("click", 'input[name=add-to-album]', function () {
         const $albumList = $('.album-list');
         if ($albumList.html() !== '') {
             $albumList.html("");
@@ -128,13 +140,13 @@
         });
     });
 
-    $(".select-albums-modal-form").on("click", function() {
+    $(document).on("click", ".select-albums-modal-form", function() {
         photoObjectId = $(this).attr("data-photo-object-id");
         photoFolder = $(this).attr("data-photo-folder");
         photoFileName = $(this).attr("data-photo-filename");
     });
 
-    $(".btn-edit-photo").on("click", function () {
+    $(document).on("click", ".btn-edit-photo", function () {
         const photoObjectId = $(this).attr("data-photo-object-id");
         const photoTitle = $('#photo-title-' + photoObjectId)[0].innerText;
         $("#photo-title").val(photoTitle);
@@ -187,7 +199,7 @@
         });
     });
 
-    $(".btn-delete-photo").on("click", function () {
+    $(document).on("click", ".btn-delete-photo", function () {
         const photoObjectId = $(this).attr("data-photo-object-id");
         const photoFolder = $(this).attr("data-photo-folder");
         const photoFileName = $(this).attr("data-photo-filename");
@@ -225,7 +237,7 @@
         });
     });
 
-    $('.album-list').on("click", "#btn-save", function (event) {
+    $(document).on("click", ".album-list", "#btn-save", function (event) {
         event.preventDefault();
         // retrieves the existing albums which the photo in question has been added
         const inAlbumsSelector = $('#in-albums-' + photoObjectId)[0];

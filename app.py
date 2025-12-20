@@ -593,9 +593,7 @@ def albums_view(path):
                                                    key=lambda x: x[sort_field],
                                                    reverse=is_reverse)
                     album["photos_details"] = sorted_photos_details
-                else:
-                    pass
-                print(sort_field)
+
                 view = "_album_view_list.html"
             tt = dict_photos_albums(album["photos_details"], album["path"])
             for photo in album["photos_details"]:
@@ -1024,8 +1022,12 @@ def get_photos():
     Gets the photos by parameters such as pagination, page size, and sort order.
     The photos are sanitised and converted to presentation forms.
     """
+    page = request.args.get('page', 1, type=int)
+    print(f"Page {page}")
     _photos = _get_photos_page()
-    return _photos
+    content = render_template(template_name_or_list="_photo-list.html",
+                              photos=_photos,)
+    return jsonify(photos=_photos, content=content)
 
 
 if __name__ == '__main__':
