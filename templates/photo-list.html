@@ -344,6 +344,10 @@
         if ($(this).length === 0) { return; }
         const $el = $(this);
         const newValue = $el.text().trim();
+        if (newValue === photoTitle) {
+            $el.attr("contenteditable", "false").removeClass("editing");
+            return;
+        }
         const id = $el[0].id; // e.g. Photo ID
         const photoId = id.slice(-(id.length - "photo-title".length - 1));
         $el.attr("contenteditable", "false").removeClass("editing");
