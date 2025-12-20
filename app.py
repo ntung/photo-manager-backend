@@ -795,6 +795,30 @@ def photo_read(path):
         return None
 
 
+@app.route('/api/v1/photo/update', methods=['PATCH'])
+def update_photo():
+    request_json = request.get_json()
+    photo_object_id = request_json['photo-id']
+    photo_title = request_json['new-photo-title']
+    app.logger.info(f"Updating photo {photo_object_id} with title"
+                    f" {photo_title}")
+    if photo_title is None or photo_title == "" or photo_object_id is None:
+        app.logger.error("Invalid photo title or photo id. Cannot update!")
+        return jsonify({"error": "Cannot update the photo title or photo id "
+                                 "empty"}), 200
+    result = db.photos.update_one(
+        {"_id": ObjectId(photo_object_id)},
+        {
+            "$set": {
+                "title": photo_title,
+                "date_modified": datetime.now(TZ_LONDON)
+            }
+        }, upsert=False
+    )
+    # TODO: check the update failed or not
+    return jsonify(message="photo updated"), 200
+
+
 @app.route('/photo/update', methods=('GET', 'POST'))
 def photo_update():
     request_json = request.get_json(silent=True)

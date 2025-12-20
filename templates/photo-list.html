@@ -341,8 +341,23 @@
     $(document).on("blur", ".photo-title", function (event) {
         event.preventDefault();
         if ($(this).length === 0) { return; }
-        $(this).attr("contenteditable", "false").removeClass("editing");
+        const $el = $(this);
+        const newValue = $el.text().trim();
+        const id = $el[0].id; // e.g. Photo ID
+        const photoId = id.slice(-(id.length - "photo-title".length - 1));
+        $el.attr("contenteditable", "false").removeClass("editing");
+
+        $.ajax({
+            url: `/api/v1/photo/update`,
+            method: "PATCH",
+            contentType: "application/json",
+            data: JSON.stringify({ "photo-id": photoId, "new-photo-title": newValue }),
+            success(res) {
+                console.log("Testing " + JSON.stringify(res));
+            }
+        });
     });
+
 </script>
 </body>
 </html>
