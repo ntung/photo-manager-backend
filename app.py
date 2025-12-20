@@ -977,11 +977,19 @@ def do_upload_photo(req):
         try:
             result = do_download_image(UPLOAD_DIR, photo_url, filename)
             nb_downloads += 1
-        except HTTPSConnection as e:
+        except requests.exceptions.HTTPError as e:
+            app.logger.error(f"HTTP error occurred: {e}")
+            return jsonify({'message': str(e)}), 500
+        except requests.exceptions.ConnectionError as e:
+            app.logger.error(f"Connection error occurred: {e}")
+            return jsonify({'message': str(e)}), 500
+        except requests.exceptions.RequestException as e:
+            app.logger.error(f"A general error occurred: {e}")
+            return jsonify({'message': str(e)}), 500
+        finally:
             msg = f"The number of downloads the remote photo: {nb_downloads}"
             app.logger.error(msg)
-            return jsonify({'message': str(e)}), 500
-        app.logger.debug(f"Download completed! {result}")
+
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
 
