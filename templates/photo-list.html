@@ -49,6 +49,7 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="{{ url_for('static', filename='js/jquery.dm-uploader.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/fslightbox.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils.js') }}"></script>
 <script>
     $(document).ready(function () {
         toastr.options = {
@@ -86,6 +87,10 @@
 
     function loadMoreContent() {
         isLoading = true;
+        const prePage = previousPage();
+        if (prePage !== -1) {
+            currentPage = prePage;
+        }
 
         $.ajax({
             url: '/api/v1/photos',
@@ -98,10 +103,12 @@
                 }
 
                 $("#photo-list").append(response.content);
-                refreshFsLightbox();
-                // TODO: change the page=currentPage in the current URI without reloading the page
-                currentPage++;
+                currentPage += 1;
                 isLoading = false;
+                // reload FsLightbox plugin to effect for the newly generated photos
+                refreshFsLightbox();
+                // change the page=currentPage in the current URI without reloading the page
+                updateQueryParam("page", currentPage);
             },
             error: function() {
                 isLoading = false;
