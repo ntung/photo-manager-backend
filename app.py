@@ -1023,8 +1023,8 @@ def get_photos():
     The photos are sanitised and converted to presentation forms.
     """
     page = request.args.get('page', 1, type=int)
-    print(f"Page {page}")
-    _photos = _get_photos_page()
+    app.logger.info(f"Loading page {page}...")
+    _photos = _get_latest_photos_with_albums()
     content = render_template(template_name_or_list="_photo-list.html",
                               photos=_photos,)
     return jsonify(photos=_photos, content=content)
