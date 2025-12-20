@@ -71,7 +71,7 @@
         $('#upload-form')[0].reset();
     });
 
-    let photoObjectId = "", photoFolder = "", photoFileName = "";
+    let photoObjectId = "", photoFolder = "", photoFileName = "", photoTitle = "";
     let currentPage = 1;
     let isLoading = false;
     let hasMore = true;
@@ -330,8 +330,8 @@
         event.preventDefault();
         if ($(this).length === 0) { return; }
         const firstChild = $(this)[0];
-        let val = firstChild.innerText;
-        console.log(val);
+        photoTitle = firstChild.innerText;
+        console.log(photoTitle);
         // ex: A sample of the id: photo-title--6945e21d8f15586b7f0aa018
         const length = -(firstChild.id.length - "photo-title".length - 1);
         const pObjId = firstChild.id.slice(length);
@@ -355,6 +355,12 @@
             data: JSON.stringify({ "photo-id": photoId, "new-photo-title": newValue }),
             success(res) {
                 console.log("Testing " + JSON.stringify(res));
+            },
+            error(xhr) {
+                console.log(xhr.responseJSON.error);
+                toastr.error(xhr.responseJSON.error);
+                // Get back the previous value
+                $el[0].innerText = photoTitle;
             }
         });
     });

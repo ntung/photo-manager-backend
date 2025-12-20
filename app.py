@@ -805,7 +805,7 @@ def update_photo():
     if photo_title is None or photo_title == "" or photo_object_id is None:
         app.logger.error("Invalid photo title or photo id. Cannot update!")
         return jsonify({"error": "Cannot update the photo title or photo id "
-                                 "empty"}), 200
+                                 "empty"}), 400
     result = db.photos.update_one(
         {"_id": ObjectId(photo_object_id)},
         {
@@ -815,6 +815,11 @@ def update_photo():
             }
         }, upsert=False
     )
+    if result.modified_count == 0:
+        return jsonify(
+            {
+                "error": "Cannot update the photo title or photo id "
+            }), 400
     # TODO: check the update failed or not
     return jsonify(message="photo updated"), 200
 
