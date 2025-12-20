@@ -237,7 +237,7 @@
         });
     });
 
-    $(document).on("click", ".album-list", "#btn-save", function (event) {
+    $(document).on("click", "#btn-save", function (event) {
         event.preventDefault();
         // retrieves the existing albums which the photo in question has been added
         const inAlbumsSelector = $('#in-albums-' + photoObjectId)[0];
