@@ -11,4 +11,5 @@ gunicorn --config gunicorn_config.py app:app
 #  --workers 17 \
 #  --certfile=cert.pem \
 #  --keyfile=key.pem \
+#  --access-logfile - --error-logfile - \
 #  app:app

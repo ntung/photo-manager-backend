@@ -70,6 +70,7 @@ Done 15/ nên hiển thị photos của 1 album theo thứ tự ngược lại:
 
 dictConfig({
     "version": 1,
+    "disable_existing_loggers": False,
     "formatters": {
         "default": {
             "format": "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
