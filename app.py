@@ -28,7 +28,6 @@ from jinja2 import FileSystemBytecodeCache
 # from gunicorn.sock import ssl_context
 from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
-from urllib3.connection import HTTPSConnection
 
 from migration_framework.runner import MigrationRunner
 from utils import PhotoManager
@@ -699,6 +698,23 @@ def _get_pagination_params():
     return skip, PAGE_SIZE
 
 
+def _serialize_album(album):
+    """
+    Serialize the album to a dict
+    Args:
+        album (dict): album
+
+    Returns:
+        dict
+    """
+    return {
+        "id": str(album.get("_id")),
+        "title": album.get("title"),
+        "description": album.get("description"),
+        "path": album.get("path"),
+    }
+
+
 def _serialize_photo(doc):
     # Extract album info safely
     _albums = doc.get("belonged_to_albums", [])
@@ -710,6 +726,7 @@ def _serialize_photo(doc):
         "courtesy": doc.get("courtesy", ""),
         "folder": doc.get("folder", ""),
         "filename": doc.get("filename", ""),
+        "hash_md5": doc.get("hash_md5", ""),
         "date_uploaded": doc.get("date_uploaded"),
         "date_modified": doc.get("date_modified"),
 
@@ -1035,7 +1052,7 @@ def do_upload_photo(req):
             return jsonify({'message': str(e)}), 500
         finally:
             msg = f"The number of downloads the remote photo: {nb_downloads}"
-            app.logger.error(msg)
+            app.logger.info(msg)
 
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
@@ -1122,6 +1139,85 @@ def get_photos():
     content = render_template(template_name_or_list="_photo-list.html",
                               photos=_photos,)
     return jsonify(photos=_photos, content=content)
+
+
+def get_album_with_photo_cross_references(album_id_str):
+    pipeline = [
+        # 1. Start with the specific Album
+        { "$match": { "_id": ObjectId(album_id_str) } },
+
+        # 2. Join with the Photos collection to get full photo data
+        {
+            "$lookup": {
+                "from": "photos",
+                "localField": "photos",   # The array of photo IDs in the album
+                "foreignField": "_id",
+                "as": "photo_list"
+            }
+        },
+
+        # 3. "Flatten" the photo_list so we can look up on individual photos
+        { "$unwind": "$photo_list" },
+
+        # 4. For each photo, find ALL albums that contain its ID
+        {
+            "$lookup": {
+                "from": "albums",
+                "localField": "photo_list._id",
+                "foreignField": "photos",
+                "as": "photo_list.all_albums"
+            }
+        },
+
+        # 5. Group the photos back into an array for the original album
+        {
+            "$group": {
+                "_id": "$_id",
+                "title": { "$first": "$title" },
+                "photos": { "$push": "$photo_list" }
+            }
+        },
+
+        # 6. Clean up: Project only necessary fields for the sibling albums
+        {
+            "$project": {
+                "title": 1,
+                "photos._id": 1,
+                # "photos.url": 1,
+                "photos.title": 1,
+                "photos.description": 1,
+                "photos.courtesy": 1,
+                "photos.folder": 1,
+                "photos.filename": 1,
+                "photos.hash_md5": 1,
+                "photos.date_uploaded": 1,
+                "photos.date_modified": 1,
+                "photos.all_albums._id": 1,
+                "photos.all_albums.title": 1,
+                "photos.all_albums.description": 1,
+                "photos.all_albums.path": 1,
+            }
+        }
+    ]
+
+    results = list(db.albums.aggregate(pipeline))
+    result = dict({})
+    if results[0] is not None:
+        result["_id"] = str(results[0]["_id"])
+        result["title"] = results[0]["title"]
+        result["photos"] = []
+        for _photo in results[0]["photos"]:
+            serialized = _serialize_photo(_photo)
+            serialized["albums"] = [_serialize_album(a) for a in _photo[
+                "all_albums"]]
+            result["photos"].append(serialized)
+    return result
+
+
+@app.route('/api/v1/album/<string:object_id>', methods=['GET'])
+def get_album_by_id(object_id):
+    _photos = get_album_with_photo_cross_references(object_id)
+    return jsonify(photos=_photos)
 
 
 if __name__ != "__main__":
