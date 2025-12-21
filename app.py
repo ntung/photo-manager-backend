@@ -39,8 +39,8 @@ TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
 
-client = MongoClient('localhost', 27017)
-db = client.photodb
+client = MongoClient(os.getenv("DB_HOST"), int(os.getenv("DB_PORT")))
+db = client[os.getenv("DB_NAME")]
 todos = db.todos
 
 TZ_LONDON = pytz.timezone("Europe/London")
