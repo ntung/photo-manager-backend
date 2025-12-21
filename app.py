@@ -875,18 +875,60 @@ def photo_show(unique_key):
     """
     Shows a photo by hash_md5 or string of the object id
     """
+    # 0. Check the input and return
     if unique_key is None:
         return render_template("photo-upload.html")
-    docs = None
-    if len(unique_key) == 32:
-        # hash_md5
-        docs = db.photos.find({"hash_md5": unique_key})
-    elif len(unique_key) == 24:
-        # string of the object id
-        docs = db.photos.find({"_id": ObjectId(unique_key)})
-    if docs is not None:
+
+    # 1. Determine if search_value is a valid ObjectId string or an MD5 hash
+    match_condition = {}
+    if ObjectId.is_valid(unique_key):
+        # It's an ID
+        match_condition = {"_id": ObjectId(unique_key)}
+    elif len(unique_key) == 32:
+        # It's an MD5 hash
+        match_condition = {"hash_md5": unique_key}
+
+    # 2. Prepare the pipeline
+    pipeline = [
+        # Stage 1: Find the photo
+        { "$match": match_condition },
+
+        # Stage 2: Reverse Lookup into Albums
+        {
+            "$lookup": {
+                "from": "albums",
+                "localField": "_id",
+                "foreignField": "photos", # The field in albums containing photo IDs
+                "as": "member_of_albums"
+            }
+        },
+
+        # Stage 3: Projection (Clean up the output)
+        {
+            "$project": {
+                # Add all these fields so they aren't deleted!
+                "title": 1,
+                "description": 1,
+                "courtesy": 1,
+                "folder": 1,
+                "filename": 1,
+                "hash_md5": 1,
+                "date_uploaded": 1,
+                "date_modified": 1,
+
+                # Keep the album info
+                "member_of_albums._id": 1,
+                "member_of_albums.path": 1,
+                "member_of_albums.title": 1,
+                "member_of_albums.description": 1
+            }
+        }
+    ]
+
+    _photos = list(db.photos.aggregate(pipeline))
+    if _photos is not None:
         return render_template("photo-show.html",
-                               photos=docs)
+                               photos=_photos)
     return None
 
 

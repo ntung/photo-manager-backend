@@ -43,7 +43,11 @@
                         {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
                         <a href="{{photo_url}}" title="{{photo['title']}}" data-fslightbox="gallery">
                             <img src="{{photo_url}}" style="width:100%" alt="{{photo['title']}}"></a>
-                        <p>{{ photo.title }}, {{ photo.get("_id") }}</p>
+                        <p>All albums:</p>
+                        <ul style="text-align: left">
+                        {% for album in photo['member_of_albums'] %}
+                            <li>{{ album['title'] }}</li>
+                        {% endfor %}</ul>
                     </div> {% endfor %}
                 </div>
             </div>
