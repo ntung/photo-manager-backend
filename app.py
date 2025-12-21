@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import math
 import os
 import pathlib
@@ -1119,8 +1120,16 @@ def get_photos():
     return jsonify(photos=_photos, content=content)
 
 
-if __name__ == '__main__':
-    # app.run(host='0.0.0.0', port=5500, debug=True, threaded=False,
-    # ssl_context='adhoc')
-    app.run(host='0.0.0.0', port=5500, debug=True, threaded=False,
-            ssl_context=('cert.pem', 'key.pem'))
+if __name__ != "__main__":
+    # 1. Locate Gunicorn's error logger
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+
+    # 2. Set Flask's logger handlers to match Gunicorn's
+    app.logger.handlers = gunicorn_logger.handlers
+
+    # 3. Match the log levels (so INFO or DEBUG messages actually show up)
+    app.logger.setLevel(gunicorn_logger.level)
+
+    # 4. (Optional) Propagate messages to the root logger
+    # This ensures third-party library logs also go to Gunicorn
+    logging.getLogger().handlers = gunicorn_logger.handlers
