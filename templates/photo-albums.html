@@ -14,7 +14,7 @@
         <div class="col">
             <h1 id="heading">Albums</h1>
             <div class="content">
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" id="album-detail-form">
                     <div class="mb-3">
                         <strong><label for="cover" class="form-label">Upload a photo for Album cover</label></strong>
                         <input type="file" id="cover" name="cover"
@@ -167,10 +167,11 @@
                     console.log("Sending data to server...");
                 },
                 success: function (data) {
-                    toastr.success("Updated successfully! The page is refreshing within 5 seconds.");
+                    toastr.success("Updated the album successfully! The page is refreshing within 3 seconds.");
                     setTimeout(() => {
+                        $('#album-detail-form')[0].reset();
                         window.location.reload();
-                    }, 5000);
+                    }, 3000);
                     // alternatively, reload the album using jQuery without refreshing the page
                 },
                 error: function () {
