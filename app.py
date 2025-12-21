@@ -488,8 +488,11 @@ def albums_reorder_photos():
     return json.dumps(album)
 
 
-@app.route('/albums/update/', methods=('GET', 'POST'))
+@app.route('/albums/update/', methods=['GET', 'POST'])
 def albums_update():
+    """
+    Updates albums
+    """
     request_json = request.get_json(silent=True)
     album_path = request_json['album-path']
     album_title = request_json['album-title']
@@ -515,7 +518,7 @@ def albums_update():
     return Response(json.dumps(retval), mimetype='application/json')
 
 
-@app.route('/albums/view/<path>', methods=('GET', 'POST'))
+@app.route('/albums/view/<string:path>', methods=['GET', 'POST'])
 @do_cache(minutes=5, content_type='text/html;utf-8')
 def albums_view(path):
     _albums = []

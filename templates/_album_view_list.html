@@ -11,7 +11,11 @@
             {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
             <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album_path }}">
                 <img src="{{ photo_url }}" style="width:25%" alt="{{ photo['title'] }}"
-                     data-photo-object-id="{{ photo_id }}"></a></div>
+                     data-photo-object-id="{{ photo_id }}"></a>
+            <br/>
+            <a href="{{ url_for('photo_show', unique_key=photo.get('_id')) }}"
+               target="_blank">Show</a>
+        </div>
         <div class="col-6">
             <a href="javascript:void(0)" class="photo-row-title" id="photo-title-{{ photo.get('_id')}}" data-photo-object-id="{{ photo.get('_id')}}"
                data-bs-toggle="modal" data-bs-target="#photo-edit-modal-form"><strong>{{ photo['title'] }}</strong></a>
