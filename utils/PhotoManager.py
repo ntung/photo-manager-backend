@@ -2,6 +2,9 @@ import os
 import logging
 from collections import defaultdict
 
+from bson import ObjectId
+from bson.errors import InvalidId
+
 MAX_NB_FILES_PER_DIR = 400
 global PHOTO_SUBMISSION_FOLDERS
 PHOTO_SUBMISSION_FOLDERS = defaultdict()
@@ -123,3 +126,17 @@ def next_string(s):
         return strip_zs[:-1] + p1 + p2
     else:
         return 'a' * (len(s) + 1)
+
+
+def safe_convert(id_str):
+    """
+    Converts a valid 24-character hex string to an ObjectId
+
+    To convert a string to an ObjectId in Python, you need to use the bson
+    library, which is installed automatically when you install pymongo.
+    """
+    try:
+        return ObjectId(id_str)
+    except (InvalidId, TypeError):
+        print(f"Error: '{id_str}' is not a valid ObjectId.")
+        return None

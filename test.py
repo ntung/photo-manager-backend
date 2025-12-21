@@ -10,6 +10,8 @@ import requests
 import uuid
 import random
 
+from bson.errors import InvalidId
+from dotenv import load_dotenv
 # import the MongoClient class of the PyMongo library
 from pymongo import MongoClient, ReturnDocument
 
@@ -283,16 +285,111 @@ def test_photo_manager_class():
     print(pm.upload_folder)
 
 
+def sanity_check_db():
+    # 1. Let's grab one ID from the photos collection
+    # create database and collection instances
+    mongo_client = MongoClient('mongodb://localhost:27017')
+    db = mongo_client.photodb
+    sample_photo = db.photos.find_one()
+    if not sample_photo:
+        print("No photos found in database.")
+    else:
+        photo_id = sample_photo['_id']
+        print(f"Searching for Photo ID: {photo_id} (Type: {type(photo_id)})")
+
+        # 2. Check if ANY album contains this ID manually
+        matching_album = db.albums.find_one({"photos": photo_id})
+        if matching_album:
+            print(f"Success! Found in Album: {matching_album['title']}")
+        else:
+            print("Manual Check Failed: No album contains this Photo ID.")
+            # Convert to ObjectId
+            try:
+                object_id = ObjectId(photo_id)
+                print(object_id)
+                print(type(object_id)) # <class 'bson.objectid.ObjectId'>
+            except (InvalidId, TypeError):
+                print(f"Error: '{photo_id}' is not a valid ObjectId.")
+
+        # 3. Run a minimal Aggregation
+        pipeline = [
+            { "$match": { "_id": photo_id } },
+            {
+                "$lookup": {
+                    "from": "albums",
+                    "localField": "_id",
+                    "foreignField": "photo_ids",
+                    "as": "contained_in_albums"
+                }
+            }
+        ]
+
+        debug_result = list(db.photos.aggregate(pipeline))
+        print("Aggregation Result:", debug_result)
+
+        # result = db.users.aggregate([
+        #     {
+        #         "$group": {
+        #             "_id": "$hash_md5",
+        #             "count": {
+        #                 "$sum": 1
+        #             },
+        #             "docs": {
+        #                 "$push": "$_id"
+        #             }
+        #         }
+        #     },
+        #     {
+        #         "$match":
+        #             {
+        #                 "count":
+        #                     {
+        #                         "$gt": 1
+        #                     }
+        #             }
+        #     }
+        # ])
+        result = db.photos.aggregate([{
+            "$group": {
+                "_id": "$hash_md5",
+                "count": {
+                    "$sum": 1
+                },
+                "ids": {
+                    "$push": "$_id"
+                }
+            }
+        }, {
+            "$match": {
+                "count": {
+                    "$gt": 1
+                }
+            }
+        }])
+        result = list(result)
+        print(result)
+
+
+def test_load_dotenv():
+    load_dotenv() # loads variables from .env into environment
+    print(os.getenv("DB_HOST"))
+    print(os.getenv("DB_PORT"))
+    print(os.getenv("DB_NAME"))
+
+
 if __name__ == '__main__':
     # update_mongodb_doc()
     # get_date_created_n_modified_then_update_db_photos()
     # download_save_image()
     # check_find_result()
     # copy_and_move_file()
-    check_cur_sub_folder()
+    # check_cur_sub_folder()
     # test_get_series()
     # test_next_string()
     # test_biomodels()
     # test_local_biomodels()
     # update_albums()
     # test_photo_manager_class()
+    sanity_check_db()
+    test_load_dotenv()
+
