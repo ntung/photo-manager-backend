@@ -137,6 +137,13 @@
         //toggleLockAndUnlockForm(true);
     });
 
+    $(".photo-description").on("focusout", function () {
+        let value = $(this).val();
+        if (value.length !== 0) {
+            value = value.trimEnd();
+            $(this).val(value);
+        }
+    });
 
     $(".photo-courtesy").on("focusout", function() {
         let value = $(this).val();
