@@ -30,7 +30,7 @@ from pymongo import MongoClient, ReturnDocument
 from slugify import slugify
 
 from migration_framework.runner import MigrationRunner
-from utils import PhotoManager
+from .utils import PhotoManager
 
 load_dotenv() # loads variables from .env into environment
 
@@ -1137,7 +1137,7 @@ def get_photos():
     app.logger.info(f"Loading page {page}...")
     _photos = _get_latest_photos_with_albums()
     content = render_template(template_name_or_list="_photo-list.html",
-                              photos=_photos,)
+                              photos=_photos, )
     return jsonify(photos=_photos, content=content)
 
 
