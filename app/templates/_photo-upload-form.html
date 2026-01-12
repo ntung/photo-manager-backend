@@ -116,7 +116,12 @@
         uploadPhoto(uploaded).then(data => {
             if (data !== undefined) {
                 console.log(data);
-                toastr.success(data["message"] ? data["message"] : JSON.stringify(data));
+                let m = data["message"] ? data["message"] : JSON.stringify(data);
+                if (m.includes("exists")) {
+                   toastr.warning(m);
+                } else {
+                   toastr.success(m);
+                }
             } else {
                 toastr.error("No photo provided!");
             }
