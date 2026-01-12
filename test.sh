@@ -18,3 +18,8 @@ END
 # curl -s -X GET http://127.0.0.1:7000/biomodels/services/download/get-files/MODEL1901160001/3/BIOMD0000000578_url.xml
 curl -s -X GET http://127.0.0.1:5000/photo/aaaa/456713969_122167976138133782_3718382245528688943_n.jpg
 # curl -s -X GET http://0.0.0.0:5000/photo/aaaa/myfile.txt
+
+# -k meaning ignore SSL
+curl -i -k -X POST -H "Content-Type: multipart/form-data" \
+  -F "file=@z6948554753092_7e30301e49b8c903136fabccc45ec8f4.jpg" \
+  -F 'metadata={}' https://192.168.0.210:5500/photo/upload

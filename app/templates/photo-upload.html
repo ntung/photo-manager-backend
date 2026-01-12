@@ -1,24 +1,67 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Upload | Photo Manager</title>
-    {% include('_head.html') %}
-</head>
-<body>
-
-<div class="container">
-    <!-- Sticky Number -->
-    {% include '_menu-bar.html' %}
-    <div class="main">
-        <div class="row">
-            <div class="col">
-                <h1>Upload your photo</h1>
-                {% include '_photo-upload-form.html' %}
+    <head>
+        <meta charset="UTF-8" />
+        <title>Upload | Photo Manager</title>
+        {% include('_head.html') %}
+    </head>
+    <body>
+        <div class="container">
+            <!-- Sticky Number -->
+            {% include '_menu-bar.html' %}
+            <div class="main">
+                <div class="row">
+                    <div class="col">
+                        <h1>Upload your photo</h1>
+                        {% include '_photo-upload-form.html' %}
+                    </div>
+                </div>
+                <!--
+                <div class="row">
+                    <div class="col">
+                        <h2>Recent Photos</h2>
+                        {% include '_photo-list.html' %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <h2>Popular Photos</h2>
+                        {% include '_photo-list.html' %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <h2>Most Viewed Photos</h2>
+                        {% include '_photo-list.html' %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <h2>Most Liked Photos</h2>
+                        {% include '_photo-list.html' %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <h2>Most Commented Photos</h2>
+                        {% include '_photo-list.html' %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <h2>Most Shared Photos</h2>
+                        {% include '_photo-list.html' %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <h2>Most Downloaded Photos</h2>
+                        {% include '_photo-list.html' %}
+                    </div>
+                </div>
+                -->
             </div>
         </div>
-    </div>
-</div>
-{% include('_foot.html') %}
-</body>
+        {% include('_foot.html') %}
+    </body>
 </html>

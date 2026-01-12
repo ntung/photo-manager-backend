@@ -10,6 +10,10 @@ flask run
 
 Alternatively, run `start.sh` as the wrapper. 
 
+# DEMOS
+* [Show photo(s) with hash_md5 (len=32)](http://127.0.0.1:5000/photo/show/d99eb2f04657b0449deaea945964d09e)
+* [Delete a pho with its object id (len=24)](http://127.0.0.1:5000/photo/delete/66ca53aec984beddd47aa900)
+
 # DOCS & IDEAS
 [1] [Storing Large Amount of Files On File System](https://stackoverflow.com/questions/1576272/storing-large-number-of-files-in-file-system)
 
