@@ -177,6 +177,7 @@
     }
 
     function callServerToChangeView(viewStyle) {
+        // TODO: revise due to creating duplicated elements
         let photosObjectIds = [];
         $('.photo').children().map((index, element) => {
             photosObjectIds.push($(element).attr('id'));
