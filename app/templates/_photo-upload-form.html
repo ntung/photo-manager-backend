@@ -207,6 +207,7 @@
     $(".photo-courtesy").on("focusout", function () {
         let value = $(this).val();
         if (value.includes("facebook.com")) {
+            let sanitized = "";
             if (value.includes("idorvanity")) {
                 // sample: https://www.facebook.com/photo/?fbid=939173604889879&set=
                 // gm.2374139532977440&idorvanity=1316017315456339
@@ -214,7 +215,6 @@
                     0,
                     value.lastIndexOf("idorvanity") - 1,
                 );
-                $(this).val(sanitized);
             } else if (value.includes("&__cft__[0]=")) {
                 // sample: https://www.facebook.com/photo/?fbid=421035673604303&set=a.308446338196571&__cft__[0]=
                 // AZWZJnJc6XKMl4KSiT2DV0mDUbD2pqFEQXSpS70XQcUmfe0Tj6qz7QnbgVzkPtiLkSaqurQxT59UakbgtYoJSi6chjBLDPlLiRQZ
@@ -224,8 +224,9 @@
                     0,
                     value.lastIndexOf("&__cft__[0]=") - 1,
                 );
-                $(this).val(sanitized);
             }
+            sanitized = sanitized.substring(0, sanitized.lastIndexOf("&")-1);
+            $(this).val(sanitized);
         }
     });
 </script>
