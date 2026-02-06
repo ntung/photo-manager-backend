@@ -163,7 +163,7 @@
 
     $(document).on("click", ".btn-edit-photo", function (event) {
         event.preventDefault();
-        const photoObjectId = $(this).attr("data-photo-object-id");
+        photoObjectId = $(this).attr("data-photo-object-id");
         const photoTitle = $('#photo-title-' + photoObjectId)[0].innerText;
         $("#photo-title").val(photoTitle);
         // Change Create to Save button
