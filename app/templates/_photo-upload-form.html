@@ -154,6 +154,7 @@
         // the statement below is so important.
         // if it is omitted, we probably see the request hit twice in the logic implementation
         event.preventDefault();
+        event.stopImmediatePropagation();
         const uploaded = extractData(event);
         uploadPhoto(uploaded)
             .then((data) => {
@@ -211,7 +212,7 @@
             if (value.includes("idorvanity")) {
                 // sample: https://www.facebook.com/photo/?fbid=939173604889879&set=
                 // gm.2374139532977440&idorvanity=1316017315456339
-                let sanitized = value.substring(
+                sanitized = value.substring(
                     0,
                     value.lastIndexOf("idorvanity") - 1,
                 );
@@ -220,12 +221,18 @@
                 // AZWZJnJc6XKMl4KSiT2DV0mDUbD2pqFEQXSpS70XQcUmfe0Tj6qz7QnbgVzkPtiLkSaqurQxT59UakbgtYoJSi6chjBLDPlLiRQZ
                 // aMg6fzndlSWMBAV8RvLvdMbud9DntQH-Doy-Y3sQG2mbk0WD46ng9VVz9rBTdv1du9Kon6p4GMym_8zxy5NAkB5wsAOSjrqDHXP
                 // OOvrm68LUjo7pzJYoPVWIJYIyLDsXMhnt-JP7kw&__tn__=EH-y-R
-                let sanitized = value.substring(
+                sanitized = value.substring(
                     0,
                     value.lastIndexOf("&__cft__[0]=") - 1,
                 );
+            } else {
+                sanitized = value;
             }
-            sanitized = sanitized.substring(0, sanitized.lastIndexOf("&")-1);
+            console.log(sanitized);
+            if (sanitized.lastIndexOf("&") > 0) {
+                sanitized = sanitized.substring(0, sanitized.lastIndexOf("&"));
+            }
+            console.log(sanitized);
             $(this).val(sanitized);
         }
     });
