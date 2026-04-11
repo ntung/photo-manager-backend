@@ -73,7 +73,7 @@
     });
 
     let photoObjectId = "", photoFolder = "", photoFileName = "", photoTitle = "";
-    let currentPage = 1;
+    let currentPage = 2;
     let isLoading = false;
     let hasMore = true;
 
@@ -118,7 +118,7 @@
 
     $(document).on("click", 'input[name=add-to-album]', function (event) {
         event.preventDefault();
-        const $albumList = $('.album-list');
+        const $albumList = $(this).closest('.photo-block').find('.album-list');
         if ($albumList.html() !== '') {
             $albumList.html("");
             return true;
