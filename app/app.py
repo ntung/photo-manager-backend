@@ -861,9 +861,7 @@ def _get_album_photos_page(album_path):
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
     start_time = time.perf_counter()
-    # Always render page 1 on initial load so the infinite-scroll JS
-    # can reliably start from page 2, regardless of any ?page= in the URL.
-    _photos = _get_latest_photos_with_albums(page=1)
+    _photos = _get_latest_photos_with_albums()
     end_time = time.perf_counter()
     run_time = end_time - start_time
     app.logger.info(f"Executed in {run_time:.6f} seconds to load 20 photos")

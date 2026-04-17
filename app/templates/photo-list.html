@@ -73,7 +73,10 @@
     });
 
     let photoObjectId = "", photoFolder = "", photoFileName = "", photoTitle = "";
-    let currentPage = 2;
+    // Resume from the page saved in the URL (?page=N means page N was the last
+    // one rendered, so start fetching from N+1 to avoid a duplicate on refresh).
+    const _savedPage = previousPage();
+    let currentPage = _savedPage !== -1 ? _savedPage + 1 : 2;
     let isLoading = false;
     let hasMore = true;
 
@@ -102,6 +105,8 @@
                 hasMore = response.has_more;
                 // Reload FsLightbox so the newly appended photos are included.
                 refreshFsLightbox();
+                // Keep the URL in sync so refreshing the page resumes from here.
+                updateQueryParam("page", currentPage);
             },
             error: function() {
                 isLoading = false;
