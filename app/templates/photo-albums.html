@@ -98,6 +98,14 @@
             albumInfo = myMap.get(path)["title"] + " " + text;
             myMap.set(path, {"albumInfo": albumInfo, "title": myMap.get(path)["title"], "description": text});
         });
+
+        // Intercept form submit: if in edit mode, send AJAX update instead of POSTing to /photo/albums
+        $('#album-detail-form').on('submit', function(e) {
+            if (albumPath !== "") {
+                e.preventDefault();
+                doUpdateAlbum();
+            }
+        });
     });
 
     function searchForAlbums() {
@@ -139,52 +147,46 @@
         });
     };
 
+    function doUpdateAlbum() {
+        const updatedTitle = $('#title').val();
+        const updatedDescription = $('#description').val();
+        $.ajax({
+            url: "/albums/update/",
+            method: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({
+                "album-path": albumPath,
+                "album-title": updatedTitle,
+                "album-description": updatedDescription
+            }),
+            success: function (data) {
+                toastr.success("Updated the album successfully! The page is refreshing within 3 seconds.");
+                setTimeout(() => {
+                    albumPath = "";
+                    albumTitle = "";
+                    $('#album-detail-form')[0].reset();
+                    $("#action-button").html('<button type="submit" class="btn btn-primary">Create</button>');
+                    window.location.reload();
+                }, 3000);
+            },
+            error: function (jqXHR, textStatus) {
+                console.error(textStatus, ": ", JSON.stringify(jqXHR));
+                toastr.error("Failed to update the album.");
+            }
+        });
+    }
+
     $('.btn-edit-album').on("click", function () {
         albumPath = $(this).attr("data-album-path");
         albumTitle = $(this).attr("data-album-title");
         $("#title").val(albumTitle);
-        let albumDescription = $('#album-description-' + albumPath)[0].innerText;
-        console.log(albumDescription);
+        const albumDescription = $('#album-description-' + albumPath)[0].innerText;
         $("#description").val(albumDescription);
-        // Change Create to Save button
+        // Change Create button to Save button
         $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
         $("#btn-save").on("click", function () {
-            console.log("saving...");
-            albumTitle = $('#title').val();
-            albumDescription = $('#description').val();
-
-            $.ajax({
-                url: "/albums/update",
-                method: "POST",
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-                data: JSON.stringify({
-                    "album-path": albumPath,
-                    "album-title": albumTitle,
-                    "album-description": albumDescription
-                }),
-                beforeSend: function (xhr) {
-                    console.log("Sending data to server...");
-                },
-                success: function (data) {
-                    toastr.success("Updated the album successfully! The page is refreshing within 3 seconds.");
-                    setTimeout(() => {
-                        $('#album-detail-form')[0].reset();
-                        window.location.reload();
-                    }, 3000);
-                    // alternatively, reload the album using jQuery without refreshing the page
-                },
-                error: function () {
-
-                }
-            }).done(function (data) {
-                console.log("Done! - Data: ", data);
-            }).fail(function (jqXHR, textStatus) {
-                console.log(textStatus, ": ", JSON.stringify(jqXHR));
-            }).always(function (data) {
-                console.log("The request has completed: ", data);
-                toastr.success("The request has completed : " + JSON.stringify(data));
-            });
+            doUpdateAlbum();
         });
     });
 
