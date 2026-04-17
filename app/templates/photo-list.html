@@ -73,10 +73,7 @@
     });
 
     let photoObjectId = "", photoFolder = "", photoFileName = "", photoTitle = "";
-    // Resume from the page saved in the URL (?page=N means page N was the last
-    // one rendered, so start fetching from N+1 to avoid a duplicate on refresh).
-    const _savedPage = previousPage();
-    let currentPage = _savedPage !== -1 ? _savedPage + 1 : 2;
+    let currentPage = 2;
     let isLoading = false;
     let hasMore = true;
 
@@ -90,6 +87,10 @@
 
     function loadMoreContent() {
         isLoading = true;
+        const prePage = previousPage();
+        if (prePage !== -1) {
+            currentPage = prePage;
+        }
         $.ajax({
             url: '/api/v1/photos',
             type: 'GET',
