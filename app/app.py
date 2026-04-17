@@ -541,80 +541,98 @@ def albums_view(path):
                                albums=_albums,
                                nb_photos=nb_photos,
                                is_empty_album=is_empty_album,
+                               has_more=False,
                                api_svr=API_SVR)
-    status = "FOUND"
-    tt = None
+
     if path is None or path == '':
         return jsonify(message="Path is empty")
-    else:
+
+    album_doc = db.albums.find_one({"path": path})
+    if album_doc is None:
+        return render_template('album-view.html',
+                               status="NOT_FOUND", message="No such album")
+
+    is_empty_album = not album_doc.get("photos")
+    view = "album-view.html"
+
+    if is_empty_album:
+        return render_template(view, status="FOUND", album=album_doc,
+                               album_object_id=album_doc.get("_id"),
+                               photos=[], album_title=album_doc['title'],
+                               albums=_albums, album_path=path, nb_photos=0,
+                               is_empty_album=True, other_albums=None,
+                               has_more=False, api_svr=API_SVR)
+
+    sort = request.args.get('sort')
+
+    if request.method == "POST":
+        # Invoked when changing layout/view style — load all photos.
+        request_json = request.get_json(silent=True)
+        view = request_json['view']
+        array_photos_object_ids = request_json['photos-object-ids']
         album = get_album(path)
-        if album is None:
-            status = "NOT_FOUND"
-            return render_template('album-view.html',
-                                   status=status, message="No such album")
-        is_empty_album = not album["photos"]
-        view = "album-view.html"
-        nb_photos = 0
-        if not is_empty_album:
-            status = "FOUND"
-            nb_photos = len(album["photos_details"])
-
-            if request.method == "POST":
-                # it is invoked when changing layout/view style
-                request_json = request.get_json(silent=True)
-                view = request_json['view']
-                array_photos_object_ids = request_json['photos-object-ids']
-                photos_details = album['photos_details']
-                bz = math.ceil(len(array_photos_object_ids) / 3)
-                buckets = PhotoManager.create_buckets(photos_details, bz)
-                # TODO: using array_photos_object_ids to get the same orders
-                #  of photos on the current page
-                # current_ordered_photos = []
-                # for id in array_photos_object_ids:
-
-                return render_template(view, status=status, album=album,
-                                       album_path=album['path'],
-                                       album_title=album['title'],
-                                       albums=_albums,
-                                       photos=album['photos_details'],
-                                       buckets=buckets, nb_photos=nb_photos,
-                                       album_object_id=album.get("_id"),
-                                       is_empty_album=is_empty_album,
-                                       api_svr=API_SVR)
-
-            sort = request.args.get('sort')
-            if sort is not None and sort == "shuffle":
-                import random
-                view = "_album_view_list.html"
-                random.shuffle(album["photos_details"])
-            elif sort is not None:
-                app.logger.info(sort)
-
-                s_opts = sort.split(";")
-                sort_field = s_opts[0]
-                sort_direction = s_opts[1]
-                photos_details = album["photos_details"]
-                if sort_field in ["title", "date_uploaded", "date_modified"]:
-                    is_reverse = sort_direction == "down"
-                    sorted_photos_details = sorted(photos_details,
-                                                   key=lambda x: x[sort_field],
-                                                   reverse=is_reverse)
-                    album["photos_details"] = sorted_photos_details
-
-                view = "_album_view_list.html"
-            tt = dict_photos_albums(album["photos_details"], album["path"])
-            for photo in album["photos_details"]:
-                photo_id = str(photo.get("_id"))
-                if photo_id in tt:
-                    photo['other_albums'] = tt[photo_id]
-
-        return render_template(view, status=status, album=album,
+        photos_details = album['photos_details']
+        nb_photos = len(photos_details)
+        bz = math.ceil(len(array_photos_object_ids) / 3)
+        buckets = PhotoManager.create_buckets(photos_details, bz)
+        return render_template(view, status="FOUND", album=album,
+                               album_path=album['path'],
+                               album_title=album['title'],
+                               albums=_albums,
+                               photos=photos_details,
+                               buckets=buckets, nb_photos=nb_photos,
                                album_object_id=album.get("_id"),
-                               photos=album['photos_details'],
+                               is_empty_album=False,
+                               has_more=False,
+                               api_svr=API_SVR)
+
+    if sort is not None:
+        # Sort or shuffle — load all photos so the full ordered set is shown.
+        album = get_album(path)
+        photos_details = album["photos_details"]
+        nb_photos = len(photos_details)
+
+        if sort == "shuffle":
+            import random
+            view = "_album_view_list.html"
+            random.shuffle(photos_details)
+        else:
+            app.logger.info(sort)
+            s_opts = sort.split(";")
+            sort_field = s_opts[0]
+            sort_direction = s_opts[1]
+            if sort_field in ["title", "date_uploaded", "date_modified"]:
+                is_reverse = sort_direction == "down"
+                photos_details = sorted(photos_details,
+                                        key=lambda x: x[sort_field],
+                                        reverse=is_reverse)
+                album["photos_details"] = photos_details
+            view = "_album_view_list.html"
+
+        tt = dict_photos_albums(photos_details, album["path"])
+        for photo in photos_details:
+            photo_id = str(photo.get("_id"))
+            if photo_id in tt:
+                photo['other_albums'] = tt[photo_id]
+
+        return render_template(view, status="FOUND", album=album,
+                               album_object_id=album.get("_id"),
+                               photos=photos_details,
                                album_title=album['title'], albums=_albums,
-                               album_path=album['path'], nb_photos=nb_photos,
-                               is_empty_album=is_empty_album,
-                               other_albums=tt, api_svr=API_SVR)
+                               album_path=path, nb_photos=nb_photos,
+                               is_empty_album=False, other_albums=tt,
+                               has_more=False, api_svr=API_SVR)
+
+    # Default GET: load only the first page; the client will fetch subsequent
+    # pages via /api/v1/album/<path>/photos as the user scrolls.
+    photos, nb_photos, has_more = _get_album_photos_page(path)
+    return render_template(view, status="FOUND", album=album_doc,
+                           album_object_id=album_doc.get("_id"),
+                           photos=photos, album_title=album_doc['title'],
+                           albums=_albums, album_path=path,
+                           nb_photos=nb_photos, is_empty_album=False,
+                           other_albums=None, has_more=has_more,
+                           api_svr=API_SVR)
 
 
 def photo_unclassified():
@@ -795,6 +813,49 @@ def _get_latest_photos_with_albums(page=None):
     ]
     result = list(db.photos.aggregate(pipeline))
     return [_serialize_photo(doc) for doc in result]
+
+
+def _get_album_photos_page(album_path):
+    """
+    Returns a paginated slice of photos for an album (newest-first) together
+    with per-photo other-album cross-references.
+
+    Returns: (photo_docs, total_count, has_more)
+    """
+    skip, page_size = _get_pagination_params()
+
+    album = db.albums.find_one({"path": album_path})
+    if not album:
+        return [], 0, False
+
+    # Reverse the stored order so the newest photo appears first,
+    # matching the behaviour of get_album().
+    all_ids = list(reversed(album.get('photos', [])))
+    total = len(all_ids)
+    paged_ids = all_ids[skip:skip + page_size]
+    has_more = (skip + page_size) < total
+
+    if not paged_ids:
+        return [], total, False
+
+    # Single $in query instead of N individual find_one calls.
+    valid_ids = [pid for pid in paged_ids if str(pid) != 'None']
+    raw_docs = list(db.photos.find({"_id": {"$in": valid_ids}}))
+    by_id = {str(p["_id"]): p for p in raw_docs}
+    # Re-order to match the paged order.
+    photo_details = [by_id[str(pid)] for pid in valid_ids if str(pid) in by_id]
+
+    # Attach the list of other albums each photo belongs to.
+    all_albums = list(db.albums.find())
+    for photo in photo_details:
+        photo['other_albums'] = [
+            {"path": a['path'], "title": a['title']}
+            for a in all_albums
+            if photo.get("_id") in a.get('photos', [])
+            and a['path'] != album_path
+        ]
+
+    return photo_details, total, has_more
 
 
 @app.route('/photo/list', methods=('GET', 'POST'))
@@ -1142,6 +1203,20 @@ def get_photos():
     content = render_template(template_name_or_list="_photo-list.html",
                               photos=_photos)
     return jsonify(photos=_photos, content=content, has_more=has_more)
+
+
+@app.route('/api/v1/album/<string:path>/photos', methods=['GET'])
+def get_album_photos(path):
+    """
+    Returns one paginated page of photos for an album as JSON + pre-rendered
+    HTML, for use by the album-view infinite scroll.
+    """
+    photos, total, has_more = _get_album_photos_page(path)
+    content = render_template("_album_view_photo_rows.html",
+                               photos=photos,
+                               album_path=path,
+                               status="FOUND")
+    return jsonify(content=content, has_more=has_more, count=len(photos))
 
 
 def get_album_with_photo_cross_references(album_id_str):

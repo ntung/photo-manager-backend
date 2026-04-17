@@ -1,0 +1,70 @@
+{% for photo in photos %}
+    {% set photo_id = photo.get("_id") %}
+    <div class="row" style="padding-top: 5px; border-bottom: 2px #38A169 solid;" id="{{ photo_id }}">
+        <div class="col-4">
+            {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
+            <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album_path }}">
+                <img src="{{ photo_url }}" style="width:25%" alt="{{ photo['title'] }}"
+                     data-photo-object-id="{{ photo_id }}"></a>
+            <br/>
+            <a href="{{ url_for('photo_show', unique_key=photo.get('_id')) }}"
+               target="_blank">Show</a>
+        </div>
+        <div class="col-6">
+            <a href="javascript:void(0)" class="photo-row-title" id="photo-title-{{ photo.get('_id')}}" data-photo-object-id="{{ photo.get('_id')}}"
+               data-bs-toggle="modal" data-bs-target="#photo-edit-modal-form"><strong>{{ photo['title'] }}</strong></a>
+            <br/>
+            <div class="photo-description original" id="photo-description-{{ photo.get('_id')}}">{{ photo['description'] }}</div>
+            <br/>
+            {% if "date_uploaded" in photo %}
+                <span>Uploaded {{ photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
+            {% endif %}
+            {% if "date_modified" in photo %}
+                <span>| Updated {{ photo['date_modified'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
+            {% endif %}
+            | Credit:
+            {% if photo['courtesy'].startswith('http') %}
+                {% if 'facebook.com' in photo['courtesy'] %}
+                    {% set source = "Facebook" %}
+                {% else %}
+                    {% set source = "Other" %}
+                {% endif %}
+                <a href="{{ photo['courtesy'] }}" target="_blank" id="original-photo-courtesy-{{ photo.get('_id')}}">{{ source }}</a>
+            {% else %}
+                {{ photo['courtesy'] }}
+            {% endif %}
+            {% if photo['other_albums'] %}
+            <p id="in-albums-{{ photo.get('_id') }}">Other albums:
+            {% for album in photo['other_albums'] %}
+                <a href="/albums/view/{{ album['path'] }}">{{ album['title'] }}</a>,
+            {% endfor %}</p><p>
+                <a href="javascript:void(0)" class="btn btn-info add-to-other-albums" id="btn-add-other-albums"
+                   data-bs-toggle="modal" data-bs-target="#select-albums-modal-form"
+                   data-photo-object-id="{{ photo.get('_id') }}"
+                   data-photo-folder="{{ photo['folder'] }}"
+                   data-photo-filename="{{ photo['filename'] }}">Add to other albums</a></p>
+            {% else %}
+                <p id="in-albums-{{ photo.get('_id') }}">Other albums:</p>
+                <p>
+                <a href="javascript:void(0)" class="btn btn-info add-to-other-albums" id="btn-add-other-albums"
+                   data-bs-toggle="modal" data-bs-target="#select-albums-modal-form"
+                   data-photo-object-id="{{ photo.get('_id') }}"
+                   data-photo-folder="{{ photo['folder'] }}"
+                   data-photo-filename="{{ photo['filename'] }}">Add to other albums</a></p>
+            {% endif %}
+        </div>
+        <div class="col-2">
+            <div class="form-check">
+                <label class="form-check-label switch" for="chk-remove-{{ photo['filename'] }}">
+                <input class="form-check-input cls-chk-remove-photo"
+                       type="checkbox" id="chk-remove-{{ photo['filename'] }}"
+                       name="chk-remove-{{ photo['filename'] }}"
+                       data-photo-object-id="{{ photo_id }}"
+                       data-photo-folder="{{ photo['folder'] }}"
+                       data-photo-filename="{{ photo['filename'] }}">
+                <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+{% endfor %}

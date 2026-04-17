@@ -59,6 +59,39 @@
 <script>
     {% if status == "FOUND" %}
 
+    let albumCurrentPage = 2;
+    let albumIsLoading = false;
+    let albumHasMore = {{ 'true' if has_more else 'false' }};
+
+    $(window).on('scroll', function () {
+        if (albumIsLoading || !albumHasMore) return;
+        if ($(window).scrollTop() + $(window).height() >= $(document).height() - 300) {
+            loadMoreAlbumPhotos();
+        }
+    });
+
+    function loadMoreAlbumPhotos() {
+        albumIsLoading = true;
+        $.ajax({
+            url: '/api/v1/album/{{ album_path }}/photos',
+            type: 'GET',
+            data: { page: albumCurrentPage },
+            success: function (response) {
+                albumIsLoading = false;
+                if (response.count === 0) {
+                    albumHasMore = false;
+                    return;
+                }
+                $('#photo-gallery').append(response.content);
+                albumCurrentPage += 1;
+                albumHasMore = response.has_more;
+            },
+            error: function () {
+                albumIsLoading = false;
+            }
+        });
+    }
+
         $('#btn-remove-photo').on("click", function () {
         const albumPath = $(this).attr("data-album-path");
         const checkBoxes = $('.cls-chk-remove-photo');
@@ -119,6 +152,7 @@
             return response.text();
         }).then(data => {
             $(".photo").html(data);
+            albumHasMore = false; // All photos are loaded after shuffle
         }).catch(error => {
             console.error('Error: ', error);
         });
@@ -168,9 +202,8 @@
             }
             return response.text();
         }).then(data => {
-            {#window.location.reload();#}
-            {#console.log(data);#}
             $(".photo").html(data);
+            albumHasMore = false; // All photos are loaded after sort
         }).catch(error => {
             console.error('Error: ', error);
         });
