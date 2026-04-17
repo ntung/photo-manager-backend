@@ -177,7 +177,7 @@
         });
     }
 
-    $('.btn-edit-album').on("click", function () {
+    $(document).on("click", ".btn-edit-album", function () {
         albumPath = $(this).attr("data-album-path");
         albumTitle = $(this).attr("data-album-title");
         $("#title").val(albumTitle);
@@ -190,7 +190,7 @@
         });
     });
 
-    $('.btn-delete-album').on("click", function () {
+    $(document).on("click", ".btn-delete-album", function () {
         albumPath = $(this).attr("data-album-path");
         albumTitle = $(this).attr("data-album-title");
         const albumObjectId = $(this).attr("data-album-object-id");
