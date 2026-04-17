@@ -87,28 +87,21 @@
 
     function loadMoreContent() {
         isLoading = true;
-        const prePage = previousPage();
-        if (prePage !== -1) {
-            currentPage = prePage;
-        }
-
         $.ajax({
             url: '/api/v1/photos',
             type: 'GET',
             data: { page: currentPage },
             success: function(response) {
+                isLoading = false;
                 if (response.photos.length === 0) {
                     hasMore = false;
                     return;
                 }
-
                 $("#photo-list").append(response.content);
                 currentPage += 1;
-                isLoading = false;
-                // reload FsLightbox plugin to effect for the newly generated photos
+                hasMore = response.has_more;
+                // Reload FsLightbox so the newly appended photos are included.
                 refreshFsLightbox();
-                // change the page=currentPage in the current URI without reloading the page
-                updateQueryParam("page", currentPage);
             },
             error: function() {
                 isLoading = false;

@@ -757,26 +757,29 @@ def _get_photos_page():
     return [_serialize_photo(doc) for doc in cursor]
 
 
-def _get_latest_photos_with_albums():
-    # Calculate how many documents to skip
-    # Page 1 skips 0, Page 2 skips 20, etc.
-    skip, page_size = _get_pagination_params()
+def _get_latest_photos_with_albums(page=None):
+    """
+    Fetches one page of photos (newest-first) with their album memberships.
+    If ``page`` is given it overrides the ``?page`` query parameter so the
+    initial page-render can always request page 1 regardless of the URL.
+    """
+    req_skip, page_size = _get_pagination_params()
+    skip = (page - 1) * page_size if page is not None else req_skip
 
     pipeline = [
         { "$sort": { "date_uploaded": -1 } },
-        { "$skip": skip },  # Skip the previous pages
-        { "$limit": page_size },   # Limit to current page size
+        { "$skip": skip },
+        { "$limit": page_size },
         {
             "$lookup": {
                 "from": "albums",
-                "localField": "_id",      # The ID of the photo
-                "foreignField": "photos", # containing the photo IDs
+                "localField": "_id",
+                "foreignField": "photos",
                 "as": "belonged_to_albums"
             }
         },
         {
             "$project": {
-                # Add all these fields so they aren't deleted!
                 "title": 1,
                 "description": 1,
                 "courtesy": 1,
@@ -784,23 +787,22 @@ def _get_latest_photos_with_albums():
                 "filename": 1,
                 "date_uploaded": 1,
                 "date_modified": 1,
-
-                # Keep your album info
                 "belonged_to_albums.path": 1,
                 "belonged_to_albums.title": 1,
                 "belonged_to_albums._id": 1
             }
         }
     ]
-    result  = list(db.photos.aggregate(pipeline))
-    _photos = [_serialize_photo(doc) for doc in result]
-    return _photos
+    result = list(db.photos.aggregate(pipeline))
+    return [_serialize_photo(doc) for doc in result]
 
 
 @app.route('/photo/list', methods=('GET', 'POST'))
 def photo_list():
     start_time = time.perf_counter()
-    _photos = _get_latest_photos_with_albums()
+    # Always render page 1 on initial load so the infinite-scroll JS
+    # can reliably start from page 2, regardless of any ?page= in the URL.
+    _photos = _get_latest_photos_with_albums(page=1)
     end_time = time.perf_counter()
     run_time = end_time - start_time
     app.logger.info(f"Executed in {run_time:.6f} seconds to load 20 photos")
@@ -1130,15 +1132,16 @@ def dict_photos_albums(list_photos, album_path):
 @app.route('/api/v1/photos', methods=['GET'])
 def get_photos():
     """
-    Gets the photos by parameters such as pagination, page size, and sort order.
-    The photos are sanitised and converted to presentation forms.
+    Returns one page of photos as JSON + pre-rendered HTML for infinite scroll.
     """
     page = request.args.get('page', 1, type=int)
     app.logger.info(f"Loading page {page}...")
     _photos = _get_latest_photos_with_albums()
+    _, page_size = _get_pagination_params()
+    has_more = len(_photos) >= page_size
     content = render_template(template_name_or_list="_photo-list.html",
-                              photos=_photos, )
-    return jsonify(photos=_photos, content=content)
+                              photos=_photos)
+    return jsonify(photos=_photos, content=content, has_more=has_more)
 
 
 def get_album_with_photo_cross_references(album_id_str):
