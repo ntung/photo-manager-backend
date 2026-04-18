@@ -802,18 +802,24 @@ def _get_latest_photos_with_albums(page=None):
     return [_serialize_photo(doc) for doc in result]
 
 
-def _get_album_photos_page(album_path, sort_field=None, sort_dir='down'):
+def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
+                           shuffle_seed=None):
     """
     Returns a paginated slice of photos for an album together with per-photo
     other-album cross-references.
 
-    sort_field: 'title' | 'date_uploaded' | 'date_modified' | None
-      When supplied the sort is pushed to MongoDB so only the current page is
-      loaded into Python; the album's custom order is ignored.
-    sort_dir: 'down' (descending) or 'up' (ascending)
+    sort_field:   'title' | 'date_uploaded' | 'date_modified' | None
+                  Sort is pushed to MongoDB; only the current page is fetched.
+    sort_dir:     'down' (descending) or 'up' (ascending)
+    shuffle_seed: integer seed for a deterministic shuffle.
+                  The full ID list is shuffled with random.Random(seed) so
+                  every page request with the same seed yields a consistent
+                  order without any server-side state.
 
     Returns: (photo_docs, total_count, has_more)
     """
+    import random as _random
+
     skip, page_size = _get_pagination_params()
 
     album = db.albums.find_one({"path": album_path})
@@ -829,7 +835,20 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down'):
 
     has_more = (skip + page_size) < total
 
-    if sort_field in ('title', 'date_uploaded', 'date_modified'):
+    if shuffle_seed is not None:
+        # Shuffle only the ID list (cheap) then fetch just the current page.
+        # Using a seeded RNG makes the order reproducible across pages without
+        # storing any state on the server.
+        shuffled = list(valid_ids)
+        _random.Random(shuffle_seed).shuffle(shuffled)
+        paged_ids = shuffled[skip:skip + page_size]
+        if not paged_ids:
+            return [], total, False
+        raw = list(db.photos.find({"_id": {"$in": paged_ids}}))
+        by_id = {str(p["_id"]): p for p in raw}
+        photo_details = [by_id[str(pid)] for pid in paged_ids if str(pid) in by_id]
+
+    elif sort_field in ('title', 'date_uploaded', 'date_modified'):
         # Push sort + pagination to MongoDB — never loads the full set into Python.
         mongo_dir = (pymongo.DESCENDING if sort_dir == 'down'
                      else pymongo.ASCENDING)
@@ -839,6 +858,7 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down'):
                      .skip(skip)
                      .limit(page_size)
         )
+
     else:
         # Default: preserve the album's custom order.
         paged_ids = all_ids[skip:skip + page_size]
@@ -1288,8 +1308,10 @@ def get_album_photos(path):
             sort_field = sf
         sort_dir = parts[1] if len(parts) > 1 else 'down'
 
+    shuffle_seed = request.args.get('shuffle', None, type=int)
+
     photos, total, has_more = _get_album_photos_page(
-        path, sort_field=sort_field, sort_dir=sort_dir
+        path, sort_field=sort_field, sort_dir=sort_dir, shuffle_seed=shuffle_seed
     )
     content = render_template("_album_view_photo_rows.html",
                                photos=photos,
