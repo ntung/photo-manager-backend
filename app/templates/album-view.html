@@ -162,6 +162,7 @@
     let albumCurrentPage = 2;
     let albumIsLoading = false;
     let albumHasMore = {{ 'true' if has_more else 'false' }};
+    let currentSort = '';   // e.g. "title;down" — set by sort, cleared on reset
 
     $(window).on('scroll', function () {
         if (albumIsLoading || !albumHasMore) return;
@@ -172,10 +173,12 @@
 
     function loadMoreAlbumPhotos() {
         albumIsLoading = true;
+        const params = { page: albumCurrentPage };
+        if (currentSort) params.sort = currentSort;
         $.ajax({
             url: '/api/v1/album/{{ album_path }}/photos',
             type: 'GET',
-            data: { page: albumCurrentPage },
+            data: params,
             success: function (response) {
                 albumIsLoading = false;
                 if (response.count === 0) {
@@ -259,6 +262,7 @@
     });
 
     $("#btn-reset-order-photo").on("click", function () {
+        currentSort = '';
         window.location.reload();
     });
 
@@ -293,19 +297,26 @@
     });
 
     function callServerToSortPhotos() {
-        const URL = "/albums/view/{{album_path}}?sort=" + sortField + ";" + sortDirection;
-        fetch(URL, {
-            method: 'GET',
-        }).then(response => {
-            if (!response.ok) {
-                throw new Error('Network response failed!!!');
+        currentSort = sortField + ';' + sortDirection;
+        albumCurrentPage = 2;
+        albumHasMore = false;
+        $.ajax({
+            url: '/api/v1/album/{{ album_path }}/photos',
+            type: 'GET',
+            data: { page: 1, sort: currentSort },
+            success: function (response) {
+                $('#photo-gallery').html(response.content);
+                albumCurrentPage = 2;
+                albumHasMore = response.has_more;
+                // Sorted view: disable drag-to-reorder to avoid conflicting
+                // with the applied sort order.
+                if ($('#photo-gallery').sortable('instance')) {
+                    $('#photo-gallery').sortable('disable');
+                }
+            },
+            error: function () {
+                console.error('Sort request failed');
             }
-            return response.text();
-        }).then(data => {
-            $(".photo").html(data);
-            albumHasMore = false; // All photos are loaded after sort
-        }).catch(error => {
-            console.error('Error: ', error);
         });
     }
 

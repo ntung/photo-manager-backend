@@ -802,10 +802,15 @@ def _get_latest_photos_with_albums(page=None):
     return [_serialize_photo(doc) for doc in result]
 
 
-def _get_album_photos_page(album_path):
+def _get_album_photos_page(album_path, sort_field=None, sort_dir='down'):
     """
-    Returns a paginated slice of photos for an album (newest-first) together
-    with per-photo other-album cross-references.
+    Returns a paginated slice of photos for an album together with per-photo
+    other-album cross-references.
+
+    sort_field: 'title' | 'date_uploaded' | 'date_modified' | None
+      When supplied the sort is pushed to MongoDB so only the current page is
+      loaded into Python; the album's custom order is ignored.
+    sort_dir: 'down' (descending) or 'up' (ascending)
 
     Returns: (photo_docs, total_count, has_more)
     """
@@ -815,32 +820,39 @@ def _get_album_photos_page(album_path):
     if not album:
         return [], 0, False
 
-    # Reverse the stored order so the newest photo appears first,
-    # matching the behaviour of get_album().
     all_ids = list(reversed(album.get('photos', [])))
-    total = len(all_ids)
-    paged_ids = all_ids[skip:skip + page_size]
-    has_more = (skip + page_size) < total
+    valid_ids = [pid for pid in all_ids if str(pid) != 'None']
+    total = len(valid_ids)
 
-    if not paged_ids:
+    if not valid_ids:
         return [], total, False
 
-    # Single $in query instead of N individual find_one calls.
-    valid_ids = [pid for pid in paged_ids if str(pid) != 'None']
-    raw_docs = list(db.photos.find({"_id": {"$in": valid_ids}}))
-    by_id = {str(p["_id"]): p for p in raw_docs}
-    # Re-order to match the paged order.
-    photo_details = [by_id[str(pid)] for pid in valid_ids if str(pid) in by_id]
+    has_more = (skip + page_size) < total
 
-    # Attach the list of other albums each photo belongs to.
-    all_albums = list(db.albums.find())
+    if sort_field in ('title', 'date_uploaded', 'date_modified'):
+        # Push sort + pagination to MongoDB — never loads the full set into Python.
+        mongo_dir = (pymongo.DESCENDING if sort_dir == 'down'
+                     else pymongo.ASCENDING)
+        photo_details = list(
+            db.photos.find({"_id": {"$in": valid_ids}})
+                     .sort(sort_field, mongo_dir)
+                     .skip(skip)
+                     .limit(page_size)
+        )
+    else:
+        # Default: preserve the album's custom order.
+        paged_ids = all_ids[skip:skip + page_size]
+        if not paged_ids:
+            return [], total, False
+        paged_valid = [pid for pid in paged_ids if str(pid) != 'None']
+        raw = list(db.photos.find({"_id": {"$in": paged_valid}}))
+        by_id = {str(p["_id"]): p for p in raw}
+        photo_details = [by_id[str(pid)] for pid in paged_valid if str(pid) in by_id]
+
+    fetched_ids = [p["_id"] for p in photo_details]
+    other_albums_map = _build_other_albums_map(fetched_ids, album_path)
     for photo in photo_details:
-        photo['other_albums'] = [
-            {"path": a['path'], "title": a['title']}
-            for a in all_albums
-            if photo.get("_id") in a.get('photos', [])
-            and a['path'] != album_path
-        ]
+        photo['other_albums'] = other_albums_map.get(str(photo.get("_id")), [])
 
     return photo_details, total, has_more
 
@@ -1261,9 +1273,24 @@ def get_photos():
 def get_album_photos(path):
     """
     Returns one paginated page of photos for an album as JSON + pre-rendered
-    HTML, for use by the album-view infinite scroll.
+    HTML, for use by the album-view infinite scroll and sorted views.
+
+    Optional query params:
+      sort=<field>;<dir>  e.g. sort=title;down  (field sort, paginated)
+      page=<n>            page number (default 1)
     """
-    photos, total, has_more = _get_album_photos_page(path)
+    sort_field, sort_dir = None, 'down'
+    sort_param = request.args.get('sort', '')
+    if sort_param:
+        parts = sort_param.split(';')
+        sf = parts[0]
+        if sf in ('title', 'date_uploaded', 'date_modified'):
+            sort_field = sf
+        sort_dir = parts[1] if len(parts) > 1 else 'down'
+
+    photos, total, has_more = _get_album_photos_page(
+        path, sort_field=sort_field, sort_dir=sort_dir
+    )
     content = render_template("_album_view_photo_rows.html",
                                photos=photos,
                                album_path=path,
