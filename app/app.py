@@ -1211,6 +1211,33 @@ def get_album_photos(path):
     return jsonify(content=content, has_more=has_more, count=len(photos))
 
 
+@app.route('/api/v1/album/<string:path>/slideshow', methods=['GET'])
+def get_album_slideshow(path):
+    """
+    Returns all photo URLs and titles for an album — used by the slideshow player.
+    Only fetches folder/filename/title so it is lightweight even for large albums.
+    """
+    album = db.albums.find_one({"path": path})
+    if not album:
+        return jsonify(photos=[])
+    all_ids = list(reversed(album.get('photos', [])))
+    valid_ids = [pid for pid in all_ids if str(pid) != 'None']
+    raw = list(db.photos.find(
+        {"_id": {"$in": valid_ids}},
+        {"folder": 1, "filename": 1, "title": 1}
+    ))
+    by_id = {str(p["_id"]): p for p in raw}
+    photos = []
+    for pid in valid_ids:
+        p = by_id.get(str(pid))
+        if p:
+            photos.append({
+                "url": f"/photo/{p['folder']}/{p['filename']}",
+                "title": p.get("title", "")
+            })
+    return jsonify(photos=photos)
+
+
 @app.route('/api/v1/photos/gallery', methods=['GET'])
 def get_gallery_photos():
     """
