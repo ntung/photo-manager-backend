@@ -17,12 +17,12 @@
             <div class="photo-description original" id="photo-description-{{ photo.get('_id')}}">{{ photo['description'] }}</div>
             <br/>
             {% if "date_uploaded" in photo %}
-                <span>Uploaded {{ photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
+                <span><i class="fa fa-upload" title="Uploaded"></i> {{ photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
             {% endif %}
             {% if "date_modified" in photo %}
-                <span>| Updated {{ photo['date_modified'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
+                <span>| <i class="fa fa-pencil" title="Updated"></i> {{ photo['date_modified'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
             {% endif %}
-            | Credit:
+            | <i class="fa fa-link" title="Credit"></i>
             {% if photo['courtesy'].startswith('http') %}
                 {% if 'facebook.com' in photo['courtesy'] %}
                     {% set source = "Facebook" %}
