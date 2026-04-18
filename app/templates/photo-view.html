@@ -4,33 +4,17 @@
     <title>Gallery | Photo Manager</title>
     {% include('_head.html') %}
     <style>
-
-        .w3s-header {
-            text-align: center;
-        {#padding: 32px;#}
+        #photo-gallery {
+            column-count: 2;
+            column-gap: 4px;
         }
 
-        .w3s-row {
-            display: -ms-flexbox; /* IE 10 */
-            display: flex;
-            -ms-flex-wrap: wrap; /* IE 10 */
-            flex-wrap: wrap;
-            padding: 0 4px;
+        #photo-gallery a {
+            display: block;
+            break-inside: avoid;
+            margin-bottom: 4px;
         }
 
-        /* Create two equal columns that sits next to each other */
-        .w3s-column {
-            -ms-flex: 50%; /* IE 10 */
-            flex: 50%;
-            padding: 0 4px;
-        }
-
-        .w3s-column img {
-            margin-top: 8px;
-            vertical-align: middle;
-        }
-
-        /* Style the buttons */
         .w3s-btn {
             border: none;
             outline: none;
@@ -51,7 +35,6 @@
     </style>
 </head>
 <body>
-{#https://www.w3schools.com/howto/howto_js_image_grid.asp#}
 <div class="container">
     {% include '_menu-bar.html' %}
     <div class="main">
@@ -61,72 +44,60 @@
         </div>
     </div>
 
-    <!-- Header -->
-    <div class="w3s-header" id="myHeader">
+    <div id="myHeader" style="margin-bottom: 8px;">
         <p>Click on the buttons to change the grid view.</p>
-        <button class="w3s-btn" onclick="one()">1</button>
-        <button class="w3s-btn active" onclick="two()">2</button>
-        <button class="w3s-btn" onclick="four()">4</button>
+        <button class="w3s-btn" onclick="setColumns(1, this)">1</button>
+        <button class="w3s-btn active" onclick="setColumns(2, this)">2</button>
+        <button class="w3s-btn" onclick="setColumns(4, this)">4</button>
     </div>
 
-    <!-- Photo Grid -->
-    <div class="w3s-row">
-        {% for bucket in buckets %}
-            <div class="w3s-column">
-                {% for photo in bucket %}
-                    {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
-                    <a href="{{photo_url}}" title="{{photo['title']}}" data-fslightbox="gallery">
-                        <img src="{{photo_url}}" style="width:100%" alt="{{photo['title']}}"></a>
-                {% endfor %}
-            </div>
-        {% endfor %}
+    <div id="photo-gallery">
+        {% include('_photo-view-items.html') %}
     </div>
     </div>
 </div>
 {% include('_foot.html') %}
-<script src="{{url_for('static', filename='js/fslightbox.js')}}"></script>
+<script src="{{ url_for('static', filename='js/fslightbox.js') }}"></script>
 <script>
-    // Get the elements with class="column"
-    const elements = document.getElementsByClassName("w3s-column");
+    let galleryCurrentPage = 2;
+    let galleryIsLoading = false;
+    let galleryHasMore = {{ 'true' if has_more else 'false' }};
 
-    // Declare a loop variable
-    let i;
-
-    // Full-width images
-    function one() {
-        for (i = 0; i < elements.length; i++) {
-            elements[i].style.msFlex = "100%";  // IE10
-            elements[i].style.flex = "100%";
+    $(window).on('scroll', function () {
+        if (galleryIsLoading || !galleryHasMore) return;
+        if ($(window).scrollTop() + $(window).height() >= $(document).height() - 300) {
+            loadMoreGalleryPhotos();
         }
-    }
+    });
 
-    // Two images side by side
-    function two() {
-        for (i = 0; i < elements.length; i++) {
-            elements[i].style.msFlex = "50%";  // IE10
-            elements[i].style.flex = "50%";
-        }
-    }
-
-    // Four images side by side
-    function four() {
-        for (i = 0; i < elements.length; i++) {
-            elements[i].style.msFlex = "25%";  // IE10
-            elements[i].style.flex = "25%";
-        }
-    }
-
-    // Add active class to the current button (highlight it)
-    const header = document.getElementById("myHeader");
-    const buttons = header.getElementsByClassName("w3s-btn");
-    for (let i = 0; i < buttons.length; i++) {
-        buttons[i].addEventListener("click", function () {
-            const current = document.getElementsByClassName("active");
-            current[0].className = current[0].className.replace(" active", "");
-            this.className += " active";
+    function loadMoreGalleryPhotos() {
+        galleryIsLoading = true;
+        $.ajax({
+            url: '/api/v1/photos/gallery',
+            type: 'GET',
+            data: { page: galleryCurrentPage },
+            success: function (response) {
+                galleryIsLoading = false;
+                if (response.count === 0) {
+                    galleryHasMore = false;
+                    return;
+                }
+                $('#photo-gallery').append(response.content);
+                galleryCurrentPage += 1;
+                galleryHasMore = response.has_more;
+                refreshFsLightbox();
+            },
+            error: function () {
+                galleryIsLoading = false;
+            }
         });
     }
-</script>
 
+    function setColumns(n, btn) {
+        document.getElementById('photo-gallery').style.columnCount = n;
+        document.querySelectorAll('.w3s-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+</script>
 </body>
 </html>
