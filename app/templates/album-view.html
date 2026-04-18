@@ -9,6 +9,19 @@
           href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"/>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"/>
+    <style>
+        .sticky-action-bar {
+            position: sticky;
+            top: 70px;
+            z-index: 100;
+            background: #fff;
+            padding: 6px calc(50vw - 50%);
+            border-bottom: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            margin-left: calc(-50vw + 50%);
+            margin-right: calc(-50vw + 50%);
+        }
+    </style>
     <script>
         // the following variable is used in the columns view to select and add multiple photos to many albums
         let selectedPhotoSet = new Set();
@@ -30,7 +43,9 @@
         </div>
 
         {% if not is_empty_album %}
-            {% include("_album_view_action_buttons.html") %}
+            <div class="sticky-action-bar">
+                {% include("_album_view_action_buttons.html") %}
+            </div>
 
             <div class="photo">
                 {% include("_album_view_list.html") %}

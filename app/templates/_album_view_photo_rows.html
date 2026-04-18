@@ -10,7 +10,7 @@
             <a href="{{ url_for('photo_show', unique_key=photo.get('_id')) }}"
                target="_blank">Show</a>
         </div>
-        <div class="col-6">
+        <div class="col-7">
             <a href="javascript:void(0)" class="photo-row-title" id="photo-title-{{ photo.get('_id')}}" data-photo-object-id="{{ photo.get('_id')}}"
                data-bs-toggle="modal" data-bs-target="#photo-edit-modal-form"><strong>{{ photo['title'] }}</strong></a>
             <br/>
@@ -53,7 +53,7 @@
                    data-photo-filename="{{ photo['filename'] }}">Add to other albums</a></p>
             {% endif %}
         </div>
-        <div class="col-2">
+        <div class="col-1">
             <div class="form-check">
                 <label class="form-check-label switch" for="chk-remove-{{ photo['filename'] }}">
                 <input class="form-check-input cls-chk-remove-photo"
