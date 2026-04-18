@@ -5,7 +5,9 @@ export UPLOAD_FOLDER=/Users/tnguyen/ownCloud/MyBusiness/data/PM/photodb-files
 #export UPLOAD_FOLDER=/home/tnguyen/Documents/MyBusiness/PhotoManager/mygallery
 #flask run --host=0.0.0.0 --port=5500 --debug >> logs/run.log
 #python app.py
-gunicorn --config gunicorn_config.py app.app:app
+gunicorn app.app:app \
+    --config gunicorn_config.py \
+    --reload
 # OR
 #gunicorn --bind 0.0.0.0:5500 \
 #  --workers 17 \
