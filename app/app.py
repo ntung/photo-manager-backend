@@ -1017,17 +1017,11 @@ def photo_show(unique_key):
 
 @app.route('/photo/view', methods=['GET', 'POST'])
 def photo_view():
-    all_photos = db.photos.find().sort([("date_uploaded", pymongo.DESCENDING)])
-    # divide 4 because I installed this layout [1]
-    # [1] https://www.w3schools.com/howto/howto_js_image_grid.asp
-    bucket_size = math.ceil(db.photos.count_documents({}) / 4)
-    buckets = PhotoManager.create_buckets(all_photos, bucket_size)
-
-    # after looping over all_photos as a Cursor, all_photos is empty
-    all_photos = PhotoManager.flatten_concatenation(buckets)
-
+    photos = _get_photos_page()
+    _, page_size = _get_pagination_params()
+    has_more = len(photos) >= page_size
     return render_template('photo-view.html',
-                           photos=all_photos, buckets=buckets, api_svr=API_SVR)
+                           photos=photos, has_more=has_more, api_svr=API_SVR)
 
 
 def do_download_image(storage_location, image_url, out_filename=None):
@@ -1214,6 +1208,18 @@ def get_album_photos(path):
                                photos=photos,
                                album_path=path,
                                status="FOUND")
+    return jsonify(content=content, has_more=has_more, count=len(photos))
+
+
+@app.route('/api/v1/photos/gallery', methods=['GET'])
+def get_gallery_photos():
+    """
+    Returns one page of photos as JSON + pre-rendered HTML for the gallery infinite scroll.
+    """
+    photos = _get_photos_page()
+    _, page_size = _get_pagination_params()
+    has_more = len(photos) >= page_size
+    content = render_template('_photo-view-items.html', photos=photos)
     return jsonify(content=content, has_more=has_more, count=len(photos))
 
 
