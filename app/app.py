@@ -844,9 +844,7 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
         paged_ids = shuffled[skip:skip + page_size]
         if not paged_ids:
             return [], total, False
-        raw = list(db.photos.find({"_id": {"$in": paged_ids}}))
-        by_id = {str(p["_id"]): p for p in raw}
-        photo_details = [by_id[str(pid)] for pid in paged_ids if str(pid) in by_id]
+        photo_details = _fetch_photos_ordered(paged_ids)
 
     elif sort_field in ('title', 'date_uploaded', 'date_modified'):
         # Push sort + pagination to MongoDB — never loads the full set into Python.
@@ -865,9 +863,7 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
         if not paged_ids:
             return [], total, False
         paged_valid = [pid for pid in paged_ids if str(pid) != 'None']
-        raw = list(db.photos.find({"_id": {"$in": paged_valid}}))
-        by_id = {str(p["_id"]): p for p in raw}
-        photo_details = [by_id[str(pid)] for pid in paged_valid if str(pid) in by_id]
+        photo_details = _fetch_photos_ordered(paged_valid)
 
     fetched_ids = [p["_id"] for p in photo_details]
     other_albums_map = _build_other_albums_map(fetched_ids, album_path)
@@ -1199,6 +1195,13 @@ def dict_photos_albums(list_photos, album_path):
                         "path": album['path'], "title": album['title']
                     }]
     return other_albums_dict
+
+
+def _fetch_photos_ordered(ids):
+    """Fetch photo docs for the given ObjectId list and return them in id order."""
+    raw = list(db.photos.find({"_id": {"$in": ids}}))
+    by_id = {str(p["_id"]): p for p in raw}
+    return [by_id[str(pid)] for pid in ids if str(pid) in by_id]
 
 
 def _build_other_albums_map(photo_object_ids, current_album_path):
