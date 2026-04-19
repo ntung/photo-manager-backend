@@ -553,36 +553,40 @@ def albums_view(path):
         _photos = photo_unclassified()
         nb_photos = len(_photos)
         is_empty_album = nb_photos == 0
-        return render_template('album-view.html',
-                               album_path='unclassified',
-                               album_title='Unclassified',
-                               status="FOUND",
-                               photos=_photos,
-                               album_object_id="unclassified",
-                               albums=_albums,
-                               nb_photos=nb_photos,
-                               is_empty_album=is_empty_album,
-                               has_more=False,
-                               api_svr=API_SVR)
+        ctx: dict = {
+            "album_path": "unclassified",
+            "album_title": "Unclassified",
+            "status": "FOUND",
+            "photos": _photos,
+            "album_object_id": "unclassified",
+            "albums": _albums,
+            "nb_photos": nb_photos,
+            "is_empty_album": is_empty_album,
+            "has_more": False,
+            "api_svr": API_SVR,
+        }
+        return render_template('album-view.html', **ctx)
 
     if path is None or path == '':
         return jsonify(message="Path is empty")
 
     album_doc = db.albums.find_one({"path": path})
     if album_doc is None:
-        return render_template('album-view.html',
-                               status="NOT_FOUND", message="No such album")
+        not_found_ctx: dict = {"status": "NOT_FOUND", "message": "No such album"}
+        return render_template('album-view.html', **not_found_ctx)
 
     is_empty_album = not album_doc.get("photos")
     view = "album-view.html"
 
     if is_empty_album:
-        return render_template(view, status="FOUND", album=album_doc,
-                               album_object_id=album_doc.get("_id"),
-                               photos=[], album_title=album_doc['title'],
-                               albums=_albums, album_path=path, nb_photos=0,
-                               is_empty_album=True, other_albums=None,
-                               has_more=False, api_svr=API_SVR)
+        return render_template(view, **{
+            "status": "FOUND", "album": album_doc,
+            "album_object_id": album_doc.get("_id"),
+            "photos": [], "album_title": album_doc['title'],
+            "albums": _albums, "album_path": path, "nb_photos": 0,
+            "is_empty_album": True, "other_albums": None,
+            "has_more": False, "api_svr": API_SVR,
+        })
 
     sort = request.args.get('sort')
 
@@ -600,16 +604,18 @@ def albums_view(path):
         nb_photos = len(photos_details)
         bz = math.ceil(len(array_photos_object_ids) / 3)
         buckets = PhotoManager.create_buckets(photos_details, bz)
-        return render_template(view, status="FOUND", album=album,
-                               album_path=album['path'],
-                               album_title=album['title'],
-                               albums=_albums,
-                               photos=photos_details,
-                               buckets=buckets, nb_photos=nb_photos,
-                               album_object_id=album.get("_id"),
-                               is_empty_album=False,
-                               has_more=False,
-                               api_svr=API_SVR)
+        return render_template(view, **{
+            "status": "FOUND", "album": album,
+            "album_path": album['path'],
+            "album_title": album['title'],
+            "albums": _albums,
+            "photos": photos_details,
+            "buckets": buckets, "nb_photos": nb_photos,
+            "album_object_id": album.get("_id"),
+            "is_empty_album": False,
+            "has_more": False,
+            "api_svr": API_SVR,
+        })
 
     if sort is not None:
         # Sort or shuffle — load all photos so the full ordered set is shown.
@@ -625,26 +631,29 @@ def albums_view(path):
                 path, sort_field=sort_field, sort_dir=sort_direction
             )
 
-        return render_template("_album_view_list.html",
-                               status="FOUND", album=album_doc,
-                               album_object_id=album_doc.get("_id"),
-                               photos=photos_details,
-                               album_title=album_doc['title'], albums=_albums,
-                               album_path=path, nb_photos=nb_photos,
-                               is_empty_album=nb_photos == 0,
-                               other_albums=None, has_more=False,
-                               api_svr=API_SVR)
+        return render_template("_album_view_list.html", **{
+            "status": "FOUND", "album": album_doc,
+            "album_object_id": album_doc.get("_id"),
+            "photos": photos_details,
+            "album_title": album_doc['title'], "albums": _albums,
+            "album_path": path, "nb_photos": nb_photos,
+            "is_empty_album": nb_photos == 0,
+            "other_albums": None, "has_more": False,
+            "api_svr": API_SVR,
+        })
 
     # Default GET: load only the first page; the client will fetch subsequent
     # pages via /api/v1/album/<path>/photos as the user scrolls.
     photos, nb_photos, has_more = _get_album_photos_page(path)
-    return render_template(view, status="FOUND", album=album_doc,
-                           album_object_id=album_doc.get("_id"),
-                           photos=photos, album_title=album_doc['title'],
-                           albums=_albums, album_path=path,
-                           nb_photos=nb_photos, is_empty_album=False,
-                           other_albums=None, has_more=has_more,
-                           api_svr=API_SVR)
+    return render_template("album-view.html", **{
+        "status": "FOUND", "album": album_doc,
+        "album_object_id": album_doc.get("_id"),
+        "photos": photos, "album_title": album_doc['title'],
+        "albums": _albums, "album_path": path,
+        "nb_photos": nb_photos, "is_empty_album": False,
+        "other_albums": None, "has_more": has_more,
+        "api_svr": API_SVR,
+    })
 
 
 def photo_unclassified():
@@ -1138,7 +1147,7 @@ def do_upload_photo(req):
         if photo_url is None or photo_url == '':
             app.logger.error("Image URL not found!")
             return render_template('photo-list.html',
-                                   message="Image URL not found!")
+                                   **{"message": "Image URL not found!"})
         global nb_downloads
         try:
             result = do_download_image(UPLOAD_DIR, photo_url, filename)
@@ -1352,9 +1361,7 @@ def get_album_photos(path):
     )
     content = render_template(
         "_album_view_photo_rows.html",
-        photos=photos,
-        album_path=path,
-        status="FOUND"
+        **{"photos": photos, "album_path": path, "status": "FOUND"},
     )
     return jsonify(content=content, has_more=has_more, count=len(photos))
 
