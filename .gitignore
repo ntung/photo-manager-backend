@@ -1,10 +1,11 @@
 # folders
 .idea
+.run
 __pycache__
+certs
 log
 logs
 tmp
-.run
 venv
 
 # files

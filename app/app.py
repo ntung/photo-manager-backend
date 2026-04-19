@@ -32,7 +32,7 @@ from slugify import slugify
 from migration_framework.runner import MigrationRunner
 from .utils import PhotoManager
 
-load_dotenv() # loads variables from .env into environment
+load_dotenv()  # loads variables from .env into environment
 
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
@@ -367,8 +367,8 @@ def save_photo_to_albums():
         album = get_album(album['path'])
         if album is not None:
             updated_photo_list = album["photos"]
-            if ((photo_object_id != "") and
-                    (ObjectId(photo_object_id) not in updated_photo_list)):
+            if (photo_object_id != ""
+                    and ObjectId(photo_object_id) not in updated_photo_list):
                 updated_photo_list.append(ObjectId(photo_object_id))
 
             r = db.albums.find_one_and_update(
@@ -462,8 +462,8 @@ def albums_reorder_photos():
     album_object_id = request_json['album-object-id']
     array_photo_object_ids = request_json['photos']
     album = {
-        "message": ("Updating the orders of the photos in the album " +
-                    album_object_id)
+        "message": ("Updating the orders of the photos in the album "
+                    + album_object_id)
     }
     cond = album_object_id != "" and len(array_photo_object_ids) > 0
     if cond:
@@ -541,80 +541,85 @@ def albums_view(path):
                                albums=_albums,
                                nb_photos=nb_photos,
                                is_empty_album=is_empty_album,
+                               has_more=False,
                                api_svr=API_SVR)
-    status = "FOUND"
-    tt = None
+
     if path is None or path == '':
         return jsonify(message="Path is empty")
-    else:
+
+    album_doc = db.albums.find_one({"path": path})
+    if album_doc is None:
+        return render_template('album-view.html',
+                               status="NOT_FOUND", message="No such album")
+
+    is_empty_album = not album_doc.get("photos")
+    view = "album-view.html"
+
+    if is_empty_album:
+        return render_template(view, status="FOUND", album=album_doc,
+                               album_object_id=album_doc.get("_id"),
+                               photos=[], album_title=album_doc['title'],
+                               albums=_albums, album_path=path, nb_photos=0,
+                               is_empty_album=True, other_albums=None,
+                               has_more=False, api_svr=API_SVR)
+
+    sort = request.args.get('sort')
+
+    if request.method == "POST":
+        # Invoked when changing layout/view style — load all photos.
+        request_json = request.get_json(silent=True)
+        view = request_json['view']
+        array_photos_object_ids = request_json['photos-object-ids']
         album = get_album(path)
-        if album is None:
-            status = "NOT_FOUND"
-            return render_template('album-view.html',
-                                   status=status, message="No such album")
-        is_empty_album = not album["photos"]
-        view = "album-view.html"
-        nb_photos = 0
-        if not is_empty_album:
-            status = "FOUND"
-            nb_photos = len(album["photos_details"])
-
-            if request.method == "POST":
-                # it is invoked when changing layout/view style
-                request_json = request.get_json(silent=True)
-                view = request_json['view']
-                array_photos_object_ids = request_json['photos-object-ids']
-                photos_details = album['photos_details']
-                bz = math.ceil(len(array_photos_object_ids) / 3)
-                buckets = PhotoManager.create_buckets(photos_details, bz)
-                # TODO: using array_photos_object_ids to get the same orders
-                #  of photos on the current page
-                # current_ordered_photos = []
-                # for id in array_photos_object_ids:
-
-                return render_template(view, status=status, album=album,
-                                       album_path=album['path'],
-                                       album_title=album['title'],
-                                       albums=_albums,
-                                       photos=album['photos_details'],
-                                       buckets=buckets, nb_photos=nb_photos,
-                                       album_object_id=album.get("_id"),
-                                       is_empty_album=is_empty_album,
-                                       api_svr=API_SVR)
-
-            sort = request.args.get('sort')
-            if sort is not None and sort == "shuffle":
-                import random
-                view = "_album_view_list.html"
-                random.shuffle(album["photos_details"])
-            elif sort is not None:
-                app.logger.info(sort)
-
-                s_opts = sort.split(";")
-                sort_field = s_opts[0]
-                sort_direction = s_opts[1]
-                photos_details = album["photos_details"]
-                if sort_field in ["title", "date_uploaded", "date_modified"]:
-                    is_reverse = sort_direction == "down"
-                    sorted_photos_details = sorted(photos_details,
-                                                   key=lambda x: x[sort_field],
-                                                   reverse=is_reverse)
-                    album["photos_details"] = sorted_photos_details
-
-                view = "_album_view_list.html"
-            tt = dict_photos_albums(album["photos_details"], album["path"])
-            for photo in album["photos_details"]:
-                photo_id = str(photo.get("_id"))
-                if photo_id in tt:
-                    photo['other_albums'] = tt[photo_id]
-
-        return render_template(view, status=status, album=album,
+        photos_details = album['photos_details']
+        nb_photos = len(photos_details)
+        bz = math.ceil(len(array_photos_object_ids) / 3)
+        buckets = PhotoManager.create_buckets(photos_details, bz)
+        return render_template(view, status="FOUND", album=album,
+                               album_path=album['path'],
+                               album_title=album['title'],
+                               albums=_albums,
+                               photos=photos_details,
+                               buckets=buckets, nb_photos=nb_photos,
                                album_object_id=album.get("_id"),
-                               photos=album['photos_details'],
-                               album_title=album['title'], albums=_albums,
-                               album_path=album['path'], nb_photos=nb_photos,
-                               is_empty_album=is_empty_album,
-                               other_albums=tt, api_svr=API_SVR)
+                               is_empty_album=False,
+                               has_more=False,
+                               api_svr=API_SVR)
+
+    if sort is not None:
+        # Sort or shuffle — load all photos so the full ordered set is shown.
+        # _get_all_album_photos replaces get_album (N+1 queries → single $in)
+        # and pushes field sorts to MongoDB instead of sorting in Python.
+        if sort == "shuffle":
+            photos_details, nb_photos = _get_all_album_photos(path, shuffle=True)
+        else:
+            s_opts = sort.split(";")
+            sort_field = s_opts[0] if len(s_opts) > 0 else None
+            sort_direction = s_opts[1] if len(s_opts) > 1 else 'down'
+            photos_details, nb_photos = _get_all_album_photos(
+                path, sort_field=sort_field, sort_dir=sort_direction
+            )
+
+        return render_template("_album_view_list.html",
+                               status="FOUND", album=album_doc,
+                               album_object_id=album_doc.get("_id"),
+                               photos=photos_details,
+                               album_title=album_doc['title'], albums=_albums,
+                               album_path=path, nb_photos=nb_photos,
+                               is_empty_album=nb_photos == 0,
+                               other_albums=None, has_more=False,
+                               api_svr=API_SVR)
+
+    # Default GET: load only the first page; the client will fetch subsequent
+    # pages via /api/v1/album/<path>/photos as the user scrolls.
+    photos, nb_photos, has_more = _get_album_photos_page(path)
+    return render_template(view, status="FOUND", album=album_doc,
+                           album_object_id=album_doc.get("_id"),
+                           photos=photos, album_title=album_doc['title'],
+                           albums=_albums, album_path=path,
+                           nb_photos=nb_photos, is_empty_album=False,
+                           other_albums=None, has_more=has_more,
+                           api_svr=API_SVR)
 
 
 def photo_unclassified():
@@ -757,26 +762,29 @@ def _get_photos_page():
     return [_serialize_photo(doc) for doc in cursor]
 
 
-def _get_latest_photos_with_albums():
-    # Calculate how many documents to skip
-    # Page 1 skips 0, Page 2 skips 20, etc.
-    skip, page_size = _get_pagination_params()
+def _get_latest_photos_with_albums(page=None):
+    """
+    Fetches one page of photos (newest-first) with their album memberships.
+    If ``page`` is given it overrides the ``?page`` query parameter so the
+    initial page-render can always request page 1 regardless of the URL.
+    """
+    req_skip, page_size = _get_pagination_params()
+    skip = (page - 1) * page_size if page is not None else req_skip
 
     pipeline = [
-        { "$sort": { "date_uploaded": -1 } },
-        { "$skip": skip },  # Skip the previous pages
-        { "$limit": page_size },   # Limit to current page size
+        {"$sort": {"date_uploaded": -1}},
+        {"$skip": skip},
+        {"$limit": page_size},
         {
             "$lookup": {
                 "from": "albums",
-                "localField": "_id",      # The ID of the photo
-                "foreignField": "photos", # containing the photo IDs
+                "localField": "_id",
+                "foreignField": "photos",
                 "as": "belonged_to_albums"
             }
         },
         {
             "$project": {
-                # Add all these fields so they aren't deleted!
                 "title": 1,
                 "description": 1,
                 "courtesy": 1,
@@ -784,17 +792,89 @@ def _get_latest_photos_with_albums():
                 "filename": 1,
                 "date_uploaded": 1,
                 "date_modified": 1,
-
-                # Keep your album info
                 "belonged_to_albums.path": 1,
                 "belonged_to_albums.title": 1,
                 "belonged_to_albums._id": 1
             }
         }
     ]
-    result  = list(db.photos.aggregate(pipeline))
-    _photos = [_serialize_photo(doc) for doc in result]
-    return _photos
+    result = list(db.photos.aggregate(pipeline))
+    return [_serialize_photo(doc) for doc in result]
+
+
+def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
+                           shuffle_seed=None):
+    """
+    Returns a paginated slice of photos for an album together with per-photo
+    other-album cross-references.
+
+    sort_field:   'title' | 'date_uploaded' | 'date_modified' | None
+                  Sort is pushed to MongoDB; only the current page is fetched.
+    sort_dir:     'down' (descending) or 'up' (ascending)
+    shuffle_seed: integer seed for a deterministic shuffle.
+                  The full ID list is shuffled with random.Random(seed) so
+                  every page request with the same seed yields a consistent
+                  order without any server-side state.
+
+    Returns: (photo_docs, total_count, has_more)
+    """
+    import random as _random
+
+    skip, page_size = _get_pagination_params()
+
+    album = db.albums.find_one({"path": album_path})
+    if not album:
+        return [], 0, False
+
+    all_ids = list(reversed(album.get('photos', [])))
+    valid_ids = [pid for pid in all_ids if str(pid) != 'None']
+    total = len(valid_ids)
+
+    if not valid_ids:
+        return [], total, False
+
+    has_more = (skip + page_size) < total
+
+    if shuffle_seed is not None:
+        # Shuffle only the ID list (cheap) then fetch just the current page.
+        # Using a seeded RNG makes the order reproducible across pages without
+        # storing any state on the server.
+        shuffled = list(valid_ids)
+        _random.Random(shuffle_seed).shuffle(shuffled)
+        paged_ids = shuffled[skip:skip + page_size]
+        if not paged_ids:
+            return [], total, False
+        raw = list(db.photos.find({"_id": {"$in": paged_ids}}))
+        by_id = {str(p["_id"]): p for p in raw}
+        photo_details = [by_id[str(pid)] for pid in paged_ids if str(pid) in by_id]
+
+    elif sort_field in ('title', 'date_uploaded', 'date_modified'):
+        # Push sort + pagination to MongoDB — never loads the full set into Python.
+        mongo_dir = (pymongo.DESCENDING if sort_dir == 'down'
+                     else pymongo.ASCENDING)
+        photo_details = list(
+            db.photos.find({"_id": {"$in": valid_ids}})
+                     .sort(sort_field, mongo_dir)
+                     .skip(skip)
+                     .limit(page_size)
+        )
+
+    else:
+        # Default: preserve the album's custom order.
+        paged_ids = all_ids[skip:skip + page_size]
+        if not paged_ids:
+            return [], total, False
+        paged_valid = [pid for pid in paged_ids if str(pid) != 'None']
+        raw = list(db.photos.find({"_id": {"$in": paged_valid}}))
+        by_id = {str(p["_id"]): p for p in raw}
+        photo_details = [by_id[str(pid)] for pid in paged_valid if str(pid) in by_id]
+
+    fetched_ids = [p["_id"] for p in photo_details]
+    other_albums_map = _build_other_albums_map(fetched_ids, album_path)
+    for photo in photo_details:
+        photo['other_albums'] = other_albums_map.get(str(photo.get("_id")), [])
+
+    return photo_details, total, has_more
 
 
 @app.route('/photo/list', methods=('GET', 'POST'))
@@ -913,14 +993,14 @@ def photo_show(unique_key):
     # 2. Prepare the pipeline
     pipeline = [
         # Stage 1: Find the photo
-        { "$match": match_condition },
+        {"$match": match_condition},
 
         # Stage 2: Reverse Lookup into Albums
         {
             "$lookup": {
                 "from": "albums",
                 "localField": "_id",
-                "foreignField": "photos", # The field in albums containing photo IDs
+                "foreignField": "photos",  # The field in albums containing photo IDs
                 "as": "member_of_albums"
             }
         },
@@ -956,17 +1036,11 @@ def photo_show(unique_key):
 
 @app.route('/photo/view', methods=['GET', 'POST'])
 def photo_view():
-    all_photos = db.photos.find().sort([("date_uploaded", pymongo.DESCENDING)])
-    # divide 4 because I installed this layout [1]
-    # [1] https://www.w3schools.com/howto/howto_js_image_grid.asp
-    bucket_size = math.ceil(db.photos.count_documents({}) / 4)
-    buckets = PhotoManager.create_buckets(all_photos, bucket_size)
-
-    # after looping over all_photos as a Cursor, all_photos is empty
-    all_photos = PhotoManager.flatten_concatenation(buckets)
-
+    photos = _get_photos_page()
+    _, page_size = _get_pagination_params()
+    has_more = len(photos) >= page_size
     return render_template('photo-view.html',
-                           photos=all_photos, buckets=buckets, api_svr=API_SVR)
+                           photos=photos, has_more=has_more, api_svr=API_SVR)
 
 
 def do_download_image(storage_location, image_url, out_filename=None):
@@ -1127,24 +1201,170 @@ def dict_photos_albums(list_photos, album_path):
     return other_albums_dict
 
 
+def _build_other_albums_map(photo_object_ids, current_album_path):
+    """
+    Returns {photo_id_str: [{path, title}, ...]} for every album (other than
+    the current one) that contains at least one of the supplied photo IDs.
+
+    Uses a single $in query instead of iterating over all albums in Python,
+    and avoids the bson.json_util serialisation round-trip of dict_photos_albums.
+    """
+    other_albums = list(db.albums.find(
+        {"path": {"$ne": current_album_path}, "photos": {"$in": photo_object_ids}},
+        {"path": 1, "title": 1, "photos": 1}
+    ))
+    photo_id_set = {str(pid) for pid in photo_object_ids}
+    result = {}
+    for album in other_albums:
+        for pid in album.get('photos', []):
+            pid_str = str(pid)
+            if pid_str in photo_id_set:
+                result.setdefault(pid_str, []).append(
+                    {"path": album['path'], "title": album['title']}
+                )
+    return result
+
+
+def _get_all_album_photos(album_path, sort_field=None, sort_dir='down',
+                          shuffle=False):
+    """
+    Fetches every photo in an album using a single $in query (replacing the
+    N+1 find_one loop in get_album). Used by the sort/shuffle path which must
+    show the complete set.
+
+    - sort_field: 'title' | 'date_uploaded' | 'date_modified' | None
+      When supplied the sort is pushed to MongoDB rather than done in Python.
+    - sort_dir:  'down' (descending) or 'up' (ascending)
+    - shuffle:   randomise order after fetching (overrides sort_field)
+
+    Returns (photo_docs, total_count). Each doc is a raw MongoDB document with
+    an 'other_albums' list attached.
+    """
+    import random as _random
+
+    album = db.albums.find_one({"path": album_path})
+    if not album:
+        return [], 0
+
+    all_ids = list(reversed(album.get('photos', [])))
+    valid_ids = [pid for pid in all_ids if str(pid) != 'None']
+    if not valid_ids:
+        return [], 0
+
+    if not shuffle and sort_field in ('title', 'date_uploaded', 'date_modified'):
+        mongo_dir = (pymongo.DESCENDING if sort_dir == 'down'
+                     else pymongo.ASCENDING)
+        photos = list(
+            db.photos.find({"_id": {"$in": valid_ids}})
+            .sort(sort_field, mongo_dir)
+        )
+    else:
+        raw = list(db.photos.find({"_id": {"$in": valid_ids}}))
+        if shuffle:
+            _random.shuffle(raw)
+            photos = raw
+        else:
+            by_id = {str(p["_id"]): p for p in raw}
+            photos = [by_id[str(pid)] for pid in valid_ids if str(pid) in by_id]
+
+    other_albums_map = _build_other_albums_map(valid_ids, album_path)
+    for photo in photos:
+        photo['other_albums'] = other_albums_map.get(str(photo.get("_id")), [])
+
+    return photos, len(photos)
+
+
 @app.route('/api/v1/photos', methods=['GET'])
 def get_photos():
     """
-    Gets the photos by parameters such as pagination, page size, and sort order.
-    The photos are sanitised and converted to presentation forms.
+    Returns one page of photos as JSON + pre-rendered HTML for infinite scroll.
     """
     page = request.args.get('page', 1, type=int)
     app.logger.info(f"Loading page {page}...")
     _photos = _get_latest_photos_with_albums()
+    _, page_size = _get_pagination_params()
+    has_more = len(_photos) >= page_size
     content = render_template(template_name_or_list="_photo-list.html",
-                              photos=_photos, )
-    return jsonify(photos=_photos, content=content)
+                              photos=_photos)
+    return jsonify(photos=_photos, content=content, has_more=has_more)
+
+
+@app.route('/api/v1/album/<string:path>/photos', methods=['GET'])
+def get_album_photos(path):
+    """
+    Returns one paginated page of photos for an album as JSON + pre-rendered
+    HTML, for use by the album-view infinite scroll and sorted views.
+
+    Optional query params:
+      sort=<field>;<dir>  e.g. sort=title;down  (field sort, paginated)
+      page=<n>            page number (default 1)
+    """
+    sort_field, sort_dir = None, 'down'
+    sort_param = request.args.get('sort', '')
+    if sort_param:
+        parts = sort_param.split(';')
+        sf = parts[0]
+        if sf in ('title', 'date_uploaded', 'date_modified'):
+            sort_field = sf
+        sort_dir = parts[1] if len(parts) > 1 else 'down'
+
+    shuffle_seed = request.args.get('shuffle', None, type=int)
+
+    photos, total, has_more = _get_album_photos_page(
+        path, sort_field=sort_field, sort_dir=sort_dir, shuffle_seed=shuffle_seed
+    )
+    content = render_template(
+        "_album_view_photo_rows.html",
+        photos=photos,
+        album_path=path,
+        status="FOUND"
+    )
+    return jsonify(content=content, has_more=has_more, count=len(photos))
+
+
+@app.route('/api/v1/album/<string:path>/slideshow', methods=['GET'])
+def get_album_slideshow(path):
+    """
+    Returns all photo URLs and titles for an album — used by the slideshow player.
+    Only fetches folder/filename/title so it is lightweight even for large albums.
+    """
+    album = db.albums.find_one({"path": path})
+    if not album:
+        return jsonify(photos=[])
+    all_ids = list(reversed(album.get('photos', [])))
+    valid_ids = [pid for pid in all_ids if str(pid) != 'None']
+    raw = list(db.photos.find(
+        {"_id": {"$in": valid_ids}},
+        {"folder": 1, "filename": 1, "title": 1}
+    ))
+    by_id = {str(p["_id"]): p for p in raw}
+    photos = []
+    for pid in valid_ids:
+        p = by_id.get(str(pid))
+        if p:
+            photos.append({
+                "url": f"/photo/{p['folder']}/{p['filename']}",
+                "title": p.get("title", "")
+            })
+    return jsonify(photos=photos)
+
+
+@app.route('/api/v1/photos/gallery', methods=['GET'])
+def get_gallery_photos():
+    """
+    Returns one page of photos as JSON + pre-rendered HTML for the gallery infinite scroll.
+    """
+    photos = _get_photos_page()
+    _, page_size = _get_pagination_params()
+    has_more = len(photos) >= page_size
+    content = render_template('_photo-view-items.html', photos=photos)
+    return jsonify(content=content, has_more=has_more, count=len(photos))
 
 
 def get_album_with_photo_cross_references(album_id_str):
     pipeline = [
         # 1. Start with the specific Album
-        { "$match": { "_id": ObjectId(album_id_str) } },
+        {"$match": {"_id": ObjectId(album_id_str)}},
 
         # 2. Join with the Photos collection to get full photo data
         {
@@ -1157,7 +1377,7 @@ def get_album_with_photo_cross_references(album_id_str):
         },
 
         # 3. "Flatten" the photo_list so we can look up on individual photos
-        { "$unwind": "$photo_list" },
+        {"$unwind": "$photo_list"},
 
         # 4. For each photo, find ALL albums that contain its ID
         {
@@ -1173,8 +1393,8 @@ def get_album_with_photo_cross_references(album_id_str):
         {
             "$group": {
                 "_id": "$_id",
-                "title": { "$first": "$title" },
-                "photos": { "$push": "$photo_list" }
+                "title": {"$first": "$title"},
+                "photos": {"$push": "$photo_list"}
             }
         },
 
