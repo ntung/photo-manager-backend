@@ -37,7 +37,6 @@ load_dotenv()  # loads variables from .env into environment
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
-
 db_port_str = os.getenv("DB_PORT")
 if db_port_str is None:
     raise RuntimeError("DB_PORT is not set")
@@ -146,7 +145,7 @@ def infer_submission_folder():
 # https://www.maskaravivek.com/post/how-to-add-http-cachecontrol-headers-in-flask/
 # https://stackoverflow.com/questions/704561/ns-binding-aborted-shown-in-firefox-with-httpfox
 def do_cache(minutes=5, content_type='application/json; charset=utf-8'):
-    """ Flask decorator that allow to set Expire and Cache headers. """
+    """ Flask decorator that allows set Expire and Cache headers. """
 
     def fwrap(f):
         @wraps(f)
@@ -335,33 +334,29 @@ def albums(path):
 
 
 def get_album(path):
-    first_album = db.albums.find_one({"path": path})
-    if first_album is None:
+    album_doc = db.albums.find_one({"path": path})
+    if album_doc is None:
         return None
 
-    photos_in_album = first_album['photos']
-    photo_details = []
-    for photo_id in photos_in_album:
-        if photo_id == 'None':
+    photo_ids = album_doc.get("photos", [])
+    photos_details = []
+
+    for photo_id in photo_ids:
+        if photo_id is None or photo_id == "None":
             continue
+
         photo_doc = db.photos.find_one({"_id": photo_id})
-        if photo_doc is not None:
-            photo_details.append(photo_doc)
-        else:
+        if photo_doc is None:
             app.logger.info("Photo object id {} was removed.".format(photo_id))
+            continue
 
-    # Sort the list of photos by the date uploaded
-    # sorted_photo_details = sorted(photos_details,
-    # key=lambda x: x['date_uploaded'], reverse=True)
-    # reverse the list of photos to make sure that
-    # we display photos of an album in the chronological order
-    photo_details.reverse()
-    # After implementing the feature: reordering photos,
-    # we want to keep the order we have done on UX/UI
-    # Therefore, we need to stop reversing the array of photos.
-    first_album["photos_details"] = photo_details  # sorted_photo_details
+        photos_details.append(photo_doc)
 
-    return first_album
+    photos_details.reverse()
+
+    album = dict(album_doc)
+    album["photos_details"] = photos_details
+    return album
 
 
 @app.route('/photo/save-photo-to-albums', methods=['GET', 'POST'])
@@ -411,7 +406,7 @@ def save_photo_to_albums():
 @app.route('/albums/add-photo/', methods=['POST'])
 def albums_add_photo():
     all_albums = db.albums.find().sort([("date_modified", pymongo.DESCENDING)])
-    # When the client clicks on Add to album button, is will render a select
+    # When the client clicks on Add to album button, it will render a select
     # box and a Save button
     return render_template('select_option_albums.html',
                            view=request.json['view'],
@@ -804,7 +799,7 @@ def _get_photos_page():
 def _get_latest_photos_with_albums(page=None):
     """
     Fetches one page of photos (newest-first) with their album memberships.
-    If ``page`` is given it overrides the ``?page`` query parameter so the
+    If `page` is given, it overrides the `?page` query parameter so the
     initial page-render can always request page 1 regardless of the URL.
     """
     req_skip, page_size = _get_pagination_params()
@@ -847,11 +842,11 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
     Returns a paginated slice of photos for an album together with per-photo
     other-album cross-references.
 
-    sort_field:   'title' | 'date_uploaded' | 'date_modified' | None
+    sort_field: 'title' | 'date_uploaded' | 'date_modified' | None
                   Sort is pushed to MongoDB; only the current page is fetched.
-    sort_dir:     'down' (descending) or 'up' (ascending)
+    sort_dir: 'down' (descending) or 'up' (ascending)
     shuffle_seed: integer seed for a deterministic shuffle.
-                  The full ID list is shuffled with random.Random(seed) so
+                  The full ID list is shuffled with random.Random(seed), so
                   every page request with the same seed yields a consistent
                   order without any server-side state.
 
@@ -875,7 +870,7 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
     has_more = (skip + page_size) < total
 
     if shuffle_seed is not None:
-        # Shuffle only the ID list (cheap) then fetch just the current page.
+        # Shuffle only the ID list (cheap), then fetch just the current page.
         # Using a seeded RNG makes the order reproducible across pages without
         # storing any state on the server.
         shuffled = list(valid_ids)
@@ -1124,7 +1119,6 @@ def do_upload_photo(req):
     filename = str(uuid.uuid4()) + ".jpg"
     if 'file' in req.files:
         file = req.files['file']
-        # file.filename and file.filename is not None:
         app.logger.info("Uploading a local photo...")
         # filename = secure_filename(file.filename)
         # filename = file.filename
@@ -1252,7 +1246,7 @@ def _build_other_albums_map(photo_object_ids, current_album_path):
     Returns {photo_id_str: [{path, title}, ...]} for every album (other than
     the current one) that contains at least one of the supplied photo IDs.
 
-    Uses a single $in query instead of iterating over all albums in Python,
+    Uses a single $in a query instead of iterating over all albums in Python
     and avoids the bson.json_util serialisation round-trip of dict_photos_albums.
     """
     other_albums = list(db.albums.find(
@@ -1274,13 +1268,13 @@ def _build_other_albums_map(photo_object_ids, current_album_path):
 def _get_all_album_photos(album_path, sort_field=None, sort_dir='down',
                           shuffle=False):
     """
-    Fetches every photo in an album using a single $in query (replacing the
+    Fetches every photo in an album using a single $in a query (replacing the
     N+1 find_one loop in get_album). Used by the sort/shuffle path which must
     show the complete set.
 
     - sort_field: 'title' | 'date_uploaded' | 'date_modified' | None
-      When supplied the sort is pushed to MongoDB rather than done in Python.
-    - sort_dir:  'down' (descending) or 'up' (ascending)
+      When supplied, the sort is pushed to MongoDB rather than done in Python.
+    - sort_dir: 'down' (descending) or 'up' (ascending)
     - shuffle:   randomise order after fetching (overrides sort_field)
 
     Returns (photo_docs, total_count). Each doc is a raw MongoDB document with
@@ -1342,8 +1336,8 @@ def get_album_photos(path):
     HTML, for use by the album-view infinite scroll and sorted views.
 
     Optional query params:
-      sort=<field>;<dir>  e.g. sort=title;down  (field sort, paginated)
-      page=<n>            page number (default 1)
+      sort=<field>;<dir> e.g. sort=title;down (field sort, paginated)
+      page=<n> page number (default 1)
     """
     sort_field, sort_dir = None, 'down'
     sort_param = request.args.get('sort', '')
@@ -1370,7 +1364,7 @@ def get_album_photos(path):
 def get_album_slideshow(path):
     """
     Returns all photo URLs and titles for an album — used by the slideshow player.
-    Only fetches folder/filename/title so it is lightweight even for large albums.
+    Only fetches folder/filename/title, so it is lightweight even for large albums.
     """
     album = db.albums.find_one({"path": path})
     if not album:
@@ -1385,7 +1379,7 @@ def get_album_slideshow(path):
     photos = []
     for pid in valid_ids:
         p = by_id.get(str(pid))
-        if p:
+        if p is not None:
             photos.append({
                 "url": f"/photo/{p['folder']}/{p['filename']}",
                 "title": p.get("title", "")
@@ -1442,7 +1436,7 @@ def get_album_with_photo_cross_references(album_id_str):
             }
         },
 
-        # 6. Clean up: Project only necessary fields for the sibling albums
+        # 6. Clean up: Project only the necessary fields for the sibling albums
         {
             "$project": {
                 "title": 1,
