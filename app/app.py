@@ -38,8 +38,17 @@ TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', TMP_BM)
 
-client = MongoClient(os.getenv("DB_HOST"), int(os.getenv("DB_PORT")))
-db = client[os.getenv("DB_NAME")]
+db_port_str = os.getenv("DB_PORT")
+if db_port_str is None:
+    raise RuntimeError("DB_PORT is not set")
+db_port = int(db_port_str)
+client = MongoClient(os.getenv("DB_HOST", "localhost"), db_port)
+db_host = os.getenv("DB_HOST")
+if db_host is None:
+    raise RuntimeError("DB_HOST is not set")
+client = MongoClient(db_host, db_port)
+db_name = os.getenv("DB_NAME", "photodb")
+db = client[db_name]
 todos = db.todos
 
 TZ_LONDON = pytz.timezone("Europe/London")
