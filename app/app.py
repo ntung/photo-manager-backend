@@ -497,7 +497,7 @@ def albums_reorder_photos():
         )
         app.logger.info(album)
         updated_album = db.albums.find_one({"_id": ObjectId(album_object_id)})
-        if updated_album.get("_id") != "":
+        if updated_album is not None and updated_album.get("_id") != "":
             album = {
                 "message": ("Updated the orders of the photos in the album "
                             + album_object_id)
@@ -594,6 +594,8 @@ def albums_view(path):
         view = request_json['view']
         array_photos_object_ids = request_json['photos-object-ids']
         album = get_album(path)
+        if album is None:
+            return jsonify({"error": "Album not found"}), 404
         photos_details = album['photos_details']
         nb_photos = len(photos_details)
         bz = math.ceil(len(array_photos_object_ids) / 3)
@@ -737,6 +739,9 @@ def _serialize_album(album):
     Returns:
         dict
     """
+    if album is None:
+        return {}
+
     return {
         "id": str(album.get("_id")),
         "title": album.get("title"),
@@ -1151,6 +1156,8 @@ def do_upload_photo(req):
             msg = f"The number of downloads the remote photo: {nb_downloads}"
             app.logger.info(msg)
 
+        if isinstance(result, Response):
+            return result
         filename = result["filename"]
         hash_md5 = result["hash_md5"]
 
