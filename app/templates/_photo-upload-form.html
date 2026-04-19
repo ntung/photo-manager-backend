@@ -232,14 +232,18 @@
                     0,
                     value.lastIndexOf("idorvanity") - 1,
                 );
-            } else if (value.includes("&__cft__[0]=")) {
+            } else if (value.includes("&__cft__[0]=") || value.includes("&__cft__%5B0%5D=")) {
+                // Handles both literal &__cft__[0]= and URL-encoded &__cft__%5B0%5D= forms.
                 // sample: https://www.facebook.com/photo/?fbid=421035673604303&set=a.308446338196571&__cft__[0]=
                 // AZWZJnJc6XKMl4KSiT2DV0mDUbD2pqFEQXSpS70XQcUmfe0Tj6qz7QnbgVzkPtiLkSaqurQxT59UakbgtYoJSi6chjBLDPlLiRQZ
                 // aMg6fzndlSWMBAV8RvLvdMbud9DntQH-Doy-Y3sQG2mbk0WD46ng9VVz9rBTdv1du9Kon6p4GMym_8zxy5NAkB5wsAOSjrqDHXP
                 // OOvrm68LUjo7pzJYoPVWIJYIyLDsXMhnt-JP7kw&__tn__=EH-y-R
+                const cftKey = value.includes("&__cft__[0]=")
+                    ? "&__cft__[0]="
+                    : "&__cft__%5B0%5D=";
                 sanitized = value.substring(
                     0,
-                    value.lastIndexOf("&__cft__[0]=") - 1,
+                    value.lastIndexOf(cftKey),
                 );
             } else {
                 sanitized = value;
