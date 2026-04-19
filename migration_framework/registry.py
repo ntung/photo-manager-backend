@@ -2,6 +2,7 @@
 import os
 import importlib
 
+
 class MigrationRegistry:
     def __init__(self, migrations_dir="migrations"):
         self.migrations_dir = migrations_dir

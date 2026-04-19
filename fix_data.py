@@ -87,5 +87,6 @@ def run_migration():
         logger.info(f"Dry run complete. Would have updated {len(updates)} "
                     f"documents.")
 
+
 if __name__ == "__main__":
     run_migration()

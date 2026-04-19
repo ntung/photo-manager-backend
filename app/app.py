@@ -32,7 +32,7 @@ from slugify import slugify
 from migration_framework.runner import MigrationRunner
 from .utils import PhotoManager
 
-load_dotenv() # loads variables from .env into environment
+load_dotenv()  # loads variables from .env into environment
 
 TMP_BM = tempfile.gettempdir() + "/photo-manager/upload"
 os.makedirs(TMP_BM, exist_ok=True)
@@ -367,8 +367,8 @@ def save_photo_to_albums():
         album = get_album(album['path'])
         if album is not None:
             updated_photo_list = album["photos"]
-            if ((photo_object_id != "") and
-                    (ObjectId(photo_object_id) not in updated_photo_list)):
+            if (photo_object_id != ""
+                    and ObjectId(photo_object_id) not in updated_photo_list):
                 updated_photo_list.append(ObjectId(photo_object_id))
 
             r = db.albums.find_one_and_update(
@@ -462,8 +462,8 @@ def albums_reorder_photos():
     album_object_id = request_json['album-object-id']
     array_photo_object_ids = request_json['photos']
     album = {
-        "message": ("Updating the orders of the photos in the album " +
-                    album_object_id)
+        "message": ("Updating the orders of the photos in the album "
+                    + album_object_id)
     }
     cond = album_object_id != "" and len(array_photo_object_ids) > 0
     if cond:
@@ -772,9 +772,9 @@ def _get_latest_photos_with_albums(page=None):
     skip = (page - 1) * page_size if page is not None else req_skip
 
     pipeline = [
-        { "$sort": { "date_uploaded": -1 } },
-        { "$skip": skip },
-        { "$limit": page_size },
+        {"$sort": {"date_uploaded": -1}},
+        {"$skip": skip},
+        {"$limit": page_size},
         {
             "$lookup": {
                 "from": "albums",
@@ -993,14 +993,14 @@ def photo_show(unique_key):
     # 2. Prepare the pipeline
     pipeline = [
         # Stage 1: Find the photo
-        { "$match": match_condition },
+        {"$match": match_condition},
 
         # Stage 2: Reverse Lookup into Albums
         {
             "$lookup": {
                 "from": "albums",
                 "localField": "_id",
-                "foreignField": "photos", # The field in albums containing photo IDs
+                "foreignField": "photos",  # The field in albums containing photo IDs
                 "as": "member_of_albums"
             }
         },
@@ -1256,7 +1256,7 @@ def _get_all_album_photos(album_path, sort_field=None, sort_dir='down',
                      else pymongo.ASCENDING)
         photos = list(
             db.photos.find({"_id": {"$in": valid_ids}})
-                     .sort(sort_field, mongo_dir)
+            .sort(sort_field, mongo_dir)
         )
     else:
         raw = list(db.photos.find({"_id": {"$in": valid_ids}}))
@@ -1313,10 +1313,12 @@ def get_album_photos(path):
     photos, total, has_more = _get_album_photos_page(
         path, sort_field=sort_field, sort_dir=sort_dir, shuffle_seed=shuffle_seed
     )
-    content = render_template("_album_view_photo_rows.html",
-                               photos=photos,
-                               album_path=path,
-                               status="FOUND")
+    content = render_template(
+        "_album_view_photo_rows.html",
+        photos=photos,
+        album_path=path,
+        status="FOUND"
+    )
     return jsonify(content=content, has_more=has_more, count=len(photos))
 
 
@@ -1362,7 +1364,7 @@ def get_gallery_photos():
 def get_album_with_photo_cross_references(album_id_str):
     pipeline = [
         # 1. Start with the specific Album
-        { "$match": { "_id": ObjectId(album_id_str) } },
+        {"$match": {"_id": ObjectId(album_id_str)}},
 
         # 2. Join with the Photos collection to get full photo data
         {
@@ -1375,7 +1377,7 @@ def get_album_with_photo_cross_references(album_id_str):
         },
 
         # 3. "Flatten" the photo_list so we can look up on individual photos
-        { "$unwind": "$photo_list" },
+        {"$unwind": "$photo_list"},
 
         # 4. For each photo, find ALL albums that contain its ID
         {
@@ -1391,8 +1393,8 @@ def get_album_with_photo_cross_references(album_id_str):
         {
             "$group": {
                 "_id": "$_id",
-                "title": { "$first": "$title" },
-                "photos": { "$push": "$photo_list" }
+                "title": {"$first": "$title"},
+                "photos": {"$push": "$photo_list"}
             }
         },
 
