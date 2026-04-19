@@ -203,6 +203,8 @@ def save_metadata(_sub_folder, _filename, _title, _desc, _courtesy, _hash_md5):
 @app.route('/album/add', methods=('GET', 'POST'))
 def album_add():
     request_json = request.get_json(silent=True)
+    if not isinstance(request_json, dict):
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
     _albums = request_json['albums']
     _photos = request_json['photos']
     for photo_id in _photos:
@@ -366,6 +368,8 @@ def get_album(path):
 @app.route('/photo/save-photo-to-albums/', methods=['POST'])
 def save_photo_to_albums():
     request_json = request.get_json(silent=True)
+    if not isinstance(request_json, dict):
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
     photo_object_id = request_json['photo-object-id']
     photo_folder = request_json['photo-folder']
     photo_filename = request_json['photo-filename']
@@ -419,6 +423,8 @@ def albums_add_photo():
 @app.route('/albums/remove-photos/', methods=['POST'])
 def albums_remove_photos():
     request_json = request.get_json(silent=True)
+    if not isinstance(request_json, dict):
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
     album_path = request_json['album-path']
     album = get_album(album_path)
 
@@ -455,6 +461,8 @@ def do_album_remove_photos(album, tobe_removed_photos):
 @app.route('/albums/delete/', methods=('GET', 'POST'))
 def albums_delete():
     request_json = request.get_json(silent=True)
+    if not isinstance(request_json, dict):
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
     album_object_id = request_json['album-object-id']
     album_path = request_json['album-path']
     if album_path is not None and album_path is not None:
@@ -468,6 +476,8 @@ def albums_delete():
 @app.route('/albums/reorder-photos/', methods=('GET', 'POST'))
 def albums_reorder_photos():
     request_json = request.get_json(silent=True)
+    if not isinstance(request_json, dict):
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
     album_object_id = request_json['album-object-id']
     array_photo_object_ids = request_json['photos']
     album = {
@@ -502,6 +512,8 @@ def albums_update():
     Updates albums
     """
     request_json = request.get_json(silent=True)
+    if not isinstance(request_json, dict):
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
     album_path = request_json['album-path']
     album_title = request_json['album-title']
     album_description = request_json['album-description']
@@ -577,6 +589,8 @@ def albums_view(path):
     if request.method == "POST":
         # Invoked when changing layout/view style — load all photos.
         request_json = request.get_json(silent=True)
+        if not isinstance(request_json, dict):
+            return jsonify({"error": "Invalid or missing JSON body"}), 400
         view = request_json['view']
         array_photos_object_ids = request_json['photos-object-ids']
         album = get_album(path)
@@ -656,6 +670,8 @@ def photo_unclassified():
 @app.route('/photo/delete', methods=['POST'])
 def photo_delete_via_post():
     request_json = request.get_json(silent=True)
+    if not isinstance(request_json, dict):
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
     photo_object_id = request_json['photo-object-id']
     query = {"_id": ObjectId(photo_object_id)}
     result = db.photos.delete_one(query)
@@ -937,6 +953,8 @@ def update_photo():
 @app.route('/photo/update', methods=('GET', 'POST'))
 def photo_update():
     request_json = request.get_json(silent=True)
+    if not isinstance(request_json, dict):
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
     photo_object_id = request_json['photo-object-id']
     photo_title = request_json['photo-title']
     photo_description = request_json['photo-description']
