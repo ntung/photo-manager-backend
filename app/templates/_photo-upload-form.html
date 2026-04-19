@@ -106,10 +106,24 @@
         }
     });
 
+    function isValidUrl(value) {
+        try {
+            const u = new URL(value);
+            return u.protocol === 'http:' || u.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    }
+
     function extractData(event) {
         event.preventDefault();
 
-        const photoUrl = $("#photo-url").val();
+        const photoUrl = $("#photo-url").val().trim();
+        if (photoUrl && !isValidUrl(photoUrl)) {
+            toastr.error("Image/Photo URL is not valid. It must start with http:// or https://");
+            return null;
+        }
+
         const title = $("#photo-title").val();
         const description = $("#photo-description").val();
         const courtesy = $("#photo-courtesy").val();
@@ -156,6 +170,7 @@
         event.preventDefault();
         event.stopImmediatePropagation();
         const uploaded = extractData(event);
+        if (uploaded === null) return;
         uploadPhoto(uploaded)
             .then((data) => {
                 if (data !== undefined) {
@@ -178,6 +193,7 @@
             })
             .catch((error) => {
                 console.error("Error: ", error);
+                toastr.error("Upload failed: " + error.message);
             })
             .finally(() => {
                 console.log("Finished the photo upload");
