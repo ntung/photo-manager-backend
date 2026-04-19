@@ -880,7 +880,7 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
         # Push sort + pagination to MongoDB — never loads the full set into Python.
         mongo_dir = (pymongo.DESCENDING if sort_dir == 'down'
                      else pymongo.ASCENDING)
-        photo_details = list(
+        photo_details: list[dict] = list(
             db.photos.find({"_id": {"$in": valid_ids}})
                      .sort(sort_field, mongo_dir)
                      .skip(skip)
@@ -1231,9 +1231,9 @@ def dict_photos_albums(list_photos, album_path):
     return other_albums_dict
 
 
-def _fetch_photos_ordered(ids):
+def _fetch_photos_ordered(ids) -> list[dict]:
     """Fetch photo docs for the given ObjectId list and return them in id order."""
-    raw = list(db.photos.find({"_id": {"$in": ids}}))
+    raw: list[dict] = list(db.photos.find({"_id": {"$in": ids}}))
     by_id = {str(p["_id"]): p for p in raw}
     return [by_id[str(pid)] for pid in ids if str(pid) in by_id]
 
@@ -1291,12 +1291,12 @@ def _get_all_album_photos(album_path, sort_field=None, sort_dir='down',
     if not shuffle and sort_field in ('title', 'date_uploaded', 'date_modified'):
         mongo_dir = (pymongo.DESCENDING if sort_dir == 'down'
                      else pymongo.ASCENDING)
-        photos = list(
+        photos: list[dict] = list(
             db.photos.find({"_id": {"$in": valid_ids}})
             .sort(sort_field, mongo_dir)
         )
     else:
-        raw = list(db.photos.find({"_id": {"$in": valid_ids}}))
+        raw: list[dict] = list(db.photos.find({"_id": {"$in": valid_ids}}))
         if shuffle:
             _random.shuffle(raw)
             photos = raw
