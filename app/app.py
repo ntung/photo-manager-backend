@@ -5,6 +5,7 @@ import math
 import os
 import pathlib
 import pprint
+import random
 import tempfile
 import time
 import uuid
@@ -137,7 +138,7 @@ def infer_submission_folder():
         submission_folders[location] += 1
     else:
         submission_folders[location] = 1
-    app.logger.info("current submission folder: {}".format(location))
+    app.logger.info("current submission folder: %s", location)
     return location
 
 
@@ -155,7 +156,7 @@ def do_cache(minutes=5, content_type='application/json; charset=utf-8'):
             rsp = Response(r, content_type=content_type)
             v = then.strftime("%a, %d %b %Y %H:%M:%S GMT")
             rsp.headers.add('Expires', v)
-            v = 'public,max-age=%d' % int(60 * minutes)
+            v = f'public,max-age={int(60 * minutes)}'
             rsp.headers.add('Cache-Control', v)
             return rsp
 
@@ -255,7 +256,7 @@ def photo_albums():
             else:
                 for album in all_untitled_albums:
                     app.logger.info(album['title'])
-        app.logger.info("{}\t{}".format(title, description))
+        app.logger.info("%s\t%s", title, description)
 
         if not title:
             # stop creating untitled album
@@ -268,9 +269,9 @@ def photo_albums():
             'date_created': datetime.now(TZ_LONDON),
             'date_modified': datetime.now(TZ_LONDON)
         })
-        app.logger.info("Inserted a new record to db.photos {}".format(r))
+        app.logger.info("Inserted a new record to db.photos %s", r)
         return redirect(url_for('photo_albums'))
-    elif request.method == 'GET':
+    if request.method == 'GET':
         all_albums = db.albums.find()
         _albums = bson.json_util.dumps(all_albums)
         _albums = bson.json_util.loads(_albums)
@@ -291,7 +292,7 @@ def photo_albums():
                 "title", "amount_photos", "date_created", "date_modified"
             ]
             if sort_field in fields:
-                is_reverse = not (sort_direction == "down")
+                is_reverse = sort_direction != "down"
                 if sort_field == "amount_photos":
                     sorted_albums = sorted(_albums,
                                            key=lambda x: len(x['photos']),
@@ -325,12 +326,10 @@ def albums(path):
     if path is None:
         all_albums = db.albums.find()
         docs_as_extended_json = bson.json_util.dumps(all_albums)
-        # bson.json_util.loads(docs_as_extended_json)
         return docs_as_extended_json
-    else:
-        first_album = get_album(path)
-        json_result = bson.json_util.dumps(first_album)
-        return json_result
+    first_album = get_album(path)
+    json_result = bson.json_util.dumps(first_album)
+    return json_result
 
 
 def get_album(path):
@@ -347,14 +346,14 @@ def get_album(path):
 
         photo_doc = db.photos.find_one({"_id": photo_id})
         if photo_doc is None:
-            app.logger.info("Photo object id {} was removed.".format(photo_id))
+            app.logger.info("Photo object id %s was removed.", photo_id)
             continue
 
         photos_details.append(photo_doc)
 
     photos_details.reverse()
 
-    album = dict(album_doc)
+    album = {**album_doc}
     album["photos_details"] = photos_details
     return album
 
@@ -724,9 +723,7 @@ def _get_pagination_params():
     Gets the pagination params
     """
     try:
-        page = int(request.args.get("page", 1))
-        if page < 1:
-            page = 1
+        page = max(int(request.args.get("page", 1)), 1)
     except ValueError:
         page = 1
     PAGE_SIZE = 20
@@ -852,8 +849,6 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
 
     Returns: (photo_docs, total_count, has_more)
     """
-    import random as _random
-
     skip, page_size = _get_pagination_params()
 
     album = db.albums.find_one({"path": album_path})
@@ -874,7 +869,7 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
         # Using a seeded RNG makes the order reproducible across pages without
         # storing any state on the server.
         shuffled = list(valid_ids)
-        _random.Random(shuffle_seed).shuffle(shuffled)
+        random.Random(shuffle_seed).shuffle(shuffled)
         paged_ids = shuffled[skip:skip + page_size]
         if not paged_ids:
             return [], total, False
@@ -884,12 +879,11 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
         # Push sort + pagination to MongoDB — never loads the full set into Python.
         mongo_dir = (pymongo.DESCENDING if sort_dir == 'down'
                      else pymongo.ASCENDING)
-        photo_details: list[dict] = list(
-            db.photos.find({"_id": {"$in": valid_ids}})
-                     .sort(sort_field, mongo_dir)
-                     .skip(skip)
-                     .limit(page_size)
-        )
+        cursor = (db.photos.find({"_id": {"$in": valid_ids}})
+                  .sort(sort_field, mongo_dir)
+                  .skip(skip)
+                  .limit(page_size))
+        photo_details: list[dict] = list(cursor)
 
     else:
         # Default: preserve the album's custom order.
@@ -913,7 +907,7 @@ def photo_list():
     _photos = _get_latest_photos_with_albums()
     end_time = time.perf_counter()
     run_time = end_time - start_time
-    app.logger.info(f"Executed in {run_time:.6f} seconds to load 20 photos")
+    app.logger.info("Executed in %.6f seconds to load 20 photos", run_time)
 
     tpl_name = 'photo-list.html'
     return render_template(template_name_or_list=tpl_name,
@@ -926,7 +920,7 @@ def photo_read(path):
         return send_from_directory(UPLOAD_FOLDER, path,
                                    as_attachment=True, max_age=86400)
     except FileNotFoundError as exception:
-        app.logger.error("404: File Not Found " + str(exception))
+        app.logger.error("404: File Not Found %s", exception)
         return None
 
 
@@ -935,8 +929,7 @@ def update_photo():
     request_json = request.get_json()
     photo_object_id = request_json['photo-id']
     photo_title = request_json['new-photo-title']
-    app.logger.info(f"Updating photo {photo_object_id} with title"
-                    f" {photo_title}")
+    app.logger.info("Updating photo %s with title %s", photo_object_id, photo_title)
     if photo_title is None or photo_title == "" or photo_object_id is None:
         app.logger.error("Invalid photo title or photo id. Cannot update!")
         return jsonify({"error": "Cannot update the photo title or photo id "
@@ -968,7 +961,7 @@ def photo_update():
     photo_title = request_json['photo-title']
     photo_description = request_json['photo-description']
     photo_courtesy = request_json['photo-courtesy']
-    app.logger.info("Photo requesting to be updated: {}".format(request_json))
+    app.logger.info("Photo requesting to be updated: %s", request_json)
     result = db.photos.update_one(
         {"_id": ObjectId(photo_object_id)},
         {
@@ -980,7 +973,7 @@ def photo_update():
             }
         }, upsert=False
     )
-    app.logger.info("Updated result: {}".format(result))
+    app.logger.info("Updated result: %s", result)
     retval = {"message": "Updated completely", "title": photo_title}
     return Response(json.dumps(retval), mimetype='application/json')
 
@@ -1000,8 +993,7 @@ def photo_upload():
 
         app.logger.debug(result)
         return result
-    else:
-        return render_template("photo-upload.html")
+    return render_template("photo-upload.html")
 
 
 @app.route('/photo/show/<string:unique_key>', methods=['GET'])
@@ -1079,7 +1071,7 @@ def do_download_image(storage_location, image_url, out_filename=None):
     # this function is working like a charm for Facebook images
     if not image_url or image_url is None:
         return jsonify(message="Image URL not found!")
-    res = requests.get(image_url, stream=True)
+    res = requests.get(image_url, stream=True, timeout=30)
     # Request the image and save it:
     if out_filename is None:
         out_filename = str(uuid.uuid4()) + ".jpg"
@@ -1147,17 +1139,16 @@ def do_upload_photo(req):
             result = do_download_image(UPLOAD_DIR, photo_url, filename)
             nb_downloads += 1
         except requests.exceptions.HTTPError as e:
-            app.logger.error(f"HTTP error occurred: {e}")
+            app.logger.error("HTTP error occurred: %s", e)
             return jsonify({'message': str(e)}), 500
         except requests.exceptions.ConnectionError as e:
-            app.logger.error(f"Connection error occurred: {e}")
+            app.logger.error("Connection error occurred: %s", e)
             return jsonify({'message': str(e)}), 500
         except requests.exceptions.RequestException as e:
-            app.logger.error(f"A general error occurred: {e}")
+            app.logger.error("A general error occurred: %s", e)
             return jsonify({'message': str(e)}), 500
         finally:
-            msg = f"The number of downloads the remote photo: {nb_downloads}"
-            app.logger.info(msg)
+            app.logger.info("The number of downloads the remote photo: %s", nb_downloads)
 
         if isinstance(result, Response):
             return result
@@ -1190,9 +1181,8 @@ def do_upload_photo(req):
                        submission_folder=submission_folder,
                        filename=docs["filename"],
                        exist_in_albums=",".join(col_albums))
-    else:
-        message = f"{filename} is a new photo."
-        app.logger.info(message)
+    message = f"{filename} is a new photo."
+    app.logger.info(message)
 
     # save the file's metadata into MongoDB
     save_metadata(submission_folder, filename, title, description, courtesy,
@@ -1218,7 +1208,7 @@ def dict_photos_albums(list_photos, album_path):
     _albums = db.albums.find()
     _albums = bson.json_util.dumps(_albums)
     _albums = bson.json_util.loads(_albums)
-    other_albums_dict = dict()
+    other_albums_dict = {}
     for photo in list_photos:
         photo_id = str(photo.get("_id"))
         for album in _albums:
@@ -1280,8 +1270,6 @@ def _get_all_album_photos(album_path, sort_field=None, sort_dir='down',
     Returns (photo_docs, total_count). Each doc is a raw MongoDB document with
     an 'other_albums' list attached.
     """
-    import random as _random
-
     album = db.albums.find_one({"path": album_path})
     if not album:
         return [], 0
@@ -1301,7 +1289,7 @@ def _get_all_album_photos(album_path, sort_field=None, sort_dir='down',
     else:
         raw: list[dict] = list(db.photos.find({"_id": {"$in": valid_ids}}))
         if shuffle:
-            _random.shuffle(raw)
+            random.shuffle(raw)
             photos = raw
         else:
             by_id = {str(p["_id"]): p for p in raw}
@@ -1320,7 +1308,7 @@ def get_photos():
     Returns one page of photos as JSON + pre-rendered HTML for infinite scroll.
     """
     page = request.args.get('page', 1, type=int)
-    app.logger.info(f"Loading page {page}...")
+    app.logger.info("Loading page %s...", page)
     _photos = _get_latest_photos_with_albums()
     _, page_size = _get_pagination_params()
     has_more = len(_photos) >= page_size
@@ -1350,7 +1338,7 @@ def get_album_photos(path):
 
     shuffle_seed = request.args.get('shuffle', None, type=int)
 
-    photos, total, has_more = _get_album_photos_page(
+    photos, _, has_more = _get_album_photos_page(
         path, sort_field=sort_field, sort_dir=sort_dir, shuffle_seed=shuffle_seed
     )
     content = render_template(

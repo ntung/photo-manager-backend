@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import datetime
+import glob
 import hashlib
 import itertools
 import os
+import pathlib
+import random
 import shutil
 import tempfile
+import uuid
 
 import requests
-import uuid
-import random
-
+from bson import ObjectId
 from bson.errors import InvalidId
 from dotenv import load_dotenv
-# import the MongoClient class of the PyMongo library
 from pymongo import MongoClient, ReturnDocument
-
-# import ObjectID from MongoDB's BSON library
-# (use pip3 to install bson)
-from bson import ObjectId
 
 from utils import PhotoManager
 from utils.PhotoManager import InitPM
@@ -54,7 +52,7 @@ def download_save_image():
         "&_nc_gid=A0X-Xx9rQwF20iS5lQ41OKl"
         "&oh=00_AYAMu2l92viMsCKxYlD5WHvOgvngumHUJcoa5LGlwmiCbA&oe=66D66CA0"
     )
-    res = requests.get(img_url)
+    res = requests.get(img_url, timeout=30)
     print(res.status_code)
     # Request the image and save it:
     out_filename = str(uuid.uuid4())
@@ -94,7 +92,7 @@ def update_mongodb_doc():
 
     # see if the MongoDB collection has documents on it
     total_docs = col.count_documents({})
-    print("{} collection has {} total documents.".format(col.name, str(total_docs)))
+    print(f"{col.name} collection has {total_docs} total documents.")
     # call the Collection class's methods using the db object
 
     try:
@@ -108,7 +106,7 @@ def update_mongodb_doc():
         print("Import the 'ObjectId' class from the 'bson' library")
 
     # print the document's contents if found
-    if find_result is not None and type(find_result) is dict:
+    if find_result is not None and isinstance(find_result, dict):
         print("found doc: ", find_result)
         pretty(find_result)
 
@@ -159,10 +157,6 @@ def pretty(d, indent=0):
 
 
 def get_date_created_n_modified_then_update_db_photos():
-    import datetime
-    import glob
-    import pathlib
-
     # create database and collection instances
     mongo_client = MongoClient('mongodb://localhost:27017')
     db = mongo_client.flask_db
@@ -188,9 +182,10 @@ def get_date_created_n_modified_then_update_db_photos():
         # check md5
         hash_md5_str = ""
         md5_hash = hashlib.md5()
-        with open(file, "rb") as f:
+        with open(file, "rb") as fh:
             # Read and update hash in chunks of 4K
-            for byte_block in iter(lambda: f.read(4096), b""):
+            # pylint: disable-next=cell-var-from-loop
+            for byte_block in iter(lambda: fh.read(4096), b""):
                 md5_hash.update(byte_block)
             hash_md5_str = md5_hash.hexdigest()
         # print(doc)
@@ -250,7 +245,7 @@ def check_cur_sub_folder():
     pm_init = PhotoManager.InitPM(UPLOAD_FOLDER, "aaaa")
     submission_folders_dict = pm_init.submission_folder_dict()
     r = pm_init.infer_current_submission_folder(submission_folders_dict)
-    print("current submission folder: {}".format(r))
+    print(f"current submission folder: {r}")
 
 
 def get_series(length=4, characters='abcdefghijklmnopqrstuvwxyz'):
@@ -281,14 +276,14 @@ def test_local_biomodels():
             "Content-Type": "text/html"
         }
         params = {"format": "html"}
-        response = requests.get(URL, headers=headers, params=params)
-        print("{}\t{}".format(m_id, response.status_code))
+        response = requests.get(URL, headers=headers, params=params, timeout=30)
+        print(f"{m_id}\t{response.status_code}")
 
 
 def test_biomodels():
     URL = "https://www.ebi.ac.uk/biomodels/model/identifiers?format=json"
     # URL = "https://wwwdev.ebi.ac.uk/biomodels/model/identifiers?format=json"
-    response = requests.get(URL)
+    response = requests.get(URL, timeout=30)
     dict_data = response.json()
     # print(dict_data['models'])
     sample = random.sample(dict_data['models'], 100)
@@ -300,8 +295,8 @@ def test_biomodels():
             # "Content-Type": "application/json"
         }
         params = {"format": "html"}
-        response = requests.get(URL, headers=headers, params=params)
-        print("{}\t{}".format(m_id, response.status_code))
+        response = requests.get(URL, headers=headers, params=params, timeout=30)
+        print(f"{m_id}\t{response.status_code}")
 
 
 def test_photo_manager_class():

@@ -6,7 +6,6 @@ from bson import ObjectId
 from bson.errors import InvalidId
 
 MAX_NB_FILES_PER_DIR = 400
-global PHOTO_SUBMISSION_FOLDERS
 PHOTO_SUBMISSION_FOLDERS = defaultdict()
 
 
@@ -20,9 +19,9 @@ class InitPM:
         subfolders = [x[0] for x in os.walk(self.upload_folder)]
         subfolders = [d for d in subfolders if d != self.upload_folder]
         if len(subfolders) == 0:
-            return dict({default_name: 0})
+            return {default_name: 0}
 
-        folder_dict = dict()
+        folder_dict = {}
         for d in subfolders:
             nb_files = len([name for name in os.listdir(d) if
                             os.path.isfile(os.path.join(d, name))])
@@ -38,7 +37,7 @@ class InitPM:
             return k
         for k in folders_dict:
             if folders_dict[k] < MAX_NB_FILES_PER_DIR:
-                logging.info(f"Directory {k} has  {folders_dict[k]} photos.")
+                logging.info("Directory %s has  %s photos.", k, folders_dict[k])
                 return k
         # Otherwise, it is starting a new series folder
         next_value = next_string(k)
@@ -48,17 +47,14 @@ class InitPM:
                             exist_ok=True)
                 folders_dict[next_value] = 0
             except FileExistsError as e:
-                logging.error("Folder Exists! Use It!" + str(e))
+                logging.error("Folder Exists! Use It! %s", e)
             except FileNotFoundError as e:
-                logging.error("404: Folder Not Found" + str(e))
+                logging.error("404: Folder Not Found %s", e)
             except OSError as error:
-                msg = "Directory %s can not be created due to %s." % (
-                    next_value, str(error))
-                logging.error(msg)
+                logging.error("Directory %s can not be created due to %s.",
+                              next_value, error)
             return next_value
-        else:
-            # return the default value
-            return self.default_name
+        return self.default_name
 
 
 # Function to return a default
@@ -81,13 +77,13 @@ def flatten_concatenation(matrix):
 
 
 def create_buckets(all_photos, bucket_size):
-    buckets = []
     """
     counter = 0 -> the last bucket will have less or equal the number of
     photos than the bucket size
     counter = 1 -> the first bucket will have less or equal the number of
     photos than the bucket size
     """
+    buckets = []
     counter = 0
     bucket = []
     i = 0
@@ -124,8 +120,7 @@ def next_string(s):
         p1 = chr(ord(strip_zs[-1]) + 1)
         p2 = 'a' * (len(s) - len(strip_zs))
         return strip_zs[:-1] + p1 + p2
-    else:
-        return 'a' * (len(s) + 1)
+    return 'a' * (len(s) + 1)
 
 
 def safe_convert(id_str):

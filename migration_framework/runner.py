@@ -1,8 +1,10 @@
 # migration_framework/runner.py
+import time
+
 from pymongo import MongoClient
+
 from .registry import MigrationRegistry
 from .logger import MigrationLogger
-import time
 
 
 class MigrationRunner:
