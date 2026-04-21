@@ -1166,7 +1166,7 @@ def do_upload_photo(req):
         all_albums = db.albums.find()
         for album in all_albums:
             _photos = album['photos']
-            if str(docs["_id"]) in _photos:
+            if docs["_id"] in _photos:
                 col_albums.append(album['path'])
         msg = ("Photo exists in DB! The photo can be found in the albums: "
                ",".join(col_albums))
