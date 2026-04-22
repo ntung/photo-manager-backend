@@ -1179,6 +1179,7 @@ def do_upload_photo(req):
         message = filename + ' exists!'
         return jsonify(message=message,
                        submission_folder=submission_folder,
+                       object_id=str(docs["_id"]),
                        filename=docs["filename"],
                        exist_in_albums=",".join(col_albums))
     message = f"{filename} is a new photo."
