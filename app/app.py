@@ -1060,11 +1060,14 @@ def photo_show(unique_key):
 
 @app.route('/photo/view', methods=['GET', 'POST'])
 def photo_view():
-    photos = _get_photos_page()
+    photos = _get_latest_photos_with_albums(page=1)
     _, page_size = _get_pagination_params()
     has_more = len(photos) >= page_size
+    all_albums = list(db.albums.find({}, {"path": 1, "title": 1}))
     return render_template('photo-view.html',
-                           photos=photos, has_more=has_more, api_svr=API_SVR)
+                           photos=photos, has_more=has_more,
+                           albums=all_albums, dict_album_values={},
+                           api_svr=API_SVR)
 
 
 def do_download_image(storage_location, image_url, out_filename=None):
@@ -1381,7 +1384,7 @@ def get_gallery_photos():
     """
     Returns one page of photos as JSON + pre-rendered HTML for the gallery infinite scroll.
     """
-    photos = _get_photos_page()
+    photos = _get_latest_photos_with_albums()
     _, page_size = _get_pagination_params()
     has_more = len(photos) >= page_size
     content = render_template('_photo-view-items.html', photos=photos)
