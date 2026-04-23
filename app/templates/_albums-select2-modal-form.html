@@ -51,25 +51,10 @@
             existingAlbums.push(child.innerHTML);
         });
 
-        const select2Data = $('.select2-selection__choice');
+        const select2Data = $('.choose-albums').select2('data');
         let albums = [];
-        $.each(select2Data, (index, object) => {
-            const albumTitle = object.innerText;
-            const lastChildId = object.lastChild.id;
-            /**
-             * the id of the lastChild looks like the sample below. It is patterned like
-             * id="select2-all-albums-container-choice-y4ag-{'_id': ObjectId('66c7684c00a564d63c6608be'),
-             * 'path': 'zhao-zhi', 'title': 'Zhao Zhi',
-             * 'description': 'Zhao Zhi - the sexiest AI model I have ever seen!',
-             * 'photos': ['66ec83e0a200000e7cb376dd',...
-            */
-            const parts = lastChildId.split(", ");
-            let paths = parts[1];
-            // see https://www.codeproject.com/Questions/1258002/Want-to-remove-single-quote-from-items-inside-json
-            paths = paths.replace(/\'/gi,'');
-            paths = paths.split(": ");
-            const path = paths[1];
-            albums.push({"path": path, "title": albumTitle, "photo_object_id": photoObjectId});
+        $.each(select2Data, (index, item) => {
+            albums.push({"path": item.id, "title": item.text, "photo_object_id": photoObjectId});
         });
 
         $.ajax({
