@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Gallery | Photo Manager</title>
+    <title>Photo Show | Photo Manager</title>
     {% include('_head.html') %}
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"/>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"/>
     <style>
         .gallery {
             display: grid;
@@ -22,10 +26,17 @@
             max-width: 100%;
             border-radius: 4px;
         }
+
+        .in-albums {
+            font-style: italic;
+            color: #9714d0;
+            text-align: left;
+            font-size: 0.9em;
+            margin: 6px 0 4px;
+        }
     </style>
 </head>
 <body>
-{#https://www.w3schools.com/howto/howto_js_image_grid.asp#}
 <div class="container">
     {% include '_menu-bar.html' %}
     <div class="main">
@@ -36,29 +47,47 @@
         </div>
         <div class="row">
             <div class="col">
-                <div class="gallery"> {% for photo in photos %}
+                <div class="gallery">
+                    {% for photo in photos %}
+                    {% set photo_id = photo['_id']|string %}
                     <div class="photo-card">
-{#                        <img src="{{ url_for('photo_show', hash_md5=photo.hash_md5) }}"#}
-{#                                                 alt="Photo {{ loop.index }}">#}
                         {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
-                        <a href="{{photo_url}}" title="{{photo['title']}}" data-fslightbox="gallery">
-                            <img src="{{photo_url}}" style="width:100%" alt="{{photo['title']}}"></a>
-                        <p>All albums:</p>
-                        <ul style="text-align: left">
-                        {% for album in photo['member_of_albums'] %}
-                            <li>{{ album['title'] }}</li>
-                        {% endfor %}</ul>
-                    </div> {% endfor %}
+                        <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-fslightbox="gallery">
+                            <img src="{{ photo_url }}" style="width:100%" alt="{{ photo['title'] }}">
+                        </a>
+                        <p id="in-albums-{{ photo_id }}" class="in-albums">
+                            In Albums:
+                            {% for album in photo['member_of_albums'] %}
+                                <a href="/albums/view/{{ album['path'] }}">{{ album['title'] }}</a>{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                        <button type="button" class="btn btn-sm btn-primary select-albums-modal-form"
+                                data-bs-toggle="modal" data-bs-target="#select-albums-modal-form"
+                                data-photo-object-id="{{ photo_id }}"
+                                data-photo-folder="{{ photo['folder'] }}"
+                                data-photo-filename="{{ photo['filename'] }}">
+                            + Add to album
+                        </button>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% include('_albums-select2-modal-form.html') %}
 {% include('_foot.html') %}
 <script src="{{ url_for('static', filename='js/fslightbox.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+    let photoObjectId = "", photoFolder = "", photoFileName = "";
 
+    $(document).on("click", ".select-albums-modal-form", function (event) {
+        event.preventDefault();
+        photoObjectId = $(this).attr("data-photo-object-id");
+        photoFolder = $(this).attr("data-photo-folder");
+        photoFileName = $(this).attr("data-photo-filename");
+    });
 </script>
-
 </body>
 </html>

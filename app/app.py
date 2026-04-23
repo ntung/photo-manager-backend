@@ -1053,8 +1053,11 @@ def photo_show(unique_key):
 
     _photos = list(db.photos.aggregate(pipeline))
     if _photos is not None:
+        all_albums = list(db.albums.find({}, {"path": 1, "title": 1}))
         return render_template("photo-show.html",
-                               photos=_photos)
+                               photos=_photos,
+                               albums=all_albums,
+                               dict_album_values={})
     return None
 
 
