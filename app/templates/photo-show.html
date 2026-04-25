@@ -68,6 +68,12 @@
                                 data-photo-filename="{{ photo['filename'] }}">
                             + Add to album
                         </button>
+                        <button type="button" class="btn btn-sm btn-danger btn-delete-photo"
+                                data-photo-object-id="{{ photo_id }}"
+                                data-photo-folder="{{ photo['folder'] }}"
+                                data-photo-filename="{{ photo['filename'] }}">
+                            Delete
+                        </button>
                     </div>
                     {% endfor %}
                 </div>
@@ -87,6 +93,32 @@
         photoObjectId = $(this).attr("data-photo-object-id");
         photoFolder = $(this).attr("data-photo-folder");
         photoFileName = $(this).attr("data-photo-filename");
+    });
+
+    $(document).on("click", ".btn-delete-photo", function (event) {
+        event.preventDefault();
+        const photoObjectId = $(this).attr("data-photo-object-id");
+        const photoFolder = $(this).attr("data-photo-folder");
+        const photoFileName = $(this).attr("data-photo-filename");
+        if (!confirm("Delete this photo? This cannot be undone.")) return;
+        $.ajax({
+            url: "/photo/delete",
+            method: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({
+                "photo-object-id": photoObjectId,
+                "photo-folder": photoFolder,
+                "photo-filename": photoFileName,
+            }),
+            success: function () {
+                toastr.success("Deleted successfully! Redirecting...");
+                setTimeout(() => { window.location.href = "/photo/list"; }, 1000);
+            },
+            error: function () {
+                toastr.error("Failed to delete the photo.");
+            }
+        });
     });
 </script>
 </body>

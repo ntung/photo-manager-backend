@@ -111,12 +111,7 @@
         });
     });
 
-    $("#select-albums-modal-form").on("hidden.bs.modal", function () {
-        // put your default event here
-        console.log("you've closed the modal");
-        const $element = $('.choose-albums');
-        const values = $element.select2('val');
-        // this works too: const values = $element.val();
-        console.log(values);
+    $("#select-albums-modal-form").on("show.bs.modal", function () {
+        $('.choose-albums').val(null).trigger('change');
     });
 </script>
