@@ -263,6 +263,9 @@ def photo_albums():
             return redirect(url_for('photo_albums'))
 
         path = slugify(title)
+        if db.albums.find_one({'path': path}):
+            app.logger.info("Album '%s' already exists (path=%s)", title, path)
+            return redirect(url_for('photo_albums') + '?error=Album+already+exists')
         r = db.albums.insert_one({
             'path': path, 'title': title, 'description': description,
             'photos': [],

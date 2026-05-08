@@ -99,6 +99,9 @@
             myMap.set(path, {"albumInfo": albumInfo, "title": myMap.get(path)["title"], "description": text});
         });
 
+        const errorParam = new URLSearchParams(window.location.search).get('error');
+        if (errorParam) toastr.error(errorParam);
+
         // Intercept form submit: if in edit mode, send AJAX update instead of POSTing to /photo/albums
         $('#album-detail-form').on('submit', function(e) {
             if (albumPath !== "") {
