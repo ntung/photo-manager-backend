@@ -224,33 +224,13 @@
     $(".photo-courtesy").on("focusout", function () {
         let value = $(this).val();
         if (value.includes("facebook.com")) {
-            let sanitized = "";
-            if (value.includes("idorvanity")) {
-                // sample: https://www.facebook.com/photo/?fbid=939173604889879&set=
-                // gm.2374139532977440&idorvanity=1316017315456339
-                sanitized = value.substring(
-                    0,
-                    value.lastIndexOf("idorvanity") - 1,
-                );
-            } else if (value.includes("&__cft__[0]=") || value.includes("&__cft__%5B0%5D=")) {
-                // Handles both literal &__cft__[0]= and URL-encoded &__cft__%5B0%5D= forms.
-                // sample: https://www.facebook.com/photo/?fbid=421035673604303&set=a.308446338196571&__cft__[0]=
-                // AZWZJnJc6XKMl4KSiT2DV0mDUbD2pqFEQXSpS70XQcUmfe0Tj6qz7QnbgVzkPtiLkSaqurQxT59UakbgtYoJSi6chjBLDPlLiRQZ
-                // aMg6fzndlSWMBAV8RvLvdMbud9DntQH-Doy-Y3sQG2mbk0WD46ng9VVz9rBTdv1du9Kon6p4GMym_8zxy5NAkB5wsAOSjrqDHXP
-                // OOvrm68LUjo7pzJYoPVWIJYIyLDsXMhnt-JP7kw&__tn__=EH-y-R
-                const cftKey = value.includes("&__cft__[0]=")
-                    ? "&__cft__[0]="
-                    : "&__cft__%5B0%5D=";
-                sanitized = value.substring(
-                    0,
-                    value.lastIndexOf(cftKey),
-                );
-            } else {
-                sanitized = value;
-            }
-            console.log(sanitized);
-            if (sanitized.lastIndexOf("&") > 0) {
-                sanitized = sanitized.substring(0, sanitized.lastIndexOf("&"));
+            let sanitized = value;
+            const qPos = sanitized.indexOf("?");
+            if (qPos > -1) {
+                const firstAmp = sanitized.indexOf("&", qPos + 1);
+                if (firstAmp > -1) {
+                    sanitized = sanitized.substring(0, firstAmp);
+                }
             }
             console.log(sanitized);
             $(this).val(sanitized);

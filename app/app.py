@@ -111,6 +111,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type: application/json'
 socketio = SocketIO(app)
+os.makedirs('/tmp/jinja_cache', exist_ok=True)
 bcc = FileSystemBytecodeCache('/tmp/jinja_cache', '%s.cache')
 app.jinja_env.bytecode_cache = bcc
 API_SVR = os.environ.get('API_SERVER')
