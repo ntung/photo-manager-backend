@@ -209,25 +209,14 @@ def album_add():
     _photos = request_json['photos']
     for photo_id in _photos:
         for album in _albums:
-            album_doc = db.albums.find_one({'path': album['path']})
-            if album_doc:
-                photo_set = album_doc['photos']
-                if photo_set is None:
-                    photo_set = [photo_id]
-                elif photo_id not in photo_set:
-                    photo_set.append(photo_id)
-                if photo_set:
-                    db.albums.update_one(
-                        {
-                            "_id": ObjectId(album_doc.get("_id"))
-                        },
-                        {
-                            "$set":
-                            {
-                                'photos': photo_set,
-                                'date_modified': datetime.now(TZ_LONDON)
-                            }
-                        }, upsert=False)
+            db.albums.update_one(
+                {'path': album['path']},
+                {
+                    '$addToSet': {'photos': ObjectId(photo_id)},
+                    '$set': {'date_modified': datetime.now(TZ_LONDON)},
+                },
+                upsert=False
+            )
 
     result = {"message": "Building the service"}
     return json.dumps(result)
