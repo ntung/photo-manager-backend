@@ -139,7 +139,6 @@
 
         $("#btn-save").on("click", function () {
             console.log("saving...");
-            syncPhotoAlbums(photoObjectId, photoFolder, photoFileName);
             $.ajax({
                 url: "/photo/update",
                 method: "POST",
@@ -159,18 +158,16 @@
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
-                    // alternatively, reload the album using jQuery without refreshing the page
                 },
                 error: function () {
-
+                    toastr.error("Failed to save changes.");
                 }
-            }).done(function (data) {
-                console.log("Done! - Data: ", data);
-            }).fail(function (jqXHR, textStatus) {
-                console.log(textStatus, ": ", JSON.stringify(jqXHR));
-            }).always(function (data) {
-                console.log("The request has completed: ", data);
             });
+            try {
+                syncPhotoAlbums(photoObjectId, photoFolder, photoFileName);
+            } catch (e) {
+                console.error("Album sync error:", e);
+            }
         });
     });
 
