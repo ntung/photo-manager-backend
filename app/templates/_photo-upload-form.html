@@ -122,9 +122,14 @@
         if (inAlbumsEl) {
             $(inAlbumsEl).find('a').each(function () {
                 const path = $(this).attr('href').replace('/albums/view/', '');
+                const title = $(this).text().trim();
                 if (path) {
                     editInitialAlbumPaths.add(path);
                     paths.push(path);
+                    // Add option if the AJAX to load all albums hasn't completed yet
+                    if ($('#upload-album-select option[value="' + path + '"]').length === 0) {
+                        $('#upload-album-select').append(new Option(title, path, false, false));
+                    }
                 }
             });
         }

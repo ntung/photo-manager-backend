@@ -130,10 +130,14 @@
         loadExistingAlbumsIntoSelect(photoObjectId);
         // Also pre-select the current album (it appears in "Other albums" only for other photos)
         const currentAlbumPath = '{{ album_path }}';
+        const currentAlbumTitle = '{{ album_title }}';
         const existingPaths = [...editInitialAlbumPaths];
         if (currentAlbumPath && !editInitialAlbumPaths.has(currentAlbumPath)) {
             editInitialAlbumPaths.add(currentAlbumPath);
             existingPaths.push(currentAlbumPath);
+            if ($('#upload-album-select option[value="' + currentAlbumPath + '"]').length === 0) {
+                $('#upload-album-select').append(new Option(currentAlbumTitle, currentAlbumPath, false, false));
+            }
             $('.upload-album-select').val(existingPaths).trigger('change');
         }
 
