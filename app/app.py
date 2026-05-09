@@ -374,26 +374,21 @@ def save_photo_to_albums():
     updated_albums = []
 
     for album in newly_added_albums:
-        album = get_album(album['path'])
-        if album is not None:
-            updated_photo_list = album["photos"]
-            if (photo_object_id != ""
-                    and ObjectId(photo_object_id) not in updated_photo_list):
-                updated_photo_list.append(ObjectId(photo_object_id))
-
-            r = db.albums.find_one_and_update(
-                {'_id': album.get('_id')},
-                {
-                    '$set': {
-                        "photos": updated_photo_list,
-                        "date_modified": datetime.now(TZ_LONDON)}
-                }, return_document=ReturnDocument.AFTER
-            )
-            if r.get('_id') is not None:
-                updated_albums.append({
-                    "path": album['path'],
-                    "title": album['title']
-                })
+        if not photo_object_id:
+            continue
+        r = db.albums.find_one_and_update(
+            {'path': album['path']},
+            {
+                '$addToSet': {'photos': ObjectId(photo_object_id)},
+                '$set': {'date_modified': datetime.now(TZ_LONDON)},
+            },
+            return_document=ReturnDocument.AFTER
+        )
+        if r is not None and r.get('_id') is not None:
+            updated_albums.append({
+                "path": r['path'],
+                "title": r['title']
+            })
 
     result = {
         "updated-albums": updated_albums,
