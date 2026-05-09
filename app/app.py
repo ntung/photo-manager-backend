@@ -541,7 +541,7 @@ def albums_view(path):
     _albums = []
     for album in db.albums.find():
         _albums.append({
-            "path": album,
+            "path": album['path'],
             "title": album['title'],
             "description": album['description']
         })
@@ -561,6 +561,7 @@ def albums_view(path):
             "is_empty_album": is_empty_album,
             "has_more": False,
             "api_svr": API_SVR,
+            "dict_album_values": {},
         }
         return render_template('album-view.html', **ctx)
 
@@ -583,6 +584,7 @@ def albums_view(path):
             "albums": _albums, "album_path": path, "nb_photos": 0,
             "is_empty_album": True, "other_albums": None,
             "has_more": False, "api_svr": API_SVR,
+            "dict_album_values": {},
         })
 
     sort = request.args.get('sort')
@@ -612,6 +614,7 @@ def albums_view(path):
             "is_empty_album": False,
             "has_more": False,
             "api_svr": API_SVR,
+            "dict_album_values": {},
         })
 
     if sort is not None:
@@ -637,6 +640,7 @@ def albums_view(path):
             "is_empty_album": nb_photos == 0,
             "other_albums": None, "has_more": False,
             "api_svr": API_SVR,
+            "dict_album_values": {},
         })
 
     # Default GET: load only the first page; the client will fetch subsequent
@@ -650,6 +654,7 @@ def albums_view(path):
         "nb_photos": nb_photos, "is_empty_album": False,
         "other_albums": None, "has_more": has_more,
         "api_svr": API_SVR,
+        "dict_album_values": {},
     })
 
 
