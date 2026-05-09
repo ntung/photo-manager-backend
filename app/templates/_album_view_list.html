@@ -159,13 +159,13 @@
                 console.log(textStatus, ": ", JSON.stringify(jqXHR));
             }).always(function (data) {
                 console.log("The request has completed: ", data);
-                toastr.success("The request has completed : " + JSON.stringify(data));
+                //toastr.success("The request has completed : " + JSON.stringify(data));
+                toastr.success("Added the photo to albums...");
             });
         });
     });
 
     $(document).on("click", ".add-to-other-albums", function() {
-        console.log("clicked me!!!");
         // this will initialise the following global variables which are being used in the modal form
         photoObjectId = $(this).attr("data-photo-object-id");
         photoFolder = $(this).attr("data-photo-folder");

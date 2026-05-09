@@ -206,7 +206,7 @@
                 console.log(textStatus, ": ", JSON.stringify(jqXHR));
             }).always(function (data) {
                 console.log("The request has completed: ", data);
-                toastr.success("The request has completed : " + JSON.stringify(data));
+                //toastr.success("The request has completed!!!");
             });
         });
     });
@@ -246,7 +246,8 @@
             console.log(textStatus, ": ", JSON.stringify(jqXHR));
         }).always(function (data) {
             console.log("The request has completed: ", data);
-            toastr.success("The request has completed : " + JSON.stringify(data));
+            toastr.success("The request has completed!");
+            //toastr.success("The request has completed : " + JSON.stringify(data));
         });
     });
 
