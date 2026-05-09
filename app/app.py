@@ -191,14 +191,15 @@ def save_metadata(_sub_folder, _filename, _title, _desc, _courtesy, _hash_md5):
         _desc = _filename
     if not _courtesy:
         _courtesy = "Unknown"
-    db.photos.insert_one({'folder': _sub_folder,
-                          'filename': _filename,
-                          'title': _title,
-                          'description': _desc,
-                          'courtesy': _courtesy,
-                          'date_uploaded': datetime.now(TZ_LONDON),
-                          'date_modified': datetime.now(TZ_LONDON),
-                          'hash_md5': _hash_md5})
+    result = db.photos.insert_one({'folder': _sub_folder,
+                                   'filename': _filename,
+                                   'title': _title,
+                                   'description': _desc,
+                                   'courtesy': _courtesy,
+                                   'date_uploaded': datetime.now(TZ_LONDON),
+                                   'date_modified': datetime.now(TZ_LONDON),
+                                   'hash_md5': _hash_md5})
+    return result.inserted_id
 
 
 @app.route('/album/add', methods=('GET', 'POST'))
@@ -1185,14 +1186,15 @@ def do_upload_photo(req):
     app.logger.info(message)
 
     # save the file's metadata into MongoDB
-    save_metadata(submission_folder, filename, title, description, courtesy,
-                  hash_md5)
+    object_id = save_metadata(submission_folder, filename, title, description,
+                              courtesy, hash_md5)
     return {
         'message': message,
         'submission_folder': submission_folder,
         'filename': filename, 'title': title,
         'description': description, 'origin': courtesy,
-        'hash_md5': hash_md5
+        'hash_md5': hash_md5,
+        'object_id': str(object_id),
     }
 
 

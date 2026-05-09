@@ -160,6 +160,8 @@
     $(document).on("click", ".btn-edit-photo", function (event) {
         event.preventDefault();
         photoObjectId = $(this).attr("data-photo-object-id");
+        const photoFolder = $(this).attr("data-photo-folder");
+        const photoFileName = $(this).attr("data-photo-filename");
         const photoTitle = $('#photo-title-' + photoObjectId)[0].innerText;
         $("#photo-title").val(photoTitle);
         // Change Create to Save button
@@ -170,11 +172,12 @@
         const photoCourtesy = $('#original-photo-courtesy-' + photoObjectId)[0].innerHTML;
         $("#photo-courtesy").val(photoCourtesy);
         //console.log(photoCourtesy);
+        loadExistingAlbumsIntoSelect(photoObjectId);
         window.scrollTo(0, 0);
         $("#photo-edit-modal-form").modal("show");
         $("#btn-save").on("click", function () {
             console.log("saving...");
-
+            syncPhotoAlbums(photoObjectId, photoFolder, photoFileName);
             $.ajax({
                 url: "/photo/update",
                 method: "POST",

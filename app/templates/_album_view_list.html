@@ -119,16 +119,27 @@
         // Change the name of Upload to Save button
         $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
         const photoObjectId = $(this).attr("data-photo-object-id");
+        const photoFolder = $(this).attr("data-photo-folder");
+        const photoFileName = $(this).attr("data-photo-filename");
         const photoTitle = $('#photo-title-' + photoObjectId)[0].innerText;
         $("#photo-title").val(photoTitle);
         const photoDescription = $('#photo-description-' + photoObjectId)[0].innerHTML;
         $("#photo-description").val(photoDescription);
         const photoCourtesy = $('#original-photo-courtesy-' + photoObjectId)[0];
         $("#photo-courtesy").val(photoCourtesy);
+        loadExistingAlbumsIntoSelect(photoObjectId);
+        // Also pre-select the current album (it appears in "Other albums" only for other photos)
+        const currentAlbumPath = '{{ album_path }}';
+        const existingPaths = [...editInitialAlbumPaths];
+        if (currentAlbumPath && !editInitialAlbumPaths.has(currentAlbumPath)) {
+            editInitialAlbumPaths.add(currentAlbumPath);
+            existingPaths.push(currentAlbumPath);
+            $('.upload-album-select').val(existingPaths).trigger('change');
+        }
 
         $("#btn-save").on("click", function () {
             console.log("saving...");
-            
+            syncPhotoAlbums(photoObjectId, photoFolder, photoFileName);
             $.ajax({
                 url: "/photo/update",
                 method: "POST",
@@ -159,8 +170,6 @@
                 console.log(textStatus, ": ", JSON.stringify(jqXHR));
             }).always(function (data) {
                 console.log("The request has completed: ", data);
-                //toastr.success("The request has completed : " + JSON.stringify(data));
-                toastr.success("Added the photo to albums...");
             });
         });
     });

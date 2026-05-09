@@ -11,7 +11,10 @@
                target="_blank">Show</a>
         </div>
         <div class="col-7">
-            <a href="javascript:void(0)" class="photo-row-title" id="photo-title-{{ photo.get('_id')}}" data-photo-object-id="{{ photo.get('_id')}}"
+            <a href="javascript:void(0)" class="photo-row-title" id="photo-title-{{ photo.get('_id')}}"
+               data-photo-object-id="{{ photo.get('_id')}}"
+               data-photo-folder="{{ photo['folder'] }}"
+               data-photo-filename="{{ photo['filename'] }}"
                data-bs-toggle="modal" data-bs-target="#photo-edit-modal-form"><strong>{{ photo['title'] }}</strong></a>
             <br/>
             <div class="photo-description original" id="photo-description-{{ photo.get('_id')}}">{{ photo['description'] }}</div>

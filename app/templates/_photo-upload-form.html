@@ -81,6 +81,13 @@
         <input id="photo-keywords" name="keywords" type="text" placeholder="Keywords"
                class="form-control"/>
     </div>-->
+    <div class="mb-3">
+        <strong><label for="upload-album-select" class="form-label">Add to Albums</label></strong><br/>
+        <label for="upload-album-select" style="display: none"></label>
+        <select id="upload-album-select" class="form-select upload-album-select"
+                data-placeholder="Choose albums (optional)" multiple>
+        </select>
+    </div>
     <div class="mb-3" id="action-button">
         <button class="btn btn-primary btn-photo-upload">Upload</button>
     </div>
@@ -88,6 +95,77 @@
 <script>
     let fileList;
     let contentType = "application/json; charset=utf-8";
+    let editInitialAlbumPaths = new Set();
+
+    $(function () {
+        $('.upload-album-select').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Choose albums (optional)',
+            closeOnSelect: false,
+            allowClear: true,
+        });
+
+        $.getJSON('/albums', function (data) {
+            const select = $('#upload-album-select');
+            data.forEach(function (album) {
+                select.append(new Option(album.title, album.path, false, false));
+            });
+            select.trigger('change');
+        });
+    });
+
+    function loadExistingAlbumsIntoSelect(photoObjectId) {
+        editInitialAlbumPaths = new Set();
+        const inAlbumsEl = document.getElementById('in-albums-' + photoObjectId);
+        const paths = [];
+        if (inAlbumsEl) {
+            $(inAlbumsEl).find('a').each(function () {
+                const path = $(this).attr('href').replace('/albums/view/', '');
+                if (path) {
+                    editInitialAlbumPaths.add(path);
+                    paths.push(path);
+                }
+            });
+        }
+        $('.upload-album-select').val(paths).trigger('change');
+    }
+
+    function syncPhotoAlbums(photoObjectId, photoFolder, photoFileName) {
+        const currentData = $('.upload-album-select').select2('data');
+        const currentPaths = new Set(currentData.map(a => a.id));
+        const addedAlbums = currentData
+            .filter(a => !editInitialAlbumPaths.has(a.id))
+            .map(a => ({ path: a.id, title: a.text, photo_object_id: photoObjectId }));
+        const removedPaths = [...editInitialAlbumPaths].filter(p => !currentPaths.has(p));
+        if (addedAlbums.length > 0) {
+            $.ajax({
+                url: "/photo/save-photo-to-albums/",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "photo-object-id": photoObjectId,
+                    "photo-folder": photoFolder,
+                    "photo-filename": photoFileName,
+                    "newly-added-albums": addedAlbums
+                })
+            });
+        }
+        removedPaths.forEach(function (albumPath) {
+            $.ajax({
+                url: "/albums/remove-photos",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "album-path": albumPath,
+                    "removed-photos": [{ "photo-object-id": photoObjectId }]
+                })
+            });
+        });
+    }
+
     // Listen for the moment the file selection changes (i.e., the user selects files)
     $("#photo-upload").on("change", function (event) {
         event.preventDefault();
@@ -183,11 +261,40 @@
                     } else {
                         toastr.success(m);
                     }
+
+                    const selectedAlbums = $('.upload-album-select').select2('data');
+                    if (selectedAlbums.length > 0 && data["object_id"] && !m.includes("exists")) {
+                        const albums = selectedAlbums.map(item => ({
+                            path: item.id,
+                            title: item.text,
+                            photo_object_id: data["object_id"]
+                        }));
+                        $.ajax({
+                            url: "/photo/save-photo-to-albums/",
+                            method: "POST",
+                            contentType: "application/json; charset=utf-8",
+                            dataType: "json",
+                            data: JSON.stringify({
+                                "photo-object-id": data["object_id"],
+                                "photo-folder": data["submission_folder"],
+                                "photo-filename": data["filename"],
+                                "newly-added-albums": albums
+                            }),
+                            success: function () {
+                                const titles = selectedAlbums.map(a => a.text).join(", ");
+                                toastr.success("Added to albums: " + titles);
+                            },
+                            error: function () {
+                                toastr.error("Upload succeeded but failed to add photo to albums.");
+                            }
+                        });
+                    }
                 } else {
                     toastr.error("No photo provided!");
                 }
                 // clear all the fields
                 $("#upload-form")[0].reset();
+                $('.upload-album-select').val(null).trigger('change');
                 // check where the upload was requested: from list view or upload view. If it is the list view,
                 // add a new photo placeholder to load the newly uploaded photo
             })
