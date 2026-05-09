@@ -29,6 +29,7 @@
         let sortField = "date_uploaded"
         let orgPhotoOrders = [];
         let order;
+        let photoObjectId = "", photoFolder = "", photoFileName = "";
     </script>
 </head>
 <body>
@@ -169,6 +170,7 @@
 <!-- JavaScript -->
 {% include('_foot.html') %}
 <script src="{{ url_for('static', filename='js/lightbox-plus-jquery.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lightbox-zoom.js') }}"></script>
 <script src="https://code.jquery.com/ui/1.14.0/jquery-ui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
