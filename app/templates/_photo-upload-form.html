@@ -255,7 +255,7 @@
         const uploaded = extractData(event);
         if (uploaded === null) return;
         uploadPhoto(uploaded)
-            .then((data) => {
+            .then(async (data) => {
                 if (data !== undefined) {
                     console.log(data);
                     let m = data["message"]
@@ -274,25 +274,24 @@
                             title: item.text,
                             photo_object_id: data["object_id"]
                         }));
-                        $.ajax({
-                            url: "/photo/save-photo-to-albums/",
-                            method: "POST",
-                            contentType: "application/json; charset=utf-8",
-                            dataType: "json",
-                            data: JSON.stringify({
-                                "photo-object-id": data["object_id"],
-                                "photo-folder": data["submission_folder"],
-                                "photo-filename": data["filename"],
-                                "newly-added-albums": albums
-                            }),
-                            success: function () {
-                                const titles = selectedAlbums.map(a => a.text).join(", ");
-                                toastr.success("Added to albums: " + titles);
-                            },
-                            error: function () {
-                                toastr.error("Upload succeeded but failed to add photo to albums.");
-                            }
-                        });
+                        try {
+                            await $.ajax({
+                                url: "/photo/save-photo-to-albums/",
+                                method: "POST",
+                                contentType: "application/json; charset=utf-8",
+                                dataType: "json",
+                                data: JSON.stringify({
+                                    "photo-object-id": data["object_id"],
+                                    "photo-folder": data["submission_folder"],
+                                    "photo-filename": data["filename"],
+                                    "newly-added-albums": albums
+                                })
+                            });
+                            const titles = selectedAlbums.map(a => a.text).join(", ");
+                            toastr.success("Added to albums: " + titles);
+                        } catch {
+                            toastr.error("Upload succeeded but failed to add photo to albums.");
+                        }
                     }
                 } else {
                     toastr.error("No photo provided!");
@@ -300,8 +299,6 @@
                 // clear all the fields
                 $("#upload-form")[0].reset();
                 $('.upload-album-select').val(null).trigger('change');
-                // check where the upload was requested: from list view or upload view. If it is the list view,
-                // add a new photo placeholder to load the newly uploaded photo
             })
             .catch((error) => {
                 console.error("Error: ", error);
