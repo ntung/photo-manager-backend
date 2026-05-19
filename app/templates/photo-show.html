@@ -68,6 +68,15 @@
                                 data-photo-filename="{{ photo['filename'] }}">
                             + Add to album
                         </button>
+                        <button type="button" class="btn btn-sm btn-primary btn-edit-photo"
+                                data-photo-object-id="{{ photo_id }}"
+                                data-photo-folder="{{ photo['folder'] }}"
+                                data-photo-filename="{{ photo['filename'] }}"
+                                data-photo-title="{{ photo['title'] }}"
+                                data-photo-description="{{ photo['description'] }}"
+                                data-photo-courtesy="{{ photo['courtesy'] }}">
+                            Edit
+                        </button>
                         <button type="button" class="btn btn-sm btn-danger btn-delete-photo"
                                 data-photo-object-id="{{ photo_id }}"
                                 data-photo-folder="{{ photo['folder'] }}"
@@ -82,6 +91,7 @@
     </div>
 </div>
 {% include('_albums-select2-modal-form.html') %}
+{% include('_photo-edit-modal-form.html') %}
 {% include('_foot.html') %}
 <script src="{{ url_for('static', filename='js/fslightbox.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -93,6 +103,46 @@
         photoObjectId = $(this).attr("data-photo-object-id");
         photoFolder = $(this).attr("data-photo-folder");
         photoFileName = $(this).attr("data-photo-filename");
+    });
+
+    $(document).on("click", ".btn-edit-photo", function (event) {
+        event.preventDefault();
+        photoObjectId = $(this).attr("data-photo-object-id");
+        const photoFolder = $(this).attr("data-photo-folder");
+        const photoFileName = $(this).attr("data-photo-filename");
+        $("#photo-title").val($(this).attr("data-photo-title"));
+        $("#photo-description").val($(this).attr("data-photo-description"));
+        $("#photo-courtesy").val($(this).attr("data-photo-courtesy"));
+        $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
+        loadExistingAlbumsIntoSelect(photoObjectId);
+        $("#photo-edit-modal-form").modal("show");
+        $("#btn-save").on("click", function () {
+            $.ajax({
+                url: "/photo/update",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "photo-object-id": photoObjectId,
+                    "photo-title": $("#photo-title").val(),
+                    "photo-description": $("#photo-description").val(),
+                    "photo-courtesy": $("#photo-courtesy").val()
+                }),
+                success: function () {
+                    toastr.success("Updated successfully!");
+                    $('#upload-form')[0].reset();
+                    setTimeout(() => { window.location.reload(); }, 1000);
+                },
+                error: function () {
+                    toastr.error("Failed to save changes.");
+                }
+            });
+            try {
+                syncPhotoAlbums(photoObjectId, photoFolder, photoFileName);
+            } catch (e) {
+                console.error("Album sync error:", e);
+            }
+        });
     });
 
     $(document).on("click", ".btn-delete-photo", function (event) {
