@@ -964,7 +964,7 @@ def photo_update():
     photo_object_id = request_json['photo-object-id']
     photo_title = request_json['photo-title']
     photo_description = request_json['photo-description']
-    photo_courtesy = request_json['photo-courtesy']
+    photo_courtesy = sanitize_facebook_url(request_json['photo-courtesy'])
     app.logger.info("Photo requesting to be updated: %s", request_json)
     result = db.photos.update_one(
         {"_id": ObjectId(photo_object_id)},
@@ -1186,7 +1186,7 @@ def do_upload_photo(req):
         title = metadata.get('title', 'Untitled')
         photo_url = metadata.get('photo-url', 'N/A')
         description = metadata.get('description', 'N/A')
-        courtesy = metadata.get('courtesy', 'Unknown')
+        courtesy = sanitize_facebook_url(metadata.get('courtesy', 'Unknown'))
 
     except json.JSONDecodeError:
         return jsonify({'message': 'Invalid JSON format in the metadata'}), 400
