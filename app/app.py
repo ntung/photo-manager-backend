@@ -184,6 +184,16 @@ def photo_todo_list():
     return render_template('todo-list.html', todos=all_todos)
 
 
+def sanitize_facebook_url(url):
+    if 'facebook.com' in url:
+        q_pos = url.find('?')
+        if q_pos > -1:
+            first_amp = url.find('&', q_pos + 1)
+            if first_amp > -1:
+                url = url[:first_amp]
+    return url
+
+
 def save_metadata(_sub_folder, _filename, _title, _desc, _courtesy, _hash_md5):
     if not _title:
         _title = "Untitled"
@@ -1012,7 +1022,7 @@ def extension_save():
         return jsonify({'message': 'raw_url or clean_url is required'}), 400
 
     title = (body.get('page_title') or '').strip() or 'Untitled'
-    courtesy = (body.get('page_url') or '').strip() or 'Unknown'
+    courtesy = sanitize_facebook_url((body.get('page_url') or '').strip()) or 'Unknown'
 
     app.logger.info("Extension save: download_url=%s", download_url)
 
