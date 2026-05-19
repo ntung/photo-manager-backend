@@ -318,7 +318,7 @@ def photo_albums():
 @app.route('/albums/<path>', methods=('GET', 'POST'))
 def albums(path):
     if path is None:
-        all_albums = db.albums.find()
+        all_albums = db.albums.find().sort([("date_modified", pymongo.DESCENDING)])
         docs_as_extended_json = bson.json_util.dumps(all_albums)
         return docs_as_extended_json
     first_album = get_album(path)
@@ -1124,7 +1124,10 @@ def photo_show(unique_key):
 
     _photos = list(db.photos.aggregate(pipeline))
     if _photos is not None:
-        all_albums = list(db.albums.find({}, {"path": 1, "title": 1}))
+        all_albums = list(
+            db.albums.find({}, {"path": 1, "title": 1})
+            .sort([("date_modified", pymongo.DESCENDING)])
+        )
         return render_template("photo-show.html",
                                photos=_photos,
                                albums=all_albums,
