@@ -52,7 +52,6 @@
         <textarea
             id="photo-description"
             name="description"
-            type="textarea"
             placeholder="Provide a description"
             class="form-control photo-description"
         ></textarea>
@@ -84,7 +83,7 @@
     <div class="mb-3">
         <strong><label for="upload-album-select" class="form-label">Add to Albums</label></strong><br/>
         <label for="upload-album-select" style="display: none"></label>
-        <select id="upload-album-select" class="form-select upload-album-select"
+        <select id="upload-album-select" name="albums" class="form-select upload-album-select"
                 data-placeholder="Choose albums (optional)" multiple>
         </select>
     </div>
