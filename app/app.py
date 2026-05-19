@@ -990,6 +990,83 @@ def photo_upload():
     return render_template("photo-upload.html")
 
 
+@app.route('/api/v1/extension/save', methods=['POST'])
+def extension_save():
+    """
+    Receive a photo save request from a browser extension.
+    Expected JSON body:
+      raw_url     – original URL with auth/tracking params, used for download (required)
+      clean_url   – stripped URL stored as photo metadata (required)
+      page_url    – source page URL, stored as courtesy
+      page_title  – page title, stored as photo title
+      saved_at    – ISO timestamp from the extension (optional, informational)
+    """
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({'message': 'Invalid or missing JSON body'}), 400
+
+    raw_url = (body.get('raw_url') or '').strip()
+    clean_url = (body.get('clean_url') or '').strip()
+    download_url = raw_url or clean_url
+    if not download_url:
+        return jsonify({'message': 'raw_url or clean_url is required'}), 400
+
+    title = (body.get('page_title') or '').strip() or 'Untitled'
+    courtesy = (body.get('page_url') or '').strip() or 'Unknown'
+
+    app.logger.info("Extension save: download_url=%s", download_url)
+
+    submission_folder = infer_submission_folder()
+    upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], submission_folder)
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = str(uuid.uuid4()) + ".jpg"
+
+    try:
+        result = do_download_image(upload_dir, download_url, filename)
+    except requests.exceptions.HTTPError as e:
+        app.logger.error("Extension save HTTP error: %s", e)
+        return jsonify({'message': str(e)}), 502
+    except requests.exceptions.ConnectionError as e:
+        app.logger.error("Extension save connection error: %s", e)
+        return jsonify({'message': str(e)}), 502
+    except requests.exceptions.RequestException as e:
+        app.logger.error("Extension save request error: %s", e)
+        return jsonify({'message': str(e)}), 502
+
+    if isinstance(result, Response):
+        return result
+
+    filename = result['filename']
+    hash_md5 = result['hash_md5']
+
+    existing = db.photos.find_one({'hash_md5': hash_md5})
+    if existing is not None:
+        abs_file_path = os.path.join(upload_dir, filename)
+        pathlib.Path(abs_file_path).unlink(missing_ok=True)
+        col_albums = [
+            album['path']
+            for album in db.albums.find()
+            if existing['_id'] in album.get('photos', [])
+        ]
+        return jsonify(
+            message=f"{filename} exists!",
+            object_id=str(existing['_id']),
+            filename=existing['filename'],
+            submission_folder=existing['folder'],
+            exist_in_albums=','.join(col_albums)
+        )
+
+    object_id = save_metadata(submission_folder, filename, title, '', courtesy, hash_md5)
+    app.logger.info("Photo object id: %s", str(object_id))
+    return jsonify(
+        message=f"{filename} is a new photo.",
+        object_id=str(object_id),
+        filename=filename,
+        submission_folder=submission_folder,
+        title=title,
+    )
+
+
 @app.route('/photo/show/<string:unique_key>', methods=['GET'])
 def photo_show(unique_key):
     """
