@@ -1097,6 +1097,20 @@ def extension_save():
     if source_profile:
         db.photos.update_one({'_id': object_id}, {'$set': {'source_profile': source_profile}})
     app.logger.info("Photo object id: %s source_profile: %s", str(object_id), source_profile)
+
+    added_albums = []
+    for album in body.get('albums') or []:
+        r = db.albums.find_one_and_update(
+            {'path': album['path']},
+            {
+                '$addToSet': {'photos': object_id},
+                '$set': {'date_modified': datetime.now(TZ_LONDON)},
+            },
+            return_document=ReturnDocument.AFTER
+        )
+        if r is not None:
+            added_albums.append({'path': r['path'], 'title': r['title']})
+
     return jsonify(
         message=f"{filename} is a new photo.",
         object_id=str(object_id),
@@ -1104,6 +1118,7 @@ def extension_save():
         submission_folder=submission_folder,
         title=title,
         source_profile=source_profile,
+        added_albums=added_albums,
     )
 
 

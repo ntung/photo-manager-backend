@@ -329,6 +329,34 @@
         }
     });
 
+    let _courtesyDebounce;
+    $(".photo-courtesy").on("input", function () {
+        const value = $(this).val().trim();
+        clearTimeout(_courtesyDebounce);
+        if (!value.includes("facebook.com")) return;
+        _courtesyDebounce = setTimeout(function () {
+            $.getJSON('/api/v1/extension/recommend-albums', {page_url: value}, function (data) {
+                if (!data.albums || data.albums.length === 0) return;
+                const select = $('.upload-album-select');
+                const currentVals = select.val() || [];
+                let added = [];
+                data.albums.forEach(function (album) {
+                    if ($('#upload-album-select option[value="' + album.path + '"]').length === 0) {
+                        select.append(new Option(album.title, album.path, false, false));
+                    }
+                    if (!currentVals.includes(album.path)) {
+                        currentVals.push(album.path);
+                        added.push(album.title);
+                    }
+                });
+                if (added.length > 0) {
+                    select.val(currentVals).trigger('change');
+                    toastr.info("Suggested albums: " + added.join(", "));
+                }
+            });
+        }, 600);
+    });
+
     $(".photo-courtesy").on("focusout", function () {
         let value = $(this).val();
         if (value.includes("facebook.com")) {
