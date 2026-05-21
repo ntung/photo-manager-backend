@@ -329,47 +329,42 @@
         }
     });
 
-    let _courtesyDebounce;
-    $(".photo-courtesy").on("input", function () {
-        const value = $(this).val().trim();
-        clearTimeout(_courtesyDebounce);
-        if (!value.includes("facebook.com")) return;
-        _courtesyDebounce = setTimeout(function () {
-            $.getJSON('/api/v1/extension/recommend-albums', {page_url: value}, function (data) {
-                if (!data.albums || data.albums.length === 0) return;
-                const select = $('.upload-album-select');
-                const currentVals = select.val() || [];
-                let added = [];
-                data.albums.forEach(function (album) {
-                    if ($('#upload-album-select option[value="' + album.path + '"]').length === 0) {
-                        select.append(new Option(album.title, album.path, false, false));
-                    }
-                    if (!currentVals.includes(album.path)) {
-                        currentVals.push(album.path);
-                        added.push(album.title);
-                    }
-                });
-                if (added.length > 0) {
-                    select.val(currentVals).trigger('change');
-                    toastr.info("Suggested albums: " + added.join(", "));
-                }
-            });
-        }, 600);
-    });
-
     $(".photo-courtesy").on("focusout", function () {
         let value = $(this).val();
-        if (value.includes("facebook.com")) {
-            let sanitized = value;
-            const qPos = sanitized.indexOf("?");
-            if (qPos > -1) {
-                const firstAmp = sanitized.indexOf("&", qPos + 1);
-                if (firstAmp > -1) {
-                    sanitized = sanitized.substring(0, firstAmp);
+        if (!value.includes("facebook.com")) return;
+
+        // Recommend albums using the full URL before sanitizing.
+        // If the pasted URL is a profile URL send it as profile_url for precise
+        // detection; otherwise send as page_url (falls back to set= extraction).
+        const isProfileUrl = value.includes('profile.php');
+        const params = isProfileUrl ? {profile_url: value} : {page_url: value};
+        $.getJSON('/api/v1/extension/recommend-albums', params, function (data) {
+            if (!data.albums || data.albums.length === 0) return;
+            const select = $('.upload-album-select');
+            const currentVals = select.val() || [];
+            const added = [];
+            data.albums.forEach(function (album) {
+                if ($('#upload-album-select option[value="' + album.path + '"]').length === 0) {
+                    select.append(new Option(album.title, album.path, false, false));
                 }
+                if (!currentVals.includes(album.path)) {
+                    currentVals.push(album.path);
+                    added.push(album.title);
+                }
+            });
+            if (added.length > 0) {
+                select.val(currentVals).trigger('change');
+                toastr.info("Suggested albums: " + added.join(", "));
             }
-            console.log(sanitized);
-            $(this).val(sanitized);
+        });
+
+        // Sanitize after recommendation call
+        const qPos = value.indexOf("?");
+        if (qPos > -1) {
+            const firstAmp = value.indexOf("&", qPos + 1);
+            if (firstAmp > -1) {
+                $(this).val(value.substring(0, firstAmp));
+            }
         }
     });
 </script>

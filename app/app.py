@@ -209,9 +209,13 @@ def extract_facebook_profile(url):
         return None
     parsed = urlparse(url)
     params = parse_qs(parsed.query)
-    # profile.php?id=NNNN
+    # profile.php?id=NNNN or any URL with explicit id= param
     if 'id' in params:
         return params['id'][0]
+    # /photo/?fbid=xxx&set=a.NNNN — use album ID as source proxy
+    if 'set' in params:
+        set_val = params['set'][0]  # e.g. "a.122101157462916740"
+        return set_val.split('.', 1)[-1] if '.' in set_val else set_val
     # /username/photos, /username/posts, /pageslug, etc.
     path_parts = [p for p in parsed.path.split('/') if p]
     if path_parts and path_parts[0] not in _FB_RESERVED:
@@ -1032,7 +1036,10 @@ def extension_save():
     Expected JSON body:
       raw_url     – original URL with auth/tracking params, used for download (required)
       clean_url   – stripped URL stored as photo metadata (required)
-      page_url    – source page URL, stored as courtesy
+      page_url    – photo page URL, stored as courtesy
+      profile_url – Facebook profile/page URL (profile.php?id=NNNN); preferred
+                    source for profile detection; falls back to page_url then
+                    the set= param in page_url as a last resort
       page_title  – page title, stored as photo title
       saved_at    – ISO timestamp from the extension (optional, informational)
     """
@@ -1048,7 +1055,9 @@ def extension_save():
 
     title = (body.get('page_title') or '').strip() or 'Untitled'
     page_url_raw = (body.get('page_url') or '').strip()
-    source_profile = extract_facebook_profile(page_url_raw)
+    profile_url_raw = (body.get('profile_url') or '').strip()
+    source_profile = (extract_facebook_profile(profile_url_raw)
+                      or extract_facebook_profile(page_url_raw))
     courtesy = sanitize_facebook_url(page_url_raw) or 'Unknown'
 
     app.logger.info("Extension save: download_url=%s", download_url)
@@ -1125,16 +1134,18 @@ def extension_save():
 @app.route('/api/v1/extension/recommend-albums', methods=['GET'])
 def extension_recommend_albums():
     """
-    Suggest albums for a photo based on the Facebook profile in page_url.
+    Suggest albums for a photo based on the Facebook profile.
     Returns albums that already contain photos from the same profile,
     ranked by number of matching photos (most populated first).
-    Query param: page_url
+    Query params: profile_url (preferred), page_url (fallback)
     """
+    profile_url = request.args.get('profile_url', '').strip()
     page_url = request.args.get('page_url', '').strip()
-    if not page_url:
-        return jsonify({'message': 'page_url is required'}), 400
+    if not profile_url and not page_url:
+        return jsonify({'message': 'profile_url or page_url is required'}), 400
 
-    source_profile = extract_facebook_profile(page_url)
+    source_profile = (extract_facebook_profile(profile_url)
+                      or extract_facebook_profile(page_url))
     if not source_profile:
         return jsonify({'albums': [], 'source_profile': None})
 
