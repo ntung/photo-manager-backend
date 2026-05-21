@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime, timedelta
 from functools import wraps
 from logging.config import dictConfig
+from urllib.parse import urlparse, parse_qs
 
 import bson
 import bson.json_util
@@ -192,6 +193,30 @@ def sanitize_facebook_url(url):
             if first_amp > -1:
                 url = url[:first_amp]
     return url
+
+
+# Top-level path segments that are Facebook features, not profile slugs
+_FB_RESERVED = {
+    'photo', 'photos', 'groups', 'pages', 'events', 'media',
+    'reel', 'reels', 'watch', 'marketplace', 'stories', 'profile',
+    'permalink', 'share',
+}
+
+
+def extract_facebook_profile(url):
+    """Return a stable profile identifier (slug or numeric ID) from a Facebook URL."""
+    if not url or 'facebook.com' not in url:
+        return None
+    parsed = urlparse(url)
+    params = parse_qs(parsed.query)
+    # profile.php?id=NNNN
+    if 'id' in params:
+        return params['id'][0]
+    # /username/photos, /username/posts, /pageslug, etc.
+    path_parts = [p for p in parsed.path.split('/') if p]
+    if path_parts and path_parts[0] not in _FB_RESERVED:
+        return path_parts[0]
+    return None
 
 
 def save_metadata(_sub_folder, _filename, _title, _desc, _courtesy, _hash_md5):
@@ -1022,7 +1047,9 @@ def extension_save():
         return jsonify({'message': 'raw_url or clean_url is required'}), 400
 
     title = (body.get('page_title') or '').strip() or 'Untitled'
-    courtesy = sanitize_facebook_url((body.get('page_url') or '').strip()) or 'Unknown'
+    page_url_raw = (body.get('page_url') or '').strip()
+    source_profile = extract_facebook_profile(page_url_raw)
+    courtesy = sanitize_facebook_url(page_url_raw) or 'Unknown'
 
     app.logger.info("Extension save: download_url=%s", download_url)
 
@@ -1067,14 +1094,50 @@ def extension_save():
         )
 
     object_id = save_metadata(submission_folder, filename, title, '', courtesy, hash_md5)
-    app.logger.info("Photo object id: %s", str(object_id))
+    if source_profile:
+        db.photos.update_one({'_id': object_id}, {'$set': {'source_profile': source_profile}})
+    app.logger.info("Photo object id: %s source_profile: %s", str(object_id), source_profile)
     return jsonify(
         message=f"{filename} is a new photo.",
         object_id=str(object_id),
         filename=filename,
         submission_folder=submission_folder,
         title=title,
+        source_profile=source_profile,
     )
+
+
+@app.route('/api/v1/extension/recommend-albums', methods=['GET'])
+def extension_recommend_albums():
+    """
+    Suggest albums for a photo based on the Facebook profile in page_url.
+    Returns albums that already contain photos from the same profile,
+    ranked by number of matching photos (most populated first).
+    Query param: page_url
+    """
+    page_url = request.args.get('page_url', '').strip()
+    if not page_url:
+        return jsonify({'message': 'page_url is required'}), 400
+
+    source_profile = extract_facebook_profile(page_url)
+    if not source_profile:
+        return jsonify({'albums': [], 'source_profile': None})
+
+    photo_ids = [
+        p['_id'] for p in db.photos.find({'source_profile': source_profile}, {'_id': 1})
+    ]
+    if not photo_ids:
+        return jsonify({'albums': [], 'source_profile': source_profile})
+
+    photo_id_set = set(photo_ids)
+    ranked = []
+    projection = {'path': 1, 'title': 1, 'photos': 1}
+    for album in db.albums.find({'photos': {'$in': photo_ids}}, projection):
+        count = sum(1 for pid in album.get('photos', []) if pid in photo_id_set)
+        ranked.append({'path': album['path'], 'title': album['title'], 'photo_count': count})
+
+    ranked.sort(key=lambda a: a['photo_count'], reverse=True)
+    return jsonify({'albums': ranked, 'source_profile': source_profile})
 
 
 @app.route('/photo/show/<string:unique_key>', methods=['GET'])
