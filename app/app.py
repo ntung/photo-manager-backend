@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime, timedelta
 from functools import wraps
 from logging.config import dictConfig
+from html import unescape as html_unescape
 from urllib.parse import urlparse, parse_qs
 
 import bson
@@ -207,15 +208,20 @@ def extract_facebook_profile(url):
     """Return a stable profile identifier (slug or numeric ID) from a Facebook URL."""
     if not url or 'facebook.com' not in url:
         return None
-    parsed = urlparse(url)
+    parsed = urlparse(html_unescape(url))
     params = parse_qs(parsed.query)
     # profile.php?id=NNNN or any URL with explicit id= param
     if 'id' in params:
         return params['id'][0]
-    # /photo/?fbid=xxx&set=a.NNNN — use album ID as source proxy
+    # /photo/?fbid=xxx&set=<prefix>.<id>[.<suffix>]
+    # Formats seen: a.<album_id>, pb.<profile_id>.<ts>, pcb.<profile_id>.<ts>
+    # The meaningful identifier is always the second segment.
     if 'set' in params:
-        set_val = params['set'][0]  # e.g. "a.122101157462916740"
-        return set_val.split('.', 1)[-1] if '.' in set_val else set_val
+        set_val = params['set'][0]
+        parts = set_val.split('.')
+        if len(parts) >= 2:
+            return parts[1]
+        return set_val
     # /username/photos, /username/posts, /pageslug, etc.
     path_parts = [p for p in parsed.path.split('/') if p]
     if path_parts and path_parts[0] not in _FB_RESERVED:
