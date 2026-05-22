@@ -1373,6 +1373,9 @@ def do_upload_photo(req):
     # save the file's metadata into MongoDB
     object_id = save_metadata(submission_folder, filename, title, description,
                               courtesy, hash_md5)
+    source_profile = extract_facebook_profile(courtesy)
+    if source_profile:
+        db.photos.update_one({'_id': object_id}, {'$set': {'source_profile': source_profile}})
     return {
         'message': message,
         'submission_folder': submission_folder,
