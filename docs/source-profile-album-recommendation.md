@@ -62,15 +62,64 @@ Two workflows are supported:
 
 **Workflow B — Automatic (no human interaction):**
 
-1. The extension calls `GET /api/v1/extension/recommend-albums` in the background.
-2. If the response contains at least one album, the extension immediately POSTs to
-   `/api/v1/extension/save` with all suggested albums included — no popup, no user confirmation.
-3. If the response is empty (no recommendations), the extension falls back to Workflow A so the
-   user can assign albums manually.
+1. The extension POSTs to `POST /api/v1/extension/auto-save` with the same body as Workflow A
+   (no `albums` field needed).
+2. The server internally resolves recommended albums from the source profile and saves the photo
+   into them in a single round trip — no popup, no user confirmation.
+3. If `fallback_required: true` is returned (no recommendations found), the extension falls back
+   to Workflow A so the user can assign albums manually.
 
 Workflow B is intended for bulk saves where the source profile is already well-represented in the
-database. Accuracy should be evaluated periodically by reviewing `added_albums` in the save
+database. Accuracy should be evaluated periodically by reviewing `recommended_albums` in the
 responses and spot-checking that photos landed in the correct albums.
+
+---
+
+## Auto-Save Endpoint
+
+```
+POST /api/v1/extension/auto-save
+```
+
+Accepts the same request body as `/api/v1/extension/save` (minus the `albums` field).
+
+**Response (new photo, albums found):**
+```json
+{
+  "message": "<filename> is a new photo.",
+  "object_id": "...",
+  "filename": "...",
+  "submission_folder": "...",
+  "title": "...",
+  "source_profile": "100015224503587",
+  "auto_assigned": true,
+  "fallback_required": false,
+  "recommended_albums": [
+    { "path": "sanduni-amanda", "title": "Sanduni Amanda" }
+  ]
+}
+```
+
+**Response (new photo, no recommendations):**
+```json
+{
+  "auto_assigned": false,
+  "fallback_required": true,
+  "recommended_albums": []
+}
+```
+
+**Response (duplicate photo):**
+```json
+{
+  "message": "<filename> exists!",
+  "object_id": "...",
+  "exist_in_albums": "sanduni-amanda,sexy-cleavage",
+  "auto_assigned": false,
+  "fallback_required": false,
+  "recommended_albums": []
+}
+```
 
 **Save response (new photo):**
 ```json
