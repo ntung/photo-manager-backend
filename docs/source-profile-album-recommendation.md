@@ -48,13 +48,29 @@ Returns `None` if no identifier can be extracted (e.g. clean URLs like `?fbid=xx
 | `page_title` | no | Page title, stored as photo title |
 | `albums` | no | Array of `{ path, title }` objects — photo is added to each on save |
 
-The extension workflow is:
+Two workflows are supported:
 
-1. Before saving, call `GET /api/v1/extension/recommend-albums` with the current `profile_url` or
-   `page_url` to get a ranked list of suggested albums.
-2. Present suggestions to the user (or auto-select them).
-3. POST to `/api/v1/extension/save` with the selected albums in the `albums` array. The server
-   adds the photo to each album atomically and returns `added_albums` confirming what was saved.
+**Workflow A — Manual (with review):**
+
+1. When the user opens the extension popup on a Facebook photo page, the extension calls
+   `GET /api/v1/extension/recommend-albums` with the current `profile_url` or `page_url`.
+2. The recommended albums are displayed in the popup and **pre-selected** so the user does not
+   need to pick them manually. The user can deselect any album before saving.
+3. The user clicks **Save**. The extension POSTs to `/api/v1/extension/save` with the confirmed
+   albums in the `albums` array. The server adds the photo to each album atomically and returns
+   `added_albums` confirming what was saved.
+
+**Workflow B — Automatic (no human interaction):**
+
+1. The extension calls `GET /api/v1/extension/recommend-albums` in the background.
+2. If the response contains at least one album, the extension immediately POSTs to
+   `/api/v1/extension/save` with all suggested albums included — no popup, no user confirmation.
+3. If the response is empty (no recommendations), the extension falls back to Workflow A so the
+   user can assign albums manually.
+
+Workflow B is intended for bulk saves where the source profile is already well-represented in the
+database. Accuracy should be evaluated periodically by reviewing `added_albums` in the save
+responses and spot-checking that photos landed in the correct albums.
 
 **Save response (new photo):**
 ```json
