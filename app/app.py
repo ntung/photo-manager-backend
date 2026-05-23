@@ -1137,6 +1137,26 @@ def extension_save():
     )
 
 
+def _get_ranked_albums(source_profile):
+    """Return albums ranked by photo count for the given source_profile, or [] if none."""
+    if not source_profile:
+        return []
+    photo_ids = [
+        p['_id'] for p in db.photos.find({'source_profile': source_profile}, {'_id': 1})
+    ]
+    if not photo_ids:
+        return []
+    photo_id_set = set(photo_ids)
+    ranked = []
+    for album in db.albums.find(
+        {'photos': {'$in': photo_ids}}, {'path': 1, 'title': 1, 'photos': 1}
+    ):
+        count = sum(1 for pid in album.get('photos', []) if pid in photo_id_set)
+        ranked.append({'path': album['path'], 'title': album['title'], 'photo_count': count})
+    ranked.sort(key=lambda a: a['photo_count'], reverse=True)
+    return ranked
+
+
 @app.route('/api/v1/extension/recommend-albums', methods=['GET'])
 def extension_recommend_albums():
     """
@@ -1152,24 +1172,116 @@ def extension_recommend_albums():
 
     source_profile = (extract_facebook_profile(profile_url)
                       or extract_facebook_profile(page_url))
-    if not source_profile:
-        return jsonify({'albums': [], 'source_profile': None})
-
-    photo_ids = [
-        p['_id'] for p in db.photos.find({'source_profile': source_profile}, {'_id': 1})
-    ]
-    if not photo_ids:
-        return jsonify({'albums': [], 'source_profile': source_profile})
-
-    photo_id_set = set(photo_ids)
-    ranked = []
-    projection = {'path': 1, 'title': 1, 'photos': 1}
-    for album in db.albums.find({'photos': {'$in': photo_ids}}, projection):
-        count = sum(1 for pid in album.get('photos', []) if pid in photo_id_set)
-        ranked.append({'path': album['path'], 'title': album['title'], 'photo_count': count})
-
-    ranked.sort(key=lambda a: a['photo_count'], reverse=True)
+    ranked = _get_ranked_albums(source_profile)
     return jsonify({'albums': ranked, 'source_profile': source_profile})
+
+
+@app.route('/api/v1/extension/auto-save', methods=['POST'])
+def extension_auto_save():
+    """
+    Combined recommend + save endpoint for Workflow B (no human interaction).
+    Accepts the same body as /api/v1/extension/save (minus albums).
+    Internally resolves recommended albums from the source profile and saves
+    the photo into them automatically.
+
+    Response includes:
+      auto_assigned    – True if at least one album was found and the photo was added
+      fallback_required – True if no recommendations exist; extension should prompt the user
+      recommended_albums – list of albums the photo was added to
+    """
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({'message': 'Invalid or missing JSON body'}), 400
+
+    raw_url = (body.get('raw_url') or '').strip()
+    clean_url = (body.get('clean_url') or '').strip()
+    download_url = raw_url or clean_url
+    if not download_url:
+        return jsonify({'message': 'raw_url or clean_url is required'}), 400
+
+    title = (body.get('page_title') or '').strip() or 'Untitled'
+    page_url_raw = (body.get('page_url') or '').strip()
+    profile_url_raw = (body.get('profile_url') or '').strip()
+    source_profile = (extract_facebook_profile(profile_url_raw)
+                      or extract_facebook_profile(page_url_raw))
+    courtesy = sanitize_facebook_url(page_url_raw) or 'Unknown'
+
+    ranked_albums = _get_ranked_albums(source_profile)
+    fallback_required = len(ranked_albums) == 0
+
+    submission_folder = infer_submission_folder()
+    upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], submission_folder)
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = str(uuid.uuid4()) + ".jpg"
+
+    try:
+        result = do_download_image(upload_dir, download_url, filename)
+    except requests.exceptions.HTTPError as e:
+        app.logger.error("Auto-save HTTP error: %s", e)
+        return jsonify({'message': str(e)}), 502
+    except requests.exceptions.ConnectionError as e:
+        app.logger.error("Auto-save connection error: %s", e)
+        return jsonify({'message': str(e)}), 502
+    except requests.exceptions.RequestException as e:
+        app.logger.error("Auto-save request error: %s", e)
+        return jsonify({'message': str(e)}), 502
+
+    if isinstance(result, Response):
+        return result
+
+    filename = result['filename']
+    hash_md5 = result['hash_md5']
+
+    existing = db.photos.find_one({'hash_md5': hash_md5})
+    if existing is not None:
+        abs_file_path = os.path.join(upload_dir, filename)
+        pathlib.Path(abs_file_path).unlink(missing_ok=True)
+        col_albums = [
+            album['path']
+            for album in db.albums.find()
+            if existing['_id'] in album.get('photos', [])
+        ]
+        return jsonify(
+            message=f"{filename} exists!",
+            object_id=str(existing['_id']),
+            filename=existing['filename'],
+            submission_folder=existing['folder'],
+            exist_in_albums=','.join(col_albums),
+            auto_assigned=False,
+            fallback_required=fallback_required,
+            recommended_albums=ranked_albums,
+        )
+
+    object_id = save_metadata(submission_folder, filename, title, '', courtesy, hash_md5)
+    if source_profile:
+        db.photos.update_one({'_id': object_id}, {'$set': {'source_profile': source_profile}})
+    app.logger.info("Auto-save object_id=%s source_profile=%s albums=%s",
+                    str(object_id), source_profile, [a['path'] for a in ranked_albums])
+
+    added_albums = []
+    for album in ranked_albums:
+        r = db.albums.find_one_and_update(
+            {'path': album['path']},
+            {
+                '$addToSet': {'photos': object_id},
+                '$set': {'date_modified': datetime.now(TZ_LONDON)},
+            },
+            return_document=ReturnDocument.AFTER
+        )
+        if r is not None:
+            added_albums.append({'path': r['path'], 'title': r['title']})
+
+    return jsonify(
+        message=f"{filename} is a new photo.",
+        object_id=str(object_id),
+        filename=filename,
+        submission_folder=submission_folder,
+        title=title,
+        source_profile=source_profile,
+        auto_assigned=len(added_albums) > 0,
+        fallback_required=fallback_required,
+        recommended_albums=added_albums,
+    )
 
 
 @app.route('/photo/show/<string:unique_key>', methods=['GET'])
