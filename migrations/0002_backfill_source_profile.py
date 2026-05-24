@@ -1,6 +1,7 @@
 version = "0002_backfill_source_profile"
 description = "Backfill source_profile on photos that have a Facebook courtesy URL"
 
+from html import unescape as html_unescape
 from urllib.parse import urlparse, parse_qs
 
 _FB_RESERVED = {
@@ -13,7 +14,7 @@ _FB_RESERVED = {
 def _extract_facebook_profile(url):
     if not url or 'facebook.com' not in url:
         return None
-    parsed = urlparse(url)
+    parsed = urlparse(html_unescape(url))
     params = parse_qs(parsed.query)
     if 'id' in params:
         return params['id'][0]
