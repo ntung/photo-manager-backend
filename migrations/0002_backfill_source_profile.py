@@ -1,8 +1,8 @@
-version = "0002_backfill_source_profile"
-description = "Backfill source_profile on photos that have a Facebook courtesy URL"
-
 from html import unescape as html_unescape
 from urllib.parse import urlparse, parse_qs
+
+version = "0002_backfill_source_profile"
+description = "Backfill source_profile on photos that have a Facebook courtesy URL"
 
 _FB_RESERVED = {
     'photo', 'photos', 'groups', 'pages', 'events', 'media',
