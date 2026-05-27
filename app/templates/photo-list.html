@@ -34,7 +34,15 @@
         <div class="col">
             <h1>Photo Manager</h1>
             <div class="content">
-                {% include('_photo-upload-form.html') %}
+                <div class="d-flex gap-3">
+                    <div id="edit-preview-col" style="display:none;flex-shrink:0;">
+                        <img id="edit-photo-preview" src="" alt="Photo preview"
+                             style="max-width:200px;max-height:320px;object-fit:contain;border-radius:4px;">
+                    </div>
+                    <div class="flex-grow-1">
+                        {% include('_photo-upload-form.html') %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -173,6 +181,8 @@
         $("#photo-courtesy").val(photoCourtesy);
         //console.log(photoCourtesy);
         loadExistingAlbumsIntoSelect(photoObjectId);
+        document.getElementById('edit-photo-preview').src = '/photo/' + photoFolder + '/' + photoFileName;
+        document.getElementById('edit-preview-col').style.display = '';
         window.scrollTo(0, 0);
         $("#photo-edit-modal-form").modal("show");
         $("#btn-save").on("click", function () {
