@@ -1475,7 +1475,7 @@ def do_upload_photo(req):
         # TODO: figure out how to use the returned json below on the view
         message = filename + ' exists!'
         return jsonify(message=message,
-                       submission_folder=submission_folder,
+                       submission_folder=docs['folder'],
                        object_id=str(docs["_id"]),
                        filename=docs["filename"],
                        exist_in_albums=",".join(col_albums))
