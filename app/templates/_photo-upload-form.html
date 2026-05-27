@@ -90,6 +90,19 @@
     <div class="mb-3" id="action-button">
         <button class="btn btn-primary btn-photo-upload">Upload</button>
     </div>
+    <div id="duplicate-preview" class="mb-3" style="display:none;">
+        <div class="alert alert-warning d-flex align-items-center gap-3 p-2 mb-0">
+            <a id="duplicate-show-link" href="#" target="_blank">
+                <img id="duplicate-thumb" src="" alt="Existing photo"
+                     style="height:80px;width:80px;object-fit:cover;border-radius:4px;flex-shrink:0;">
+            </a>
+            <div>
+                <strong>This photo already exists.</strong><br>
+                <a id="duplicate-show-link2" href="#" target="_blank">View / Edit</a>
+                <span id="duplicate-albums" class="text-muted" style="font-size:0.85em;"></span>
+            </div>
+        </div>
+    </div>
 </form>
 <script>
     let fileList;
@@ -251,6 +264,7 @@
         // if it is omitted, we probably see the request hit twice in the logic implementation
         event.preventDefault();
         event.stopImmediatePropagation();
+        document.getElementById('duplicate-preview').style.display = 'none';
         const uploaded = extractData(event);
         if (uploaded === null) return;
         uploadPhoto(uploaded)
@@ -262,6 +276,18 @@
                         : JSON.stringify(data);
                     if (m.includes("exists")) {
                         toastr.warning(m);
+                        if (window.location.href.includes("/photo/upload")) {
+                            const photoUrl = '/photo/' + data['submission_folder'] + '/' + data['filename'];
+                            const showUrl = '/photo/show/' + data['object_id'];
+                            document.getElementById('duplicate-thumb').src = photoUrl;
+                            document.getElementById('duplicate-show-link').href = showUrl;
+                            document.getElementById('duplicate-show-link2').href = showUrl;
+                            const albumsEl = document.getElementById('duplicate-albums');
+                            albumsEl.textContent = data['exist_in_albums']
+                                ? ' • In: ' + data['exist_in_albums']
+                                : '';
+                            document.getElementById('duplicate-preview').style.display = '';
+                        }
                     } else {
                         toastr.success(m);
                     }
@@ -331,17 +357,40 @@
 
     $(".photo-courtesy").on("focusout", function () {
         let value = $(this).val();
-        if (value.includes("facebook.com")) {
-            let sanitized = value;
-            const qPos = sanitized.indexOf("?");
-            if (qPos > -1) {
-                const firstAmp = sanitized.indexOf("&", qPos + 1);
-                if (firstAmp > -1) {
-                    sanitized = sanitized.substring(0, firstAmp);
+        if (!value.includes("facebook.com")) return;
+
+        // Recommend albums using the full URL before sanitizing.
+        // If the pasted URL is a profile URL send it as profile_url for precise
+        // detection; otherwise send as page_url (falls back to set= extraction).
+        const isProfileUrl = value.includes('profile.php');
+        const params = isProfileUrl ? {profile_url: value} : {page_url: value};
+        $.getJSON('/api/v1/extension/recommend-albums', params, function (data) {
+            if (!data.albums || data.albums.length === 0) return;
+            const select = $('.upload-album-select');
+            const currentVals = select.val() || [];
+            const added = [];
+            data.albums.forEach(function (album) {
+                if ($('#upload-album-select option[value="' + album.path + '"]').length === 0) {
+                    select.append(new Option(album.title, album.path, false, false));
                 }
+                if (!currentVals.includes(album.path)) {
+                    currentVals.push(album.path);
+                    added.push(album.title);
+                }
+            });
+            if (added.length > 0) {
+                select.val(currentVals).trigger('change');
+                toastr.info("Suggested albums: " + added.join(", "));
             }
-            console.log(sanitized);
-            $(this).val(sanitized);
+        });
+
+        // Sanitize after recommendation call
+        const qPos = value.indexOf("?");
+        if (qPos > -1) {
+            const firstAmp = value.indexOf("&", qPos + 1);
+            if (firstAmp > -1) {
+                $(this).val(value.substring(0, firstAmp));
+            }
         }
     });
 </script>

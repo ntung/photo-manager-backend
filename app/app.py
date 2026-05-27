@@ -12,6 +12,8 @@ import uuid
 from datetime import datetime, timedelta
 from functools import wraps
 from logging.config import dictConfig
+from html import unescape as html_unescape
+from urllib.parse import urlparse, parse_qs
 
 import bson
 import bson.json_util
@@ -192,6 +194,39 @@ def sanitize_facebook_url(url):
             if first_amp > -1:
                 url = url[:first_amp]
     return url
+
+
+# Top-level path segments that are Facebook features, not profile slugs
+_FB_RESERVED = {
+    'photo', 'photos', 'groups', 'pages', 'events', 'media',
+    'reel', 'reels', 'watch', 'marketplace', 'stories', 'profile',
+    'permalink', 'share',
+}
+
+
+def extract_facebook_profile(url):
+    """Return a stable profile identifier (slug or numeric ID) from a Facebook URL."""
+    if not url or 'facebook.com' not in url:
+        return None
+    parsed = urlparse(html_unescape(url))
+    params = parse_qs(parsed.query)
+    # profile.php?id=NNNN or any URL with explicit id= param
+    if 'id' in params:
+        return params['id'][0]
+    # /photo/?fbid=xxx&set=<prefix>.<id>[.<suffix>]
+    # Formats seen: a.<album_id>, pb.<profile_id>.<ts>, pcb.<profile_id>.<ts>
+    # The meaningful identifier is always the second segment.
+    if 'set' in params:
+        set_val = params['set'][0]
+        parts = set_val.split('.')
+        if len(parts) >= 2:
+            return parts[1]
+        return set_val
+    # /username/photos, /username/posts, /pageslug, etc.
+    path_parts = [p for p in parsed.path.split('/') if p]
+    if path_parts and path_parts[0] not in _FB_RESERVED:
+        return path_parts[0]
+    return None
 
 
 def save_metadata(_sub_folder, _filename, _title, _desc, _courtesy, _hash_md5):
@@ -1007,7 +1042,10 @@ def extension_save():
     Expected JSON body:
       raw_url     – original URL with auth/tracking params, used for download (required)
       clean_url   – stripped URL stored as photo metadata (required)
-      page_url    – source page URL, stored as courtesy
+      page_url    – photo page URL, stored as courtesy
+      profile_url – Facebook profile/page URL (profile.php?id=NNNN); preferred
+                    source for profile detection; falls back to page_url then
+                    the set= param in page_url as a last resort
       page_title  – page title, stored as photo title
       saved_at    – ISO timestamp from the extension (optional, informational)
     """
@@ -1022,7 +1060,11 @@ def extension_save():
         return jsonify({'message': 'raw_url or clean_url is required'}), 400
 
     title = (body.get('page_title') or '').strip() or 'Untitled'
-    courtesy = sanitize_facebook_url((body.get('page_url') or '').strip()) or 'Unknown'
+    page_url_raw = (body.get('page_url') or '').strip()
+    profile_url_raw = (body.get('profile_url') or '').strip()
+    source_profile = (extract_facebook_profile(profile_url_raw)
+                      or extract_facebook_profile(page_url_raw))
+    courtesy = sanitize_facebook_url(page_url_raw) or 'Unknown'
 
     app.logger.info("Extension save: download_url=%s", download_url)
 
@@ -1067,13 +1109,178 @@ def extension_save():
         )
 
     object_id = save_metadata(submission_folder, filename, title, '', courtesy, hash_md5)
-    app.logger.info("Photo object id: %s", str(object_id))
+    if source_profile:
+        db.photos.update_one({'_id': object_id}, {'$set': {'source_profile': source_profile}})
+    app.logger.info("Photo object id: %s source_profile: %s", str(object_id), source_profile)
+
+    added_albums = []
+    for album in body.get('albums') or []:
+        r = db.albums.find_one_and_update(
+            {'path': album['path']},
+            {
+                '$addToSet': {'photos': object_id},
+                '$set': {'date_modified': datetime.now(TZ_LONDON)},
+            },
+            return_document=ReturnDocument.AFTER
+        )
+        if r is not None:
+            added_albums.append({'path': r['path'], 'title': r['title']})
+
     return jsonify(
         message=f"{filename} is a new photo.",
         object_id=str(object_id),
         filename=filename,
         submission_folder=submission_folder,
         title=title,
+        source_profile=source_profile,
+        added_albums=added_albums,
+    )
+
+
+def _get_ranked_albums(source_profile):
+    """Return albums ranked by photo count for the given source_profile, or [] if none."""
+    if not source_profile:
+        return []
+    photo_ids = [
+        p['_id'] for p in db.photos.find({'source_profile': source_profile}, {'_id': 1})
+    ]
+    if not photo_ids:
+        return []
+    photo_id_set = set(photo_ids)
+    ranked = []
+    for album in db.albums.find(
+        {'photos': {'$in': photo_ids}}, {'path': 1, 'title': 1, 'photos': 1}
+    ):
+        count = sum(1 for pid in album.get('photos', []) if pid in photo_id_set)
+        ranked.append({'path': album['path'], 'title': album['title'], 'photo_count': count})
+    ranked.sort(key=lambda a: a['photo_count'], reverse=True)
+    return ranked
+
+
+@app.route('/api/v1/extension/recommend-albums', methods=['GET'])
+def extension_recommend_albums():
+    """
+    Suggest albums for a photo based on the Facebook profile.
+    Returns albums that already contain photos from the same profile,
+    ranked by number of matching photos (most populated first).
+    Query params: profile_url (preferred), page_url (fallback)
+    """
+    profile_url = request.args.get('profile_url', '').strip()
+    page_url = request.args.get('page_url', '').strip()
+    if not profile_url and not page_url:
+        return jsonify({'message': 'profile_url or page_url is required'}), 400
+
+    source_profile = (extract_facebook_profile(profile_url)
+                      or extract_facebook_profile(page_url))
+    ranked = _get_ranked_albums(source_profile)
+    return jsonify({'albums': ranked, 'source_profile': source_profile})
+
+
+@app.route('/api/v1/extension/auto-save', methods=['POST'])
+def extension_auto_save():
+    """
+    Combined recommend + save endpoint for Workflow B (no human interaction).
+    Accepts the same body as /api/v1/extension/save (minus albums).
+    Internally resolves recommended albums from the source profile and saves
+    the photo into them automatically.
+
+    Response includes:
+      auto_assigned    – True if at least one album was found and the photo was added
+      fallback_required – True if no recommendations exist; extension should prompt the user
+      recommended_albums – list of albums the photo was added to
+    """
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({'message': 'Invalid or missing JSON body'}), 400
+
+    raw_url = (body.get('raw_url') or '').strip()
+    clean_url = (body.get('clean_url') or '').strip()
+    download_url = raw_url or clean_url
+    if not download_url:
+        return jsonify({'message': 'raw_url or clean_url is required'}), 400
+
+    title = (body.get('page_title') or '').strip() or 'Untitled'
+    page_url_raw = (body.get('page_url') or '').strip()
+    profile_url_raw = (body.get('profile_url') or '').strip()
+    source_profile = (extract_facebook_profile(profile_url_raw)
+                      or extract_facebook_profile(page_url_raw))
+    courtesy = sanitize_facebook_url(page_url_raw) or 'Unknown'
+
+    ranked_albums = _get_ranked_albums(source_profile)
+    fallback_required = len(ranked_albums) == 0
+
+    submission_folder = infer_submission_folder()
+    upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], submission_folder)
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = str(uuid.uuid4()) + ".jpg"
+
+    try:
+        result = do_download_image(upload_dir, download_url, filename)
+    except requests.exceptions.HTTPError as e:
+        app.logger.error("Auto-save HTTP error: %s", e)
+        return jsonify({'message': str(e)}), 502
+    except requests.exceptions.ConnectionError as e:
+        app.logger.error("Auto-save connection error: %s", e)
+        return jsonify({'message': str(e)}), 502
+    except requests.exceptions.RequestException as e:
+        app.logger.error("Auto-save request error: %s", e)
+        return jsonify({'message': str(e)}), 502
+
+    if isinstance(result, Response):
+        return result
+
+    filename = result['filename']
+    hash_md5 = result['hash_md5']
+
+    existing = db.photos.find_one({'hash_md5': hash_md5})
+    if existing is not None:
+        abs_file_path = os.path.join(upload_dir, filename)
+        pathlib.Path(abs_file_path).unlink(missing_ok=True)
+        col_albums = [
+            album['path']
+            for album in db.albums.find()
+            if existing['_id'] in album.get('photos', [])
+        ]
+        return jsonify(
+            message=f"{filename} exists!",
+            object_id=str(existing['_id']),
+            filename=existing['filename'],
+            submission_folder=existing['folder'],
+            exist_in_albums=','.join(col_albums),
+            auto_assigned=False,
+            fallback_required=fallback_required,
+            recommended_albums=ranked_albums,
+        )
+
+    object_id = save_metadata(submission_folder, filename, title, '', courtesy, hash_md5)
+    if source_profile:
+        db.photos.update_one({'_id': object_id}, {'$set': {'source_profile': source_profile}})
+    app.logger.info("Auto-save object_id=%s source_profile=%s albums=%s",
+                    str(object_id), source_profile, [a['path'] for a in ranked_albums])
+
+    added_albums = []
+    for album in ranked_albums:
+        r = db.albums.find_one_and_update(
+            {'path': album['path']},
+            {
+                '$addToSet': {'photos': object_id},
+                '$set': {'date_modified': datetime.now(TZ_LONDON)},
+            },
+            return_document=ReturnDocument.AFTER
+        )
+        if r is not None:
+            added_albums.append({'path': r['path'], 'title': r['title']})
+
+    return jsonify(
+        message=f"{filename} is a new photo.",
+        object_id=str(object_id),
+        filename=filename,
+        submission_folder=submission_folder,
+        title=title,
+        source_profile=source_profile,
+        auto_assigned=len(added_albums) > 0,
+        fallback_required=fallback_required,
+        recommended_albums=added_albums,
     )
 
 
@@ -1268,7 +1475,7 @@ def do_upload_photo(req):
         # TODO: figure out how to use the returned json below on the view
         message = filename + ' exists!'
         return jsonify(message=message,
-                       submission_folder=submission_folder,
+                       submission_folder=docs['folder'],
                        object_id=str(docs["_id"]),
                        filename=docs["filename"],
                        exist_in_albums=",".join(col_albums))
@@ -1278,6 +1485,9 @@ def do_upload_photo(req):
     # save the file's metadata into MongoDB
     object_id = save_metadata(submission_folder, filename, title, description,
                               courtesy, hash_md5)
+    source_profile = extract_facebook_profile(courtesy)
+    if source_profile:
+        db.photos.update_one({'_id': object_id}, {'$set': {'source_profile': source_profile}})
     return {
         'message': message,
         'submission_folder': submission_folder,
