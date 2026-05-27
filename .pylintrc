@@ -1,0 +1,70 @@
+# This is a Pylint configuration file (.pylintrc)
+
+# ------------------------------------
+# General Configuration
+# ------------------------------------
+[MASTER]
+# A comma-separated list of package or module names to be excluded.
+# Exclude test files from analysis by default, as they often contain dummy data.
+# ignore=tests
+
+# ------------------------------------
+# MESSAGES CONTROL
+# ------------------------------------
+[MESSAGES CONTROL]
+# List of message identifiers (E, W, C, R, F) or names to disable.
+disable=
+    # C0114: Missing module docstring (Often skipped for small or simple files)
+    C0114,
+    # C0115: Missing class docstring (Allow simpler data structures without docstrings)
+    C0115,
+    # C0116: Missing function or method docstring (Allow simple getter/setter methods)
+    C0116,
+    # C0103: Invalid name (Allow shorter variable names like 'i', 'j' in loops)
+    C0103,
+    # W0613: Unused argument (Common in web frameworks where arguments are mandated)
+    W0613,
+    # R0903: Too few public methods (Allow simple classes that are primarily data containers)
+    R0903,
+    # R0913: Too many arguments (Sometimes necessary for complex initialization)
+    R0913
+
+# ------------------------------------
+# BASIC CODE STYLE (Convention Checks)
+# ------------------------------------
+[BASIC]
+# Regular expression for module names
+module-rgx=([a-z_][a-z0-9_]*)|([A-Z][a-z0-9]+)+
+
+# Naming style for constants (e.g., PI_VALUE)
+const-naming-style=UPPER_CASE
+
+# Naming style for variables (e.g., user_name)
+variable-naming-style=snake_case
+
+# Naming style for functions/methods (e.g., process_data)
+function-naming-style=snake_case
+
+# ------------------------------------
+# LAYOUT AND FORMATTING
+# ------------------------------------
+[FORMAT]
+# Maximum number of characters on a single line (Standard is 80 or 100)
+max-line-length=100
+
+# Number of spaces of indent for blocks
+indent-string='    '
+
+# Maximum number of lines in a module
+max-module-lines=700
+
+# Maximum number of branches in a function or method
+max-branches=12
+
+# ------------------------------------
+# TYPE CHECKING AND IMPORTS
+# ------------------------------------
+[TYPECHECK]
+# List of known to not be a member of any one of the defined classes.
+# Useful for libraries that use dynamic attribute access.
+# generated-members=

@@ -1,0 +1,396 @@
+<form method="post" enctype="multipart/form-data" id="upload-form">
+    <div class="mb-3">
+        <div id="drop-area">
+            <b
+                ><label for="photo-upload" class="form-label"
+                    >Browse OR Drag and Drop a photo here</label
+                ></b
+            >
+            <input
+                type="file"
+                id="photo-upload"
+                name="photo-upload"
+                multiple
+                class="form-control"
+                accept="image/png,image/jpeg,image/jpg"
+                title="Click here to add photos"
+            />
+        </div>
+        <br />
+        <strong
+            ><label for="photo-url" class="form-label"
+                >Image/Photo URL</label
+            ></strong
+        ><br />
+        <input
+            id="photo-url"
+            name="photo-url"
+            type="text"
+            placeholder="Image/Photo URL"
+            class="form-control"
+        />
+    </div>
+
+    <div class="mb-3">
+        <strong
+            ><label for="photo-title" class="form-label">Title</label></strong
+        ><br />
+        <input
+            id="photo-title"
+            name="title"
+            type="text"
+            placeholder="Title of photo"
+            class="form-control"
+        />
+    </div>
+    <div class="mb-3">
+        <strong
+            ><label for="photo-description" class="form-label"
+                >Description</label
+            ></strong
+        ><br />
+        <textarea
+            id="photo-description"
+            name="description"
+            placeholder="Provide a description"
+            class="form-control photo-description"
+        ></textarea>
+    </div>
+    <div class="mb-3">
+        <strong
+            ><label for="photo-courtesy" class="form-label"
+                >Credit/Courtesy</label
+            ></strong
+        ><br />
+        <input
+            id="photo-courtesy"
+            name="courtesy"
+            type="text"
+            placeholder="Credit or Courtesy"
+            class="form-control photo-courtesy"
+        />
+    </div>
+    <!--<div class="mb-3">
+        <strong><label for="photo-hashtags" class="form-label">Hashtags</label></strong><br/>
+        <input id="photo-hashtags" name="hashtags" type="text" placeholder="Hashtags"
+               class="form-control"/>
+    </div>
+    <div class="mb-3">
+        <strong><label for="photo-keywords" class="form-label">Keywords</label></strong><br/>
+        <input id="photo-keywords" name="keywords" type="text" placeholder="Keywords"
+               class="form-control"/>
+    </div>-->
+    <div class="mb-3">
+        <strong><label for="upload-album-select" class="form-label">Add to Albums</label></strong><br/>
+        <label for="upload-album-select" style="display: none"></label>
+        <select id="upload-album-select" name="albums" class="form-select upload-album-select"
+                data-placeholder="Choose albums (optional)" multiple>
+        </select>
+    </div>
+    <div class="mb-3" id="action-button">
+        <button class="btn btn-primary btn-photo-upload">Upload</button>
+    </div>
+    <div id="duplicate-preview" class="mb-3" style="display:none;">
+        <div class="alert alert-warning d-flex align-items-center gap-3 p-2 mb-0">
+            <a id="duplicate-show-link" href="#" target="_blank">
+                <img id="duplicate-thumb" src="" alt="Existing photo"
+                     style="height:80px;width:80px;object-fit:cover;border-radius:4px;flex-shrink:0;">
+            </a>
+            <div>
+                <strong>This photo already exists.</strong><br>
+                <a id="duplicate-show-link2" href="#" target="_blank">View / Edit</a>
+                <span id="duplicate-albums" class="text-muted" style="font-size:0.85em;"></span>
+            </div>
+        </div>
+    </div>
+</form>
+<script>
+    let fileList;
+    let contentType = "application/json; charset=utf-8";
+    let editInitialAlbumPaths = new Set();
+
+    $(function () {
+        $('.upload-album-select').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Choose albums (optional)',
+            closeOnSelect: false,
+            allowClear: true,
+        });
+
+        $.getJSON('/albums', function (data) {
+            const select = $('#upload-album-select');
+            data.forEach(function (album) {
+                select.append(new Option(album.title, album.path, false, false));
+            });
+            select.trigger('change');
+        });
+    });
+
+    function loadExistingAlbumsIntoSelect(photoObjectId) {
+        editInitialAlbumPaths = new Set();
+        const inAlbumsEl = document.getElementById('in-albums-' + photoObjectId);
+        const paths = [];
+        if (inAlbumsEl) {
+            $(inAlbumsEl).find('a').each(function () {
+                const path = $(this).attr('href').replace('/albums/view/', '');
+                const title = $(this).text().trim();
+                if (path) {
+                    editInitialAlbumPaths.add(path);
+                    paths.push(path);
+                    // Add option if the AJAX to load all albums hasn't completed yet
+                    if ($('#upload-album-select option[value="' + path + '"]').length === 0) {
+                        $('#upload-album-select').append(new Option(title, path, false, false));
+                    }
+                }
+            });
+        }
+        $('.upload-album-select').val(paths).trigger('change');
+    }
+
+    function syncPhotoAlbums(photoObjectId, photoFolder, photoFileName) {
+        const currentData = $('.upload-album-select').select2('data');
+        const currentPaths = new Set(currentData.map(a => a.id));
+        const addedAlbums = currentData
+            .filter(a => !editInitialAlbumPaths.has(a.id))
+            .map(a => ({ path: a.id, title: a.text, photo_object_id: photoObjectId }));
+        const removedPaths = [...editInitialAlbumPaths].filter(p => !currentPaths.has(p));
+        if (addedAlbums.length > 0) {
+            $.ajax({
+                url: "/photo/save-photo-to-albums/",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "photo-object-id": photoObjectId,
+                    "photo-folder": photoFolder,
+                    "photo-filename": photoFileName,
+                    "newly-added-albums": addedAlbums
+                })
+            });
+        }
+        removedPaths.forEach(function (albumPath) {
+            $.ajax({
+                url: "/albums/remove-photos",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "album-path": albumPath,
+                    "removed-photos": [{ "photo-object-id": photoObjectId }]
+                })
+            });
+        });
+    }
+
+    // Listen for the moment the file selection changes (i.e., the user selects files)
+    $("#photo-upload").on("change", function (event) {
+        event.preventDefault();
+        // 'this' inside the handler refers to the native DOM element
+        const fileInput = this;
+
+        // This is where you access the files property
+        fileList = fileInput.files;
+
+        if (fileList && fileList.length > 0) {
+            console.log("Files are now defined and ready:", fileList);
+            // Now you can start reading or uploading them
+        } else {
+            // User may have opened the dialog and clicked cancel
+            console.log("No files selected.");
+        }
+    });
+
+    function isValidUrl(value) {
+        try {
+            const u = new URL(value);
+            return u.protocol === 'http:' || u.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    }
+
+    function extractData(event) {
+        event.preventDefault();
+
+        const photoUrl = $("#photo-url").val().trim();
+        if (photoUrl && !isValidUrl(photoUrl)) {
+            toastr.error("Image/Photo URL is not valid. It must start with http:// or https://");
+            return null;
+        }
+
+        const title = $("#photo-title").val();
+        const description = $("#photo-description").val();
+        const courtesy = $("#photo-courtesy").val();
+
+        const metaData = {
+            "photo-url": photoUrl,
+            title: title,
+            description: description,
+            courtesy: courtesy,
+        };
+        const strMetaData = JSON.stringify(metaData);
+        const formData = new FormData();
+        formData.append("metadata", strMetaData);
+        if (fileList !== undefined) {
+            const photoUpload = fileList[0]; // ("#photo-upload").get[0];
+            formData.append("file", photoUpload);
+            contentType = "multipart/form-data";
+        }
+        return formData;
+    }
+
+    async function uploadPhoto(data) {
+        const URL = "/photo/upload";
+        let params = {
+            method: "POST",
+            body: data,
+        };
+
+        const result = await fetch(URL, params);
+        if (!result.ok) {
+            throw new Error("HTTP error " + result.status);
+        }
+        try {
+            return await result.json();
+        } catch {
+            // Note: ES2019 allows optional `catch` bindings
+            this.dataError = true;
+        }
+    }
+
+    $(".btn-photo-upload").on("click", function (event) {
+        // the statement below is so important.
+        // if it is omitted, we probably see the request hit twice in the logic implementation
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        document.getElementById('duplicate-preview').style.display = 'none';
+        const uploaded = extractData(event);
+        if (uploaded === null) return;
+        uploadPhoto(uploaded)
+            .then(async (data) => {
+                if (data !== undefined) {
+                    console.log(data);
+                    let m = data["message"]
+                        ? data["message"]
+                        : JSON.stringify(data);
+                    if (m.includes("exists")) {
+                        toastr.warning(m);
+                        if (window.location.href.includes("/photo/upload")) {
+                            const photoUrl = '/photo/' + data['submission_folder'] + '/' + data['filename'];
+                            const showUrl = '/photo/show/' + data['object_id'];
+                            document.getElementById('duplicate-thumb').src = photoUrl;
+                            document.getElementById('duplicate-show-link').href = showUrl;
+                            document.getElementById('duplicate-show-link2').href = showUrl;
+                            const albumsEl = document.getElementById('duplicate-albums');
+                            albumsEl.textContent = data['exist_in_albums']
+                                ? ' • In: ' + data['exist_in_albums']
+                                : '';
+                            document.getElementById('duplicate-preview').style.display = '';
+                        }
+                    } else {
+                        toastr.success(m);
+                    }
+
+                    const selectedAlbums = $('.upload-album-select').select2('data');
+                    if (selectedAlbums.length > 0 && data["object_id"] && !m.includes("exists")) {
+                        const albums = selectedAlbums.map(item => ({
+                            path: item.id,
+                            title: item.text,
+                            photo_object_id: data["object_id"]
+                        }));
+                        try {
+                            await $.ajax({
+                                url: "/photo/save-photo-to-albums/",
+                                method: "POST",
+                                contentType: "application/json; charset=utf-8",
+                                dataType: "json",
+                                data: JSON.stringify({
+                                    "photo-object-id": data["object_id"],
+                                    "photo-folder": data["submission_folder"],
+                                    "photo-filename": data["filename"],
+                                    "newly-added-albums": albums
+                                })
+                            });
+                            const titles = selectedAlbums.map(a => a.text).join(", ");
+                            toastr.success("Added to albums: " + titles);
+                        } catch {
+                            toastr.error("Upload succeeded but failed to add photo to albums.");
+                        }
+                    }
+                } else {
+                    toastr.error("No photo provided!");
+                }
+                // clear all the fields
+                $("#upload-form")[0].reset();
+                $('.upload-album-select').val(null).trigger('change');
+            })
+            .catch((error) => {
+                console.error("Error: ", error);
+                toastr.error("Upload failed: " + error.message);
+            })
+            .finally(() => {
+                console.log("Finished the photo upload");
+                if (window.location.href.includes("/photo/list")) {
+                    window.location.reload();
+                } else if (window.location.href.includes("/photo/upload")) {
+                    // window.location.reload();
+                    // console.log("Upload complete. Now load the photo into the preview placeholder!");
+                    // Load the photo into the preview placeholder
+                    // const previewPlaceholder = document.getElementById(
+                    //     "preview-placeholder",
+                    // );
+                    // previewPlaceholder.src = URL.createObjectURL(file);
+                }
+            });
+
+        //toggleLockAndUnlockForm(true);
+    });
+
+    $(".photo-description").on("focusout", function () {
+        let value = $(this).val();
+        if (value.length !== 0) {
+            value = value.trimEnd();
+            $(this).val(value);
+        }
+    });
+
+    $(".photo-courtesy").on("focusout", function () {
+        let value = $(this).val();
+        if (!value.includes("facebook.com")) return;
+
+        // Recommend albums using the full URL before sanitizing.
+        // If the pasted URL is a profile URL send it as profile_url for precise
+        // detection; otherwise send as page_url (falls back to set= extraction).
+        const isProfileUrl = value.includes('profile.php');
+        const params = isProfileUrl ? {profile_url: value} : {page_url: value};
+        $.getJSON('/api/v1/extension/recommend-albums', params, function (data) {
+            if (!data.albums || data.albums.length === 0) return;
+            const select = $('.upload-album-select');
+            const currentVals = select.val() || [];
+            const added = [];
+            data.albums.forEach(function (album) {
+                if ($('#upload-album-select option[value="' + album.path + '"]').length === 0) {
+                    select.append(new Option(album.title, album.path, false, false));
+                }
+                if (!currentVals.includes(album.path)) {
+                    currentVals.push(album.path);
+                    added.push(album.title);
+                }
+            });
+            if (added.length > 0) {
+                select.val(currentVals).trigger('change');
+                toastr.info("Suggested albums: " + added.join(", "));
+            }
+        });
+
+        // Sanitize after recommendation call
+        const qPos = value.indexOf("?");
+        if (qPos > -1) {
+            const firstAmp = value.indexOf("&", qPos + 1);
+            if (firstAmp > -1) {
+                $(this).val(value.substring(0, firstAmp));
+            }
+        }
+    });
+</script>

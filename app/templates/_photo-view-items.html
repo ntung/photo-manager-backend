@@ -1,0 +1,22 @@
+{% for photo in photos %}
+{% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
+<div class="gallery-item">
+    <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-fslightbox="gallery">
+        <img src="{{ photo_url }}" style="width:100%" alt="{{ photo['title'] }}" loading="lazy">
+    </a>
+    <div class="gallery-item-actions">
+        <p id="in-albums-{{ photo['id'] }}" class="gallery-in-albums">
+            {% for album in photo['albums'] %}
+                <a href="/albums/view/{{ album['path'] }}">{{ album['title'] }}</a>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        <button type="button" class="btn btn-sm btn-primary select-albums-modal-form"
+                data-bs-toggle="modal" data-bs-target="#select-albums-modal-form"
+                data-photo-object-id="{{ photo['id'] }}"
+                data-photo-folder="{{ photo['folder'] }}"
+                data-photo-filename="{{ photo['filename'] }}">
+            + Album
+        </button>
+    </div>
+</div>
+{% endfor %}

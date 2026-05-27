@@ -1,0 +1,115 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">Photo Manager</a>
+
+        <!-- Hamburger button -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Menu items -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/list">List</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/view">View</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/albums">Albums</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/upload">Upload</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/photo/todo-list">ToDoList</a>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+</nav>
+<style>
+    /* The navigation bar */
+.pm-menubar {
+  overflow: hidden;
+  background-color: #333;
+  position: fixed; /* Set the pm-menubar to fixed position */
+  top: 0; /* Position the pm-menubar at the top of the page */
+  width: 100%; /* Full width */
+}
+
+/* Links inside the pm-menubar */
+.pm-menubar a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* Change background on mouse-over */
+.pm-menubar a:hover {
+  background: #ddd;
+  color: black;
+}
+
+{#.active {
+  background-color: lightcoral
+}#}
+</style>
+<script>
+  {#const menus = [{"/albums": "Albums"}, {"/": "Home"}, {"/list": "List"}, {"/view": "View"}, {"/todo-list": "ToDo List"}];
+  $('.menubar-item').removeClass("active");
+  const href = window.location.href;
+  let path = href.substring(href.lastIndexOf("/"));
+  if (path === "/") {
+    path = "home";
+  } else {
+    path = path.substring(1);
+  }
+  $('#pm-para-menubar a[id="pm-menubar-' + path + '"]').addClass('active');
+
+  $(document).ready(function() {
+      const $btnUpload = $("#pm-right-menubar-link-upload-a-photo");
+      $btnUpload.on("click", function() {
+          $("#photo-edit-modal-form").modal('show');
+      });
+  });#}
+
+//   $(function() {
+//     $('#pm-para-menubar a').on("click", function() {
+//       //alert($('.menubar-item').length);
+//       $('.menubar-item').removeClass("active");
+//       $(this).addClass('active');
+//       /*
+//       const url = window.location.pathname, 
+//       urlRegExp = new RegExp(url.replace(/\/$/,'') + "$"); // create regexp to match current url pathname and remove trailing slash if present as it could collide with the link in navigation in case trailing slash wasn't present there
+//       // now grab every link from the navigation
+//       $('#pm-para-menu a').each(function(){
+//           // and test its normalized href against the url pathname regexp
+//           if (urlRegExp.test(this.href.replace(/\/$/,''))){
+//               $(this).addClass('active');
+//           }
+//       });
+//       */
+//     });
+//   });
+  
+//   $(document).ready(function () {
+//     var url = window.location;
+//     // Will only work if string in href matches with location
+//     $('#pm-para-menubar a[href="' + url + '"]').parent().addClass('active');
+
+//     // Will also work for relative and absolute hrefs
+//     //$('#navbar .navbar-nav li a').filter(function () {
+//     //  return this.href == url;
+//     //}).parent().addClass('active').parent().parent().addClass('active');
+// });
+
+</script>

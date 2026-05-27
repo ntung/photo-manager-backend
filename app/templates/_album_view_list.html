@@ -1,0 +1,185 @@
+<style>
+    .original {
+        white-space: pre-line;
+    }
+</style>
+<div id="photo-gallery" class="my-gallery">
+{% include("_album_view_photo_rows.html") %}
+</div>
+
+{% include('_photo-edit-modal-form.html') %}
+{% include('_albums-select2-modal-form.html') %}
+<script>
+{% if status == "FOUND" %}
+    orgPhotoOrders = [];
+    order = null;
+
+    $(function () {
+        // below is used to drag
+        let i = 1;
+        {% for photo in photos %}
+            {#$("#{{photo.get('_id')}}").sortable();#}
+            order = {
+                "{{photo.get('_id')}}": i
+            };
+            orgPhotoOrders.push(order);
+            i++;
+        {% endfor %}
+        console.log("Nb. of photos", orgPhotoOrders.length);
+        // below is used to set sortable
+        $(".my-gallery").sortable({
+            cursor: 'move',
+            distance: 30,
+            opacity: 0.6,
+            scrollSensitivity: 40,
+            update: function (event, ui) {
+                const photoOrder = $(this).sortable('toArray'); //.toString();
+                const body = {
+                    "album-object-id": "{{album_object_id}}",
+                    "photos": photoOrder
+                }
+                if (photoOrder.length > 0) {
+                    updateOrder(body);
+                }
+            }
+        });
+
+        // load and show the photo description as it was stored in MongoDB with \r\n characters
+        const value = loadLocalStorageHowToViewPhotoDescription("#btn-view-original-description");
+        toggleViewPhotoOriginalDescription(value);
+    });
+
+    function updateOrder(body) {
+        console.log(body);
+        if (body["photos"].length > 0) {
+            const URL = "/albums/reorder-photos"
+            fetch(URL, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json; charset=utf-8',
+                    'Content-Type': 'application/json; charset=utf-8'
+                },
+                body: JSON.stringify(body)
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response failed!!!');
+                }
+                return response.json();
+            }).then(data => {
+                console.log(data);
+            }).catch(error => {
+                console.error('Error: ', error);
+            });
+        }
+    }
+
+    $("#btn-view-original-description").on("click", function() {
+        console.log("clicked me!");
+        const value = updateLocalStorageHowToViewPhotoDescription(this);
+        toggleViewPhotoOriginalDescription(value);
+    });
+
+    function updateLocalStorageHowToViewPhotoDescription(element) {
+        let currentValue = localStorage.getItem("view-photo-original-description");
+        let value;
+        if (currentValue === null) {
+            // set true as the default
+            value = "true";
+        } else {
+            value = currentValue === "true" ? false : true;
+        }
+        currentValue = value.toString()
+        $(element).prop("checked", value);
+        localStorage.setItem("view-photo-original-description", currentValue);
+        return value;
+    }
+
+    function loadLocalStorageHowToViewPhotoDescription(element) {
+        let currentValue = localStorage.getItem("view-photo-original-description");
+        let value;
+        if (currentValue === null) {
+            // set true as the default
+            value = true;
+        } else {
+            value = currentValue === "true";
+        }
+        $(element).prop("checked", value);
+        return value;
+    }
+
+    function toggleViewPhotoOriginalDescription(value) {
+        if (value) {
+            $("div[id^='photo-description-']").addClass("original");
+        } else {
+            $("div[id^='photo-description-']").removeClass("original");
+        }
+    }
+
+    $(document).on("click", '.photo-row-title', function() {
+        // Change the name of Upload to Save button
+        $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
+        const photoObjectId = $(this).attr("data-photo-object-id");
+        const photoFolder = $(this).attr("data-photo-folder");
+        const photoFileName = $(this).attr("data-photo-filename");
+        const photoTitle = $('#photo-title-' + photoObjectId)[0].innerText;
+        $("#photo-title").val(photoTitle);
+        const photoDescription = $('#photo-description-' + photoObjectId)[0].innerHTML;
+        $("#photo-description").val(photoDescription);
+        const photoCourtesy = $('#original-photo-courtesy-' + photoObjectId)[0];
+        $("#photo-courtesy").val(photoCourtesy);
+        loadExistingAlbumsIntoSelect(photoObjectId);
+        // Also pre-select the current album (it appears in "Other albums" only for other photos)
+        const currentAlbumPath = '{{ album_path }}';
+        const currentAlbumTitle = '{{ album_title }}';
+        const existingPaths = [...editInitialAlbumPaths];
+        if (currentAlbumPath && !editInitialAlbumPaths.has(currentAlbumPath)) {
+            editInitialAlbumPaths.add(currentAlbumPath);
+            existingPaths.push(currentAlbumPath);
+            if ($('#upload-album-select option[value="' + currentAlbumPath + '"]').length === 0) {
+                $('#upload-album-select').append(new Option(currentAlbumTitle, currentAlbumPath, false, false));
+            }
+            $('.upload-album-select').val(existingPaths).trigger('change');
+        }
+
+        $("#btn-save").on("click", function () {
+            console.log("saving...");
+            $.ajax({
+                url: "/photo/update",
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify({
+                    "photo-object-id": photoObjectId,
+                    "photo-title": $("#photo-title").val(),
+                    "photo-description": $("#photo-description").val(),
+                    "photo-courtesy": $("#photo-courtesy").val()
+                }),
+                beforeSend: function (xhr) {
+                    console.log("Sending data to server...");
+                },
+                success: function (data) {
+                    toastr.success("Updated successfully! The page is refreshing within 1 second.");
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                },
+                error: function () {
+                    toastr.error("Failed to save changes.");
+                }
+            });
+            try {
+                syncPhotoAlbums(photoObjectId, photoFolder, photoFileName);
+            } catch (e) {
+                console.error("Album sync error:", e);
+            }
+        });
+    });
+
+    $(document).on("click", ".add-to-other-albums", function() {
+        // this will initialise the following global variables which are being used in the modal form
+        photoObjectId = $(this).attr("data-photo-object-id");
+        photoFolder = $(this).attr("data-photo-folder");
+        photoFileName = $(this).attr("data-photo-filename");
+    });
+{% endif %}
+</script>

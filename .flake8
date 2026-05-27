@@ -1,0 +1,42 @@
+[flake8]
+# --- CORE CONFIGURATION ---
+
+# 1. Rules to IGNORE
+# E203: Whitespace before ':' (Often conflicts with black formatter)
+# W503: Line break before binary operator (Many people prefer W504/after the operator)
+# C901: Too complex (We handle this with max-complexity instead)
+# F401: Unused import (Often ignored locally, but can be useful globally)
+ignore = E203, W503, C901, F401
+
+# 2. Maximum Line Length
+# Common to increase this from the default 79 to 100 or 120.
+max-line-length = 100
+
+# 3. Maximum Cyclomatic Complexity
+# Default is 10. Increasing it slightly allows for more complex functions.
+max-complexity = 12
+
+# 4. Directories/Files to EXCLUDE
+# These are commonly third-party code, auto-generated files, or configuration directories.
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    build,
+    dist,
+    docs,
+    tests/* # Note: you might want to remove 'tests/*' if you want strict linting there!
+
+# 5. Show file names on output
+show-source = True
+
+# --- OPTIONAL PLUGINS (If installed) ---
+
+# Example: If you install the flake8-docstrings plugin (Dxxx rules)
+# You might want to ignore the missing docstring rule for test methods
+# per default settings
+# inline-quotes = "
+# docstring-convention = google
+# per-file-ignores =
+#     tests/*.py: D103

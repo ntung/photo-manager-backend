@@ -1,41 +1,58 @@
 #!/usr/bin/env python3
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+import datetime
+import glob
 import hashlib
 import itertools
 import os
+import pathlib
+import random
 import shutil
 import tempfile
+import uuid
 
 import requests
-import uuid
-import random
-
-# import the MongoClient class of the PyMongo library
-from pymongo import MongoClient, ReturnDocument
-
-# import ObjectID from MongoDB's BSON library
-# (use pip3 to install bson)
 from bson import ObjectId
+from bson.errors import InvalidId
+from dotenv import load_dotenv
+from pymongo import MongoClient, ReturnDocument
 
 from utils import PhotoManager
 from utils.PhotoManager import InitPM
 
 
 def download_save_image():
-    img_url = ("https://scontent.flhr1-2.fna.fbcdn.net/v/t39.30808-6/456797640_122168154668133782_4442476498527671168_n"
-               ".jpg?_nc_cat=110&ccb=1-7&_nc_sid=833d8c&_nc_ohc=Jil3bbXaYo4Q7kNvgH_dtip&_nc_ht=scontent.flhr1-2.fna&oh"
-               "=00_AYDfF3KucL2RV4FrneHlWM9wUBHXIZqFoPFtR0CwQ4tZUg&oe=66CFF00A")
     img_url = (
-        "https://scontent.flhr1-2.fna.fbcdn.net/v/t39.30808-6/456695100_10232212218352261_5748597674855465029_n.jpg"
-        "?_nc_cat=102&ccb=1-7&_nc_sid=127cfc&_nc_ohc=p01GlNjbC1YQ7kNvgGdOe9w&_nc_ht=scontent.flhr1-2.fna&oh"
-        "=00_AYBPGPf-NWdkMkE8qAox2i0MK62fjbaqzqsZzyof9yuA3Q&oe=66D00590")
-    img_url = ("https://scontent.flhr1-1.fna.fbcdn.net/v/t39.30808-6/456406141_122167657232133782_5336542751530079681_n"
-               ".jpg?_nc_cat=107&ccb=1-7&_nc_sid=833d8c&_nc_ohc=rBjXcYld-LAQ7kNvgE4Sqeo&_nc_ht=scontent.flhr1-1.fna&oh"
-               "=00_AYABNpdsL1eunGYTIV0gSWVnmbwbJlV4lCy1ohNpfDZZNw&oe=66CFE27D")
-    img_url = ("https://scontent-lhr8-1.xx.fbcdn.net/v/t39.30808-6/456459176_10222302455374329_8715846420532793352_n"
-               ".jpg?_nc_cat=111&ccb=1-7&_nc_sid=f727a1&_nc_ohc=sE5iT2-HUe8Q7kNvgFUZsor&_nc_ht=scontent-lhr8-1.xx"
-               "&_nc_gid=A0X-Xx9rQwF20iS5lQ41OKl&oh=00_AYAMu2l92viMsCKxYlD5WHvOgvngumHUJcoa5LGlwmiCbA&oe=66D66CA0")
-    res = requests.get(img_url)
+        "https://scontent.flhr1-2.fna.fbcdn.net/v/t39.30808-6/"
+        "456797640_122168154668133782_4442476498527671168_n"
+        ".jpg?_nc_cat=110&ccb=1-7&_nc_sid=833d8c"
+        "&_nc_ohc=Jil3bbXaYo4Q7kNvgH_dtip"
+        "&_nc_ht=scontent.flhr1-2.fna&oh"
+        "=00_AYDfF3KucL2RV4FrneHlWM9wUBHXIZqFoPFtR0CwQ4tZUg&oe=66CFF00A"
+    )
+    img_url = (
+        "https://scontent.flhr1-2.fna.fbcdn.net/v/t39.30808-6/"
+        "456695100_10232212218352261_5748597674855465029_n.jpg"
+        "?_nc_cat=102&ccb=1-7&_nc_sid=127cfc"
+        "&_nc_ohc=p01GlNjbC1YQ7kNvgGdOe9w&_nc_ht=scontent.flhr1-2.fna&oh"
+        "=00_AYBPGPf-NWdkMkE8qAox2i0MK62fjbaqzqsZzyof9yuA3Q&oe=66D00590"
+    )
+    img_url = (
+        "https://scontent.flhr1-1.fna.fbcdn.net/v/t39.30808-6/"
+        "456406141_122167657232133782_5336542751530079681_n"
+        ".jpg?_nc_cat=107&ccb=1-7&_nc_sid=833d8c"
+        "&_nc_ohc=rBjXcYld-LAQ7kNvgE4Sqeo&_nc_ht=scontent.flhr1-1.fna&oh"
+        "=00_AYABNpdsL1eunGYTIV0gSWVnmbwbJlV4lCy1ohNpfDZZNw&oe=66CFE27D"
+    )
+    img_url = (
+        "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.30808-6/"
+        "456459176_10222302455374329_8715846420532793352_n"
+        ".jpg?_nc_cat=111&ccb=1-7&_nc_sid=f727a1"
+        "&_nc_ohc=sE5iT2-HUe8Q7kNvgFUZsor&_nc_ht=scontent-lhr8-1.xx"
+        "&_nc_gid=A0X-Xx9rQwF20iS5lQ41OKl"
+        "&oh=00_AYAMu2l92viMsCKxYlD5WHvOgvngumHUJcoa5LGlwmiCbA&oe=66D66CA0"
+    )
+    res = requests.get(img_url, timeout=30)
     print(res.status_code)
     # Request the image and save it:
     out_filename = str(uuid.uuid4())
@@ -75,7 +92,7 @@ def update_mongodb_doc():
 
     # see if the MongoDB collection has documents on it
     total_docs = col.count_documents({})
-    print("{} collection has {} total documents.".format(col.name, str(total_docs)))
+    print(f"{col.name} collection has {total_docs} total documents.")
     # call the Collection class's methods using the db object
 
     try:
@@ -84,12 +101,12 @@ def update_mongodb_doc():
             ObjectId("66cd552aeac91d7825fce042")
         )
     except NameError as err:
-        find_result = None
+        find_result = None  # noqa: F841
         print(err, "-- Use pip3 to install bson")
         print("Import the 'ObjectId' class from the 'bson' library")
 
     # print the document's contents if found
-    if find_result is not None and type(find_result) is dict:
+    if find_result is not None and isinstance(find_result, dict):
         print("found doc: ", find_result)
         pretty(find_result)
 
@@ -119,10 +136,13 @@ def update_albums():
         for doc in albums.find():
             if 'date_created' not in doc:
                 doc['date_created'] = doc['date_modified']
-                db["albums"].update_one({"_id": ObjectId(doc.get("_id"))}, {"$set": doc}, upsert=True)
+                db["albums"].update_one(
+                    {"_id": ObjectId(doc.get("_id"))},
+                    {"$set": doc},
+                    upsert=True
+                )
 
     except NameError as err:
-        find_result = None
         print(err, "-- Use pip3 to install bson")
         print("Import the 'ObjectId' class from the 'bson' library")
 
@@ -137,10 +157,6 @@ def pretty(d, indent=0):
 
 
 def get_date_created_n_modified_then_update_db_photos():
-    import datetime
-    import glob
-    import pathlib
-
     # create database and collection instances
     mongo_client = MongoClient('mongodb://localhost:27017')
     db = mongo_client.flask_db
@@ -166,14 +182,16 @@ def get_date_created_n_modified_then_update_db_photos():
         # check md5
         hash_md5_str = ""
         md5_hash = hashlib.md5()
-        with open(file, "rb") as f:
+        with open(file, "rb") as fh:
             # Read and update hash in chunks of 4K
-            for byte_block in iter(lambda: f.read(4096), b""):
+            # pylint: disable-next=cell-var-from-loop
+            for byte_block in iter(lambda: fh.read(4096), b""):
                 md5_hash.update(byte_block)
             hash_md5_str = md5_hash.hexdigest()
         # print(doc)
         for photo in doc:
-            # if photo is not None and "date_uploaded" not in photo and "date_modified" not in photo:
+            # if photo is not None
+            #     and "date_uploaded" not in photo and "date_modified" not in photo:
             if photo is not None and "hash_md5" not in photo:
                 # print("created: date created and modified")
                 print("updated hash md5")
@@ -196,7 +214,10 @@ def get_date_created_n_modified_then_update_db_photos():
 
 
 def copy_and_move_file():
-    source = "/var/folders/xl/k19y1yrx38s6kw44qn5m5lfr0000gp/T/3a015210-2c15-4dd9-8556-bcf9f1fc9b8e.jpg"
+    source = (
+        "/var/folders/xl/k19y1yrx38s6kw44qn5m5lfr0000gp/T/"
+        "3a015210-2c15-4dd9-8556-bcf9f1fc9b8e.jpg"
+    )
     target = "/Users/tnguyen/tmp/001.jpg"
     # shutil.copyfile(source, target)
     shutil.copy2(source, target)
@@ -224,7 +245,7 @@ def check_cur_sub_folder():
     pm_init = PhotoManager.InitPM(UPLOAD_FOLDER, "aaaa")
     submission_folders_dict = pm_init.submission_folder_dict()
     r = pm_init.infer_current_submission_folder(submission_folders_dict)
-    print("current submission folder: {}".format(r))
+    print(f"current submission folder: {r}")
 
 
 def get_series(length=4, characters='abcdefghijklmnopqrstuvwxyz'):
@@ -255,14 +276,14 @@ def test_local_biomodels():
             "Content-Type": "text/html"
         }
         params = {"format": "html"}
-        response = requests.get(URL, headers=headers, params=params)
-        print("{}\t{}".format(m_id, response.status_code))
+        response = requests.get(URL, headers=headers, params=params, timeout=30)
+        print(f"{m_id}\t{response.status_code}")
 
 
 def test_biomodels():
     URL = "https://www.ebi.ac.uk/biomodels/model/identifiers?format=json"
     # URL = "https://wwwdev.ebi.ac.uk/biomodels/model/identifiers?format=json"
-    response = requests.get(URL)
+    response = requests.get(URL, timeout=30)
     dict_data = response.json()
     # print(dict_data['models'])
     sample = random.sample(dict_data['models'], 100)
@@ -274,13 +295,105 @@ def test_biomodels():
             # "Content-Type": "application/json"
         }
         params = {"format": "html"}
-        response = requests.get(URL, headers=headers, params=params)
-        print("{}\t{}".format(m_id, response.status_code))
+        response = requests.get(URL, headers=headers, params=params, timeout=30)
+        print(f"{m_id}\t{response.status_code}")
 
 
 def test_photo_manager_class():
     pm = InitPM("/Users/tnguyen/ownCloud/MyBusiness/photo-manager")
     print(pm.upload_folder)
+
+
+def sanity_check_db():
+    # 1. Let's grab one ID from the photos collection
+    # create database and collection instances
+    mongo_client = MongoClient('mongodb://localhost:27017')
+    db = mongo_client.photodb
+    sample_photo = db.photos.find_one()
+    if not sample_photo:
+        print("No photos found in database.")
+    else:
+        photo_id = sample_photo['_id']
+        print(f"Searching for Photo ID: {photo_id} (Type: {type(photo_id)})")
+
+        # 2. Check if ANY album contains this ID manually
+        matching_album = db.albums.find_one({"photos": photo_id})
+        if matching_album:
+            print(f"Success! Found in Album: {matching_album['title']}")
+        else:
+            print("Manual Check Failed: No album contains this Photo ID.")
+            # Convert to ObjectId
+            try:
+                object_id = ObjectId(photo_id)
+                print(object_id)
+                print(type(object_id))  # <class 'bson.objectid.ObjectId'>
+            except (InvalidId, TypeError):
+                print(f"Error: '{photo_id}' is not a valid ObjectId.")
+
+        # 3. Run a minimal Aggregation
+        pipeline = [
+            {"$match": {"_id": photo_id}},
+            {
+                "$lookup": {
+                    "from": "albums",
+                    "localField": "_id",
+                    "foreignField": "photo_ids",
+                    "as": "contained_in_albums"
+                }
+            }
+        ]
+
+        debug_result = list(db.photos.aggregate(pipeline))
+        print("Aggregation Result:", debug_result)
+
+        # result = db.users.aggregate([
+        #     {
+        #         "$group": {
+        #             "_id": "$hash_md5",
+        #             "count": {
+        #                 "$sum": 1
+        #             },
+        #             "docs": {
+        #                 "$push": "$_id"
+        #             }
+        #         }
+        #     },
+        #     {
+        #         "$match":
+        #             {
+        #                 "count":
+        #                     {
+        #                         "$gt": 1
+        #                     }
+        #             }
+        #     }
+        # ])
+        result = db.photos.aggregate([{
+            "$group": {
+                "_id": "$hash_md5",
+                "count": {
+                    "$sum": 1
+                },
+                "ids": {
+                    "$push": "$_id"
+                }
+            }
+        }, {
+            "$match": {
+                "count": {
+                    "$gt": 1
+                }
+            }
+        }])
+        result = list(result)
+        print(result)
+
+
+def test_load_dotenv():
+    load_dotenv()  # loads variables from .env into environment
+    print(os.getenv("DB_HOST"))
+    print(os.getenv("DB_PORT"))
+    print(os.getenv("DB_NAME"))
 
 
 if __name__ == '__main__':
@@ -289,10 +402,12 @@ if __name__ == '__main__':
     # download_save_image()
     # check_find_result()
     # copy_and_move_file()
-    check_cur_sub_folder()
+    # check_cur_sub_folder()
     # test_get_series()
     # test_next_string()
     # test_biomodels()
     # test_local_biomodels()
     # update_albums()
     # test_photo_manager_class()
+    sanity_check_db()
+    test_load_dotenv()

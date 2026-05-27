@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Albums | Photo Manager</title>
+    {% include('_head.html') %}
+    <style>
+    </style>
+</head>
+<body>
+<div class="container">
+    {% include '_menu-bar.html' %}
+    <div class="main">
+    <div class="row">
+        <div class="col">
+            <h1 id="heading">Albums</h1>
+            <div class="content">
+                <form method="post" enctype="multipart/form-data" id="album-detail-form">
+                    <div class="mb-3">
+                        <strong><label for="cover" class="form-label">Upload a photo for Album cover</label></strong>
+                        <input type="file" id="cover" name="cover"
+                               class="form-control" accept="image/png,image/jpeg,image/jpg"/>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong><label for="title" class="form-label">Title</label></strong><br/>
+                        <input id="title" name="title" type="text" placeholder="Album Title" class="form-control"/>
+                    </div>
+                    <div class="mb-3">
+                        <strong><label for="description" class="form-label">Description</label></strong><br/>
+                        <textarea id="description" name="description" type="textarea" placeholder="Describe your album"
+                                  class="form-control"></textarea>
+                    </div>
+
+                    <div class="mb-3 action-button" id="action-button">
+                        <button type="submit" class="btn btn-primary">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="row align-items-center">
+        <div class="col-2"><label for="albums-search"><strong>Search</strong></label></div>
+        <div class="col-10">
+            <input id="albums-search" type="text" class="form-control" onkeyup="searchForAlbums()"
+                   placeholder="Search for albums"></div>
+    </div>
+    <div class="row align-items-center">
+        <div class="col-2 align-self-center"><strong>Albums</strong></div>
+        <div class="col-8 align-self-center"><strong>Sort</strong>
+            &nbsp;&nbsp;
+            <span style="font-size: 26px" id="sort-direction-block" class="sort-direction-para">
+                    <i class="fa fa-arrow-circle-down" aria-hidden="true" id="sort-direction-icon"></i>
+                </span>
+            &nbsp;
+            <button type="button" class="btn btn-danger" id="btn-sort">Sort</button>
+            &nbsp;
+            <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" data-field-name="title">Title</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item" data-field-name="amount_photos">Amount Photos</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item" data-field-name="date_modified">Modified Date</a></li>
+                <li><a class="dropdown-item" data-field-name="date_created">Created Date</a></li>
+            </ul>
+
+        </div>
+        <div class="col-2 align-self-center"><strong>Actions</strong></div>
+    </div>
+    <div class="album-list">
+        {% include('_albums-list.html') %}
+    </div>
+</div></div>
+{% include('_foot.html') %}
+<script src="https://code.jquery.com/ui/1.14.0/jquery-ui.js"></script>
+<script>
+    let albumPath = "", albumTitle = "";
+    const myMap = new Map();
+
+    $(function() {
+        let path, text, albumInfo;
+        $('.album-title').map((index, title) => {
+            path = $(title).attr("data-album-path");
+            text = $(title).text();
+            myMap.set(path, {"title": text});
+        });
+
+        $('.album-description').map((index, desc) => {
+            path = $(desc).attr("data-album-path");
+            text = $(desc).text();
+            albumInfo = myMap.get(path)["title"] + " " + text;
+            myMap.set(path, {"albumInfo": albumInfo, "title": myMap.get(path)["title"], "description": text});
+        });
+
+        const errorParam = new URLSearchParams(window.location.search).get('error');
+        if (errorParam) toastr.error(errorParam);
+
+        // Intercept form submit: if in edit mode, send AJAX update instead of POSTing to /photo/albums
+        $('#album-detail-form').on('submit', function(e) {
+            if (albumPath !== "") {
+                e.preventDefault();
+                doUpdateAlbum();
+            }
+        });
+    });
+
+    function searchForAlbums() {
+        const input = document.getElementById('albums-search');
+        const orgFilter = input.value;
+        let filter = orgFilter.toUpperCase();
+        let albumInfo, title, description;
+        myMap.forEach((value, key) => {
+            // Note: key is the album path
+            albumInfo = value["albumInfo"];
+            title = value["title"];
+            description = value["description"];
+            if (albumInfo.toUpperCase().indexOf(filter) >= 0) {
+                $('.album-' + key).show();
+                // highlight the matched text in the title or description
+                const linkTitle = $('#link-album-title-'+key);
+                const orgFilterHighlight = '<span class="pm-highlight">' + orgFilter +'</span>';
+                if (title.toUpperCase().indexOf(filter) >= 0) {
+                    // highlight title, the id: link-album-title-{path}
+                    title = title.replaceAll(orgFilter, orgFilterHighlight);
+                    linkTitle.html(title);
+                } else {
+                    title = title.replaceAll(orgFilterHighlight, filter);
+                    linkTitle.html(title);
+                }
+
+                const desc = $('#album-description-'+key);
+                if (description.toUpperCase().indexOf(filter) >= 0) {
+                    // highlight description, the id: album-description-{path}
+                    description = description.replaceAll(orgFilter, orgFilterHighlight);
+                    desc.html(description);
+                } else {
+                    description = description.replaceAll(orgFilterHighlight, filter);
+                    desc.html(description);
+                }
+            } else {
+                $('.album-' + key).hide();
+            }
+        });
+    };
+
+    function doUpdateAlbum() {
+        const updatedTitle = $('#title').val();
+        const updatedDescription = $('#description').val();
+        $.ajax({
+            url: "/albums/update/",
+            method: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({
+                "album-path": albumPath,
+                "album-title": updatedTitle,
+                "album-description": updatedDescription
+            }),
+            success: function (data) {
+                toastr.success("Updated the album successfully! The page is refreshing within 3 seconds.");
+                setTimeout(() => {
+                    albumPath = "";
+                    albumTitle = "";
+                    $('#album-detail-form')[0].reset();
+                    $("#action-button").html('<button type="submit" class="btn btn-primary">Create</button>');
+                    window.location.reload();
+                }, 3000);
+            },
+            error: function (jqXHR, textStatus) {
+                console.error(textStatus, ": ", JSON.stringify(jqXHR));
+                toastr.error("Failed to update the album.");
+            }
+        });
+    }
+
+    $(document).on("click", ".btn-edit-album", function () {
+        albumPath = $(this).attr("data-album-path");
+        albumTitle = $(this).attr("data-album-title");
+        $("#title").val(albumTitle);
+        const albumDescription = $('#album-description-' + albumPath)[0].innerText;
+        $("#description").val(albumDescription);
+        // Change Create button to Save button
+        $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
+        $("#btn-save").on("click", function () {
+            doUpdateAlbum();
+        });
+    });
+
+    $(document).on("click", ".btn-delete-album", function () {
+        albumPath = $(this).attr("data-album-path");
+        albumTitle = $(this).attr("data-album-title");
+        const albumObjectId = $(this).attr("data-album-object-id");
+        $.ajax({
+            url: "/albums/delete",
+            method: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({
+                "album-object-id": albumObjectId,
+                "album-path": albumPath,
+                "album-title": albumTitle
+            }),
+            beforeSend: function (xhr) {
+                console.log("Sending data to server...");
+            },
+            success: function (data) {
+                toastr.success("Updated successfully! The page is refreshing within 3 seconds.");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+                // alternatively, reload the album using jQuery without refreshing the page
+            },
+            error: function () {
+
+            }
+        }).done(function (data) {
+            console.log("Done! - Data: ", data);
+        }).fail(function (jqXHR, textStatus) {
+            console.log(textStatus, ": ", JSON.stringify(jqXHR));
+        }).always(function (data) {
+            console.log("The request has completed: ", data);
+            toastr.success("The request has completed!");
+        });
+    });
+
+    let sortDirection = "down";
+    let sortField = "date_created";
+
+    $('.dropdown-menu a').on("click", function () {
+        $('button[data-toggle="dropdown"]').text($(this).text());
+        const selected = $(this).text();
+        $('#btn-sort').text(selected);
+        sortField = $(this).attr("data-field-name");
+        callServerToSortAlbums();
+    });
+
+    function callServerToSortAlbums() {
+        const URL = "/photo/albums?sort=" + sortField + ";" + sortDirection;
+        console.log(URL);
+        fetch(URL, {
+            method: 'GET'
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Network response failed!!!');
+            }
+            return response.text();
+        }).then(data => {
+            {#window.location.reload();#}
+            {#console.log(data);#}
+            $(".album-list").html(data);
+        }).catch(error => {
+            console.error('Error: ', error);
+        });
+    }
+
+    $('.sort-direction-para').on("click", function () {
+        const sortDirectionIcon = $('#sort-direction-icon');
+        if (sortDirectionIcon.hasClass("fa-arrow-circle-down")) {
+            sortDirectionIcon.removeClass("fa-arrow-circle-down");
+            sortDirectionIcon.addClass("fa-arrow-circle-up");
+            sortDirection = "up";
+        } else {
+            sortDirectionIcon.removeClass("fa-arrow-circle-up");
+            sortDirectionIcon.addClass("fa-arrow-circle-down");
+            sortDirection = "down";
+        }
+        const btnSort = $("#btn-sort");
+        if (btnSort.text() === "Sort") {
+            // if the sort field hasn't been selected, set 'Uploaded' the default sort field
+            btnSort.text("Date Created");
+            sortField = "date_created";
+        } else {
+            console.log("Sorting by the selected field");
+        }
+        callServerToSortAlbums();
+    });
+
+</script>
+</body>
+</html>

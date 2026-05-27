@@ -1,0 +1,73 @@
+{% for photo in photos %}
+    {% set id_image = photo['filename'][:-4] %}
+    {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
+    <div class="row photo-block">
+        <div class="col-4">
+            <a href="{{ photo_url }}"
+               title="{{ photo['title'] }}" data-fslightbox="gallery">
+                <img id="{{ photo['folder'] }}-{{ photo['filename'] }}" src="{{ photo_url }}"
+                     style="width:100%" alt="{{ photo['title'] }}"></a></div>
+        <div class="col-8 photo-metadata">
+            <h3 id="photo-title-{{ photo['id'] }}" class="photo-title">{{ photo['title'] }}</h3>
+            <p id="photo-filename-{{ photo['id'] }}"><em>{{ photo['filename'] }}</em></p>
+            <p id="photo-description-{{ photo['id'] }}">{{ photo['description'] }}</p>
+            <p id="photo-other-metadata-{{ photo['id'] }}">
+                {% if "date_uploaded" in photo %}
+                    <span><i class="fa fa-upload" title="Uploaded"></i> {{ photo['date_uploaded'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
+                {% endif %}
+                {% if "date_modified" in photo %}
+                    <span>| <i class="fa fa-pencil" title="Updated"></i> {{ photo['date_modified'].strftime('%d/%m/%Y, %H:%M:%S') }}</span>
+                {% endif %}
+                | <i class="fa fa-link" title="Source"></i>
+                <span id="original-photo-courtesy-{{ photo['id'] }}"
+                      style="display: none">{{ photo['courtesy'] }}</span>
+                <span id="photo-courtesy-{{ photo['id'] }}">
+                        {% if photo['courtesy'].startswith('http') %}
+                            {% if 'facebook.com' in photo['courtesy'] %}
+                                {% set source = "Facebook" %}
+                            {% else %}
+                                {% set source = "Other" %}
+                            {% endif %}
+                            <a href="{{ photo['courtesy'] }}" target="_blank">{{ source }}</a>
+                        {% else %}
+                            {{ photo['courtesy'] }}
+                        {% endif %}
+                    </span>
+            </p>
+            <p id="in-albums-{{ photo['id'] }}" style="font-style: italic; color: #9714d0">In Albums:
+                {% for album in photo['albums'] %}
+                    <a href="/albums/view/{{ album['path'] }}">{{ album['title'] }}</a>,
+                {% endfor %}
+            </p>
+            <p><input type="button" value="Add to albums" class="btn btn-primary" name="add-to-album"
+                      data-photo-object-id="{{ photo['id'] }}"
+                      data-photo-folder="{{ photo['folder'] }}"
+                      data-photo-filename="{{ photo['filename'] }}"/>
+                &nbsp;
+                <button type="button" class="btn btn-primary select-albums-modal-form"
+                        data-bs-toggle="modal" data-bs-target="#select-albums-modal-form"
+                        data-photo-object-id="{{ photo['id'] }}"
+                        data-photo-folder="{{ photo['folder'] }}"
+                        data-photo-filename="{{ photo['filename'] }}">
+                    Add to albums (Open a modal)
+                </button>
+                &nbsp;
+                <button type="button" class="btn btn-primary btn-edit-photo" id="btn-edit-photo"
+                        data-photo-object-id="{{ photo['id'] }}"
+                        data-photo-folder="{{ photo['folder'] }}"
+                        data-photo-filename="{{ photo['filename'] }}">
+                    Edit
+                </button>
+                &nbsp;
+                <button type="button" class="btn btn-primary btn-delete-photo" id="btn-delete-photo"
+                        data-photo-object-id="{{ photo['id'] }}"
+                        data-photo-folder="{{ photo['folder'] }}"
+                        data-photo-filename="{{ photo['filename'] }}">
+                    Delete
+                </button>
+            </p>
+            <p id="{{ id_image }}" class="album-list"></p>
+            <div id="showAllAlbums"></div>
+        </div>
+    </div>
+{% endfor %}

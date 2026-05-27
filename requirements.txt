@@ -3,8 +3,14 @@ pymongo
 requests
 flask-cors
 flask-socketio
+flake8~=7.0
+pylint
+loguru
 gunicorn
 pyopenssl
-python-dotenv
+python-dotenv==1.2.1
 python-slugify
 pytz
+uvicorn
+asgiref
+hexora

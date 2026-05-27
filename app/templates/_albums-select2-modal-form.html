@@ -1,0 +1,115 @@
+<!-- The Modal -->
+<div class="modal" id="select-albums-modal-form">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Choose albums to add the photo</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <label for="all-albums" style="display: none"></label>
+                <select id="all-albums" class="form-select choose-albums" data-placeholder="Choose albums" multiple>
+                    {% for album in albums %}
+                        {% if album['title'] not in dict_album_values %}
+                            <option value="{{ album['path'] }}">{{ album['title'] }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <!-- Modal footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btn-add2album">Add</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script>
+    $(function() {
+        $('.choose-albums').select2({
+            theme: 'bootstrap-5',
+            width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
+            placeholder: $(this).data('placeholder'),
+            closeOnSelect: false,
+            allowClear: true,
+        });
+    });
+
+    $("#btn-add2album").on("click", function() {
+
+        // retrieves the existing albums which the photo in question has been added
+        const inAlbumsSelector = $('#in-albums-' + photoObjectId)[0];
+        let existingAlbums = [];
+        $.map(inAlbumsSelector.children, (child, index) => {
+            existingAlbums.push(child.innerHTML);
+        });
+
+        const select2Data = $('.choose-albums').select2('data');
+        let albums = [];
+        $.each(select2Data, (index, item) => {
+            albums.push({"path": item.id, "title": item.text, "photo_object_id": photoObjectId});
+        });
+
+        $.ajax({
+            url: "/photo/save-photo-to-albums/",
+            method: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({
+                "photo-object-id": photoObjectId,
+                "photo-folder": photoFolder,
+                "photo-filename": photoFileName,
+                "newly-added-albums": albums
+            }),
+            beforeSend: function (xhr) {
+                console.log("Sending data to server...");
+                let alreadyAddedAlbums = [];
+                $.map(albums, function (item, index) {
+                    const title = item.title;
+                    if (existingAlbums.includes(title)) {
+                        alreadyAddedAlbums.push(title);
+                    }
+                });
+                if (alreadyAddedAlbums.length > 0) {
+                    const s = alreadyAddedAlbums.join(", ");
+                    toastr.warning("The photo is available in these albums " + s + ". Please remove them before clicking Save.");
+                    return false;
+                }
+            },
+            success: function (data) {
+                console.log("Data returned back: ", data);
+                const inAlbumsSelector = $('#in-albums-' + data['photo-object-id'])[0];
+                let innerHTML = inAlbumsSelector.innerHTML;
+                data['updated-albums'].map(item => {
+                    if (!existingAlbums.includes(item.title)) {
+                        innerHTML += '<a href="/albums/view/' + item.path + '">' + item.title + '</a>, ';
+                    } else {
+                        console.log("Photo " + photoFileName + " already added to the album " + item.title);
+                        toastr.warning("Photo " + photoFileName + " already added to the album " + item.title);
+                    }
+                });
+                inAlbumsSelector.innerHTML = innerHTML;
+                $('.album-list').html("");
+            },
+            error: function () {
+
+            }
+        }).done(function (data) {
+            console.log("Done! - Data: ", data);
+        }).fail(function (jqXHR, textStatus) {
+            console.log(textStatus, ": ", JSON.stringify(jqXHR));
+        }).always(function (data) {
+            toastr.success("Added the photo to the albums!");
+        });
+    });
+
+    $("#select-albums-modal-form").on("show.bs.modal", function () {
+        $('.choose-albums').val(null).trigger('change');
+    });
+</script>
