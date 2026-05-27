@@ -1,6 +1,19 @@
 {% for album in albums %}
-    <div class="row album-{{ album['path'] }}">
-        <div class="col-10 title-n-description">
+    <div class="row album-{{ album['path'] }} align-items-center">
+        <div class="col-2 col-md-1">
+            {% if album.get('cover_photo_url') %}
+                <a href="/albums/view/{{ album['path'] }}">
+                    <img src="{{ album['cover_photo_url'] }}"
+                         style="width:56px;height:56px;object-fit:cover;border-radius:4px;">
+                </a>
+            {% else %}
+                <div style="width:56px;height:56px;background:#f0f0f0;border-radius:4px;
+                            display:flex;align-items:center;justify-content:center;">
+                    <i class="fa fa-image" style="color:#ccc;font-size:20px;"></i>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-8 col-md-9 title-n-description">
             <p id="album-title-{{ album['path'] }}" class="album-title-para" style="margin-bottom: 0 !important;">
                 <a href="/albums/view/{{ album['path'] }}"
                    class="album-title" data-album-path="{{ album['path'] }}"
@@ -8,7 +21,7 @@
             <div class="album-description" id="album-description-{{ album['path'] }}"
                  style="font-style: italic" data-album-path="{{ album['path'] }}">{{ album['description'] }}</div>
         </div>
-        <div class="col-2 align-content-center align-self-center">
+        <div class="col-2 align-content-center align-self-center text-end">
             <a id="btn-edit-{{ album['path'] }}" class="btn-edit-album"
                data-album-path="{{ album['path'] }}"
                data-album-title="{{ album['title'] }}">
