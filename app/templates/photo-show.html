@@ -115,6 +115,8 @@
         $("#photo-courtesy").val($(this).attr("data-photo-courtesy"));
         $("#action-button").html('<button type="button" class="btn btn-primary" id="btn-save">Save</button>');
         loadExistingAlbumsIntoSelect(photoObjectId);
+        document.getElementById('edit-photo-preview').src = '/photo/' + photoFolder + '/' + photoFileName;
+        document.getElementById('edit-preview-col').style.display = '';
         $("#photo-edit-modal-form").modal("show");
         $("#btn-save").on("click", function () {
             $.ajax({
