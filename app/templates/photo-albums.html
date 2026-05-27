@@ -38,41 +38,43 @@
             </div>
         </div>
     </div>
-    <div class="row align-items-center">
-        <div class="col-2"><label for="albums-search"><strong>Search</strong></label></div>
-        <div class="col-10">
+    <div class="row align-items-center mb-2">
+        <div class="col-12 col-sm-2">
+            <label for="albums-search"><strong>Search</strong></label>
+        </div>
+        <div class="col-12 col-sm-10">
             <input id="albums-search" type="text" class="form-control" onkeyup="searchForAlbums()"
-                   placeholder="Search for albums"></div>
+                   placeholder="Search for albums">
+        </div>
     </div>
-    <div class="row align-items-center">
-        <div class="col-2 align-self-center"><strong>Albums</strong></div>
-        <div class="col-8 align-self-center"><strong>Sort</strong>
-            &nbsp;&nbsp;
-            <span style="font-size: 26px" id="sort-direction-block" class="sort-direction-para">
+    <div class="row align-items-center mb-1">
+        <div class="col-12 col-sm-2 d-none d-sm-block align-self-center">
+            <strong>Albums</strong>
+        </div>
+        <div class="col-12 col-sm-8 align-self-center">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <strong>Sort</strong>
+                <span style="font-size: 26px" id="sort-direction-block" class="sort-direction-para">
                     <i class="fa fa-arrow-circle-down" aria-hidden="true" id="sort-direction-icon"></i>
                 </span>
-            &nbsp;
-            <button type="button" class="btn btn-danger" id="btn-sort">Sort</button>
-            &nbsp;
-            <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-                <span class="visually-hidden">Toggle Dropdown</span>
-            </button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" data-field-name="title">Title</a></li>
-                <li>
-                    <hr class="dropdown-divider">
-                </li>
-                <li><a class="dropdown-item" data-field-name="amount_photos">Amount Photos</a></li>
-                <li>
-                    <hr class="dropdown-divider">
-                </li>
-                <li><a class="dropdown-item" data-field-name="date_modified">Modified Date</a></li>
-                <li><a class="dropdown-item" data-field-name="date_created">Created Date</a></li>
-            </ul>
-
+                <div class="btn-group">
+                    <button type="button" class="btn btn-danger" id="btn-sort">Sort</button>
+                    <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="visually-hidden">Toggle Dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" data-field-name="title">Title</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" data-field-name="amount_photos">Amount Photos</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" data-field-name="date_modified">Modified Date</a></li>
+                        <li><a class="dropdown-item" data-field-name="date_created">Created Date</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
-        <div class="col-2 align-self-center"><strong>Actions</strong></div>
+        <div class="col-2 align-self-center d-none d-sm-block"><strong>Actions</strong></div>
     </div>
     <div class="album-list">
         {% include('_albums-list.html') %}

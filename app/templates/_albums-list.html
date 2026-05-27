@@ -4,12 +4,13 @@
             {% if album.get('cover_photo_url') %}
                 <a href="/albums/view/{{ album['path'] }}">
                     <img src="{{ album['cover_photo_url'] }}"
-                         style="width:56px;height:56px;object-fit:cover;border-radius:4px;">
+                         class="rounded"
+                         style="width:40px;height:40px;object-fit:cover;">
                 </a>
             {% else %}
-                <div style="width:56px;height:56px;background:#f0f0f0;border-radius:4px;
-                            display:flex;align-items:center;justify-content:center;">
-                    <i class="fa fa-image" style="color:#ccc;font-size:20px;"></i>
+                <div class="rounded d-flex align-items-center justify-content-center"
+                     style="width:40px;height:40px;background:#f0f0f0;">
+                    <i class="fa fa-image" style="color:#ccc;font-size:16px;"></i>
                 </div>
             {% endif %}
         </div>
