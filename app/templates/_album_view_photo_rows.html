@@ -56,7 +56,7 @@
                    data-photo-filename="{{ photo['filename'] }}">Add to other albums</a></p>
             {% endif %}
         </div>
-        <div class="col-1">
+        <div class="col-1 d-flex flex-column align-items-center gap-2">
             <div class="form-check">
                 <label class="form-check-label switch" for="chk-remove-{{ photo['filename'] }}">
                 <input class="form-check-input cls-chk-remove-photo"
@@ -68,6 +68,15 @@
                 <span class="slider round"></span>
                 </label>
             </div>
+            {% if cover_photo_id and photo_id|string == cover_photo_id %}
+                <span class="text-muted" style="font-size:0.75em;">Cover</span>
+            {% else %}
+                <a href="javascript:void(0)"
+                   class="btn-set-cover text-secondary"
+                   data-photo-object-id="{{ photo_id }}"
+                   data-album-path="{{ album_path }}"
+                   style="font-size:0.75em;">Set cover</a>
+            {% endif %}
         </div>
     </div>
 {% endfor %}

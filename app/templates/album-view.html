@@ -42,6 +42,14 @@
                 <h1>View Album {{ album_title }} ({{ nb_photos }})</h1>
             </div>
         </div>
+        {% if cover_photo_url %}
+        <div class="row mb-3">
+            <div class="col">
+                <img src="{{ cover_photo_url }}" class="img-fluid rounded"
+                     style="max-height:260px;width:100%;object-fit:cover;">
+            </div>
+        </div>
+        {% endif %}
 
         {% if not is_empty_album %}
             <div class="sticky-action-bar">

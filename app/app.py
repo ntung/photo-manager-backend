@@ -345,6 +345,19 @@ def photo_albums():
             sorted_albums = sorted(_albums,
                                    key=lambda x: len(x['photos']),
                                    reverse=True)
+        cover_oids = [a['cover_photo'] for a in sorted_albums
+                      if isinstance(a.get('cover_photo'), ObjectId)]
+        if cover_oids:
+            cp_map = {
+                str(p['_id']): f"/photo/{p['folder']}/{p['filename']}"
+                for p in db.photos.find({'_id': {'$in': cover_oids}}, {'folder': 1, 'filename': 1})
+            }
+        else:
+            cp_map = {}
+        for a in sorted_albums:
+            cp = a.get('cover_photo')
+            a['cover_photo_url'] = cp_map.get(str(cp)) if isinstance(cp, ObjectId) else None
+
         unclassified = {
             "title": "Unclassified",
             "description": "Unclassified photos - not in any albums yet.",
@@ -363,9 +376,16 @@ def photo_albums():
 @app.route('/albums/<path>', methods=('GET', 'POST'))
 def albums(path):
     if path is None:
-        all_albums = db.albums.find().sort([("date_modified", pymongo.DESCENDING)])
-        docs_as_extended_json = bson.json_util.dumps(all_albums)
-        return docs_as_extended_json
+        all_albums = list(db.albums.find().sort([("date_modified", pymongo.DESCENDING)]))
+        cover_oids = [a['cover_photo'] for a in all_albums if a.get('cover_photo')]
+        cp_map = {
+            str(p['_id']): f"/photo/{p['folder']}/{p['filename']}"
+            for p in db.photos.find({'_id': {'$in': cover_oids}}, {'folder': 1, 'filename': 1})
+        } if cover_oids else {}
+        for a in all_albums:
+            cid = a.get('cover_photo')
+            a['cover_photo_url'] = cp_map.get(str(cid)) if cid else None
+        return bson.json_util.dumps(all_albums)
     first_album = get_album(path)
     json_result = bson.json_util.dumps(first_album)
     return json_result
@@ -607,6 +627,10 @@ def albums_view(path):
     is_empty_album = not album_doc.get("photos")
     view = "album-view.html"
 
+    cover_id = album_doc.get('cover_photo')
+    cover_url = _cover_photo_url(cover_id)
+    cover_id_str = str(cover_id) if cover_id else ''
+
     if is_empty_album:
         return render_template(view, **{
             "status": "FOUND", "album": album_doc,
@@ -616,6 +640,7 @@ def albums_view(path):
             "is_empty_album": True, "other_albums": None,
             "has_more": False, "api_svr": API_SVR,
             "dict_album_values": {},
+            "cover_photo_url": cover_url, "cover_photo_id": cover_id_str,
         })
 
     sort = request.args.get('sort')
@@ -646,6 +671,7 @@ def albums_view(path):
             "has_more": False,
             "api_svr": API_SVR,
             "dict_album_values": {},
+            "cover_photo_url": cover_url, "cover_photo_id": cover_id_str,
         })
 
     if sort is not None:
@@ -672,6 +698,7 @@ def albums_view(path):
             "other_albums": None, "has_more": False,
             "api_svr": API_SVR,
             "dict_album_values": {},
+            "cover_photo_url": cover_url, "cover_photo_id": cover_id_str,
         })
 
     # Default GET: load only the first page; the client will fetch subsequent
@@ -686,6 +713,7 @@ def albums_view(path):
         "other_albums": None, "has_more": has_more,
         "api_svr": API_SVR,
         "dict_album_values": {},
+        "cover_photo_url": cover_url, "cover_photo_id": cover_id_str,
     })
 
 
@@ -1643,11 +1671,39 @@ def get_album_photos(path):
     photos, _, has_more = _get_album_photos_page(
         path, sort_field=sort_field, sort_dir=sort_dir, shuffle_seed=shuffle_seed
     )
+    album_doc = db.albums.find_one({"path": path}, {'cover_photo': 1})
+    cover_id = album_doc.get('cover_photo') if album_doc else None
+    cover_id_str = str(cover_id) if cover_id else ''
     content = render_template(
         "_album_view_photo_rows.html",
-        **{"photos": photos, "album_path": path, "status": "FOUND"},
+        **{"photos": photos, "album_path": path, "status": "FOUND",
+           "cover_photo_id": cover_id_str},
     )
     return jsonify(content=content, has_more=has_more, count=len(photos))
+
+
+def _cover_photo_url(cover_id):
+    if not cover_id:
+        return None
+    photo = db.photos.find_one({'_id': cover_id}, {'folder': 1, 'filename': 1})
+    return f"/photo/{photo['folder']}/{photo['filename']}" if photo else None
+
+
+@app.route('/api/v1/album/<string:path>/cover', methods=['PATCH'])
+def set_album_cover(path):
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({'message': 'Invalid or missing JSON body'}), 400
+    photo_id = (body.get('photo_id') or '').strip()
+    if not photo_id:
+        return jsonify({'message': 'photo_id is required'}), 400
+    result = db.albums.update_one(
+        {'path': path},
+        {'$set': {'cover_photo': ObjectId(photo_id), 'date_modified': datetime.now(TZ_LONDON)}}
+    )
+    if result.matched_count == 0:
+        return jsonify({'message': 'Album not found'}), 404
+    return jsonify({'message': 'Cover photo updated'})
 
 
 @app.route('/api/v1/album/<string:path>/slideshow', methods=['GET'])

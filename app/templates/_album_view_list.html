@@ -181,5 +181,24 @@
         photoFolder = $(this).attr("data-photo-folder");
         photoFileName = $(this).attr("data-photo-filename");
     });
+
+    $(document).on("click", ".btn-set-cover", function () {
+        const photoObjectId = $(this).attr("data-photo-object-id");
+        const albumPath = $(this).attr("data-album-path");
+        $.ajax({
+            url: "/api/v1/album/" + albumPath + "/cover",
+            method: "PATCH",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify({"photo_id": photoObjectId}),
+            success: function () {
+                toastr.success("Cover photo updated!");
+                setTimeout(() => { window.location.reload(); }, 800);
+            },
+            error: function () {
+                toastr.error("Failed to set cover photo.");
+            }
+        });
+    });
 {% endif %}
 </script>
