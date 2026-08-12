@@ -159,7 +159,7 @@ def do_cache(minutes=5, content_type='application/json; charset=utf-8'):
             rsp = Response(r, content_type=content_type)
             v = then.strftime("%a, %d %b %Y %H:%M:%S GMT")
             rsp.headers.add('Expires', v)
-            v = f'public,max-age={int(60 * minutes)}'
+            v = f'private,max-age={int(60 * minutes)}'
             rsp.headers.add('Cache-Control', v)
             return rsp
 
