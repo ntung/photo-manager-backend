@@ -1706,6 +1706,86 @@ def set_album_cover(path):
     return jsonify({'message': 'Cover photo updated'})
 
 
+@app.route('/api/v1/album/<string:path>/unclaimed-by-source', methods=['GET'])
+def get_unclaimed_by_source(path):
+    """
+    Returns photos that share a source_profile with photos already in the album
+    but are not yet members of the album.  Grouped by source_profile so the UI
+    can show where each batch came from.
+
+    Response: { sources: [{profile, photos: [{id, folder, filename, title, courtesy}]}],
+                total_count: int }
+    """
+    album = db.albums.find_one({"path": path})
+    if not album:
+        return jsonify({'error': 'Album not found'}), 404
+
+    album_photo_ids = list(album.get('photos', []))
+    if not album_photo_ids:
+        return jsonify({'sources': [], 'total_count': 0})
+
+    # Collect distinct, non-empty source_profiles present in this album.
+    source_profiles = db.photos.distinct(
+        'source_profile',
+        {'_id': {'$in': album_photo_ids}, 'source_profile': {'$exists': True, '$ne': None}}
+    )
+    source_profiles = [s for s in source_profiles if s]
+
+    if not source_profiles:
+        return jsonify({'sources': [], 'total_count': 0})
+
+    # Photos that share a source_profile but are NOT already in the album.
+    unclaimed = list(db.photos.find(
+        {'source_profile': {'$in': source_profiles}, '_id': {'$nin': album_photo_ids}},
+        {'folder': 1, 'filename': 1, 'title': 1, 'courtesy': 1, 'source_profile': 1}
+    ))
+
+    groups = {}
+    for photo in unclaimed:
+        sp = photo['source_profile']
+        groups.setdefault(sp, []).append({
+            'id': str(photo['_id']),
+            'folder': photo['folder'],
+            'filename': photo['filename'],
+            'title': photo.get('title', ''),
+            'courtesy': photo.get('courtesy', ''),
+        })
+
+    sources = [{'profile': p, 'photos': photos} for p, photos in groups.items()]
+    return jsonify({'sources': sources, 'total_count': len(unclaimed)})
+
+
+@app.route('/api/v1/album/<string:path>/claim-photos', methods=['POST'])
+def claim_photos_to_album(path):
+    """
+    Bulk-add a list of photos (by ObjectId string) to an album.
+    Uses $addToSet so duplicates are safely ignored.
+
+    Body: { photo_ids: [str, ...] }
+    """
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({'error': 'Invalid or missing JSON body'}), 400
+    photo_ids = body.get('photo_ids', [])
+    if not photo_ids:
+        return jsonify({'error': 'photo_ids is required'}), 400
+    try:
+        oid_list = [ObjectId(pid) for pid in photo_ids]
+    except Exception:
+        return jsonify({'error': 'Invalid photo_ids — expected ObjectId strings'}), 400
+
+    result = db.albums.update_one(
+        {'path': path},
+        {
+            '$addToSet': {'photos': {'$each': oid_list}},
+            '$set': {'date_modified': datetime.now(TZ_LONDON)},
+        }
+    )
+    if result.matched_count == 0:
+        return jsonify({'error': 'Album not found'}), 404
+    return jsonify({'message': f'Added {len(oid_list)} photos', 'count': len(oid_list)})
+
+
 @app.route('/api/v1/album/<string:path>/slideshow', methods=['GET'])
 def get_album_slideshow(path):
     """
