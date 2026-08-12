@@ -412,11 +412,27 @@
             return $('<div>').text(str || '').html();
         }
 
+        function updateGroupCheckboxes() {
+            $('.claim-group-chk').each(function () {
+                const grp = $(this).data('group');
+                const all = $('.claim-photo-chk[data-group="' + grp + '"]');
+                const checkedCount = all.filter(':checked').length;
+                if (checkedCount === 0) {
+                    $(this).prop('checked', false).prop('indeterminate', false);
+                } else if (checkedCount === all.length) {
+                    $(this).prop('checked', true).prop('indeterminate', false);
+                } else {
+                    $(this).prop('checked', false).prop('indeterminate', true);
+                }
+            });
+        }
+
         function updateClaimCount() {
             const n = $('.claim-photo-chk:checked').length;
             const total = $('.claim-photo-chk').length;
             $('#claim-selected-count').text(n + ' of ' + total + ' selected');
             $('#btn-claim-confirm').prop('disabled', n === 0);
+            updateGroupCheckboxes();
         }
 
         function renderClaimModal(data) {
@@ -429,15 +445,19 @@
             }
 
             let html = '';
-            data.sources.forEach(function (src) {
+            data.sources.forEach(function (src, groupIdx) {
                 const label = src.profile.startsWith('http')
                     ? '<a href="' + escapeHtml(src.profile) + '" target="_blank">'
                       + escapeHtml(src.profile) + '</a>'
                     : escapeHtml(src.profile);
                 html += '<div class="mb-4">';
-                html += '<h6 class="text-muted border-bottom pb-1">'
-                      + '<i class="fa fa-link me-1"></i>' + label
-                      + ' <span class="badge bg-secondary">' + src.photos.length + '</span></h6>';
+                html += '<h6 class="text-muted border-bottom pb-2 d-flex align-items-center gap-2">'
+                      + '<input type="checkbox" class="claim-group-chk form-check-input flex-shrink-0 mt-0"'
+                      + ' data-group="' + groupIdx + '" checked'
+                      + ' title="Select / deselect all from this source">'
+                      + '<span class="flex-grow-1"><i class="fa fa-link me-1"></i>' + label + '</span>'
+                      + '<span class="badge bg-secondary ms-1">' + src.photos.length + '</span>'
+                      + '</h6>';
                 html += '<div class="row g-2">';
                 src.photos.forEach(function (photo) {
                     const imgUrl  = '/photo/' + photo.folder + '/' + photo.filename;
@@ -451,7 +471,7 @@
                           + '</a>'
                           + '<div class="position-absolute top-0 start-0 p-1">'
                           + '<input type="checkbox" class="claim-photo-chk form-check-input"'
-                          + ' value="' + photo.id + '" checked'
+                          + ' value="' + photo.id + '" data-group="' + groupIdx + '" checked'
                           + ' title="' + escapeHtml(photo.title) + '">'
                           + '</div></div>'
                           + '<div class="card-body p-1">'
@@ -469,6 +489,11 @@
             $('#claim-select-all, #claim-deselect-all').show();
             updateClaimCount();
             $(document).on('change.claim', '.claim-photo-chk', updateClaimCount);
+            $(document).on('change.claim', '.claim-group-chk', function () {
+                const grp = $(this).data('group');
+                $('.claim-photo-chk[data-group="' + grp + '"]').prop('checked', $(this).prop('checked'));
+                updateClaimCount();
+            });
         }
 
         // Fetch unclaimed count on page load; show button only when > 0.
