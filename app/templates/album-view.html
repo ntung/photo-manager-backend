@@ -440,21 +440,26 @@
                       + ' <span class="badge bg-secondary">' + src.photos.length + '</span></h6>';
                 html += '<div class="row g-2">';
                 src.photos.forEach(function (photo) {
-                    const url = '/photo/' + photo.folder + '/' + photo.filename;
+                    const imgUrl  = '/photo/' + photo.folder + '/' + photo.filename;
+                    const showUrl = '/photo/show/' + photo.id;
                     html += '<div class="col-6 col-md-3 col-lg-2">'
                           + '<div class="card h-100 border-0 shadow-sm">'
                           + '<div class="position-relative">'
-                          + '<img src="' + url + '" class="card-img-top rounded-top"'
+                          + '<a href="' + showUrl + '" target="_blank" tabindex="-1">'
+                          + '<img src="' + imgUrl + '" class="card-img-top rounded-top"'
                           + ' style="height:90px;object-fit:cover;" alt="' + escapeHtml(photo.title) + '">'
+                          + '</a>'
                           + '<div class="position-absolute top-0 start-0 p-1">'
                           + '<input type="checkbox" class="claim-photo-chk form-check-input"'
                           + ' value="' + photo.id + '" checked'
                           + ' title="' + escapeHtml(photo.title) + '">'
                           + '</div></div>'
                           + '<div class="card-body p-1">'
-                          + '<small class="text-truncate d-block text-secondary"'
+                          + '<small class="text-truncate d-block">'
+                          + '<a href="' + showUrl + '" target="_blank" class="text-secondary text-decoration-none"'
                           + ' title="' + escapeHtml(photo.title) + '">'
-                          + escapeHtml(photo.title) + '</small>'
+                          + escapeHtml(photo.title) + '</a>'
+                          + '</small>'
                           + '</div></div></div>';
                 });
                 html += '</div></div>';
