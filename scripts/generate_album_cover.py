@@ -18,11 +18,13 @@ How it works:
 
 Usage:
     python scripts/generate_album_cover.py <album-path> [options]
+    python scripts/generate_album_cover.py --all-missing [options]
 
 Examples:
     python scripts/generate_album_cover.py cute-breeder --dry-run
     python scripts/generate_album_cover.py cute-breeder
     python scripts/generate_album_cover.py cute-breeder --num-photos 4 --width 1600 --height 667
+    python scripts/generate_album_cover.py --all-missing
 """
 import argparse
 import hashlib
@@ -31,6 +33,7 @@ import sys
 import uuid
 from datetime import datetime
 
+import bson.errors
 import pymongo
 import pytz
 from bson import ObjectId
@@ -46,6 +49,10 @@ TZ_LONDON = pytz.timezone("Europe/London")
 DEFAULT_UPLOAD_FOLDER = "/tmp/photo-manager/upload"
 
 
+class CoverGenerationError(Exception):
+    """Raised for expected per-album failures so batch runs can skip and continue."""
+
+
 def get_db():
     db_host = os.environ.get('DB_HOST')
     db_port = os.environ.get('DB_PORT')
@@ -54,6 +61,22 @@ def get_db():
     db_name = os.environ.get('DB_NAME', 'photodb')
     client = pymongo.MongoClient(db_host, int(db_port), serverSelectionTimeoutMS=5000)
     return client[db_name]
+
+
+def _normalize_object_ids(raw_ids):
+    """Some album.photos entries are stored as plain strings instead of
+    ObjectId (pre-existing data issue) - coerce them so $in lookups match,
+    dropping anything that isn't a valid ObjectId at all."""
+    normalized = []
+    for x in raw_ids:
+        if isinstance(x, ObjectId):
+            normalized.append(x)
+            continue
+        try:
+            normalized.append(ObjectId(x))
+        except (bson.errors.InvalidId, TypeError):
+            print(f"  WARNING: skipping malformed photo id in album.photos: {x!r}")
+    return normalized
 
 
 def pick_evenly_spaced(photo_ids, num_photos):
@@ -101,11 +124,11 @@ def build_collage(image_paths, target_w, target_h):
 def generate_cover(db, upload_folder, album_path, num_photos, target_w, target_h, dry_run):
     album = db.albums.find_one({'path': album_path})
     if not album:
-        raise SystemExit(f"Album not found: {album_path}")
+        raise CoverGenerationError(f"Album not found: {album_path}")
 
-    photo_ids = album.get('photos', [])
+    photo_ids = _normalize_object_ids(album.get('photos', []))
     if not photo_ids:
-        raise SystemExit(f"Album '{album_path}' has no photos to build a cover from")
+        raise CoverGenerationError(f"Album '{album_path}' has no photos to build a cover from")
 
     chosen_ids = pick_evenly_spaced(photo_ids, num_photos)
     projection = {'folder': 1, 'filename': 1, 'title': 1}
@@ -115,14 +138,14 @@ def generate_cover(db, upload_folder, album_path, num_photos, target_w, target_h
     }
     missing = [pid for pid in chosen_ids if pid not in chosen_docs]
     if missing:
-        raise SystemExit(f"Photo doc(s) not found for ids: {missing}")
+        raise CoverGenerationError(f"Photo doc(s) not found for ids: {missing}")
 
     source_paths = []
     for pid in chosen_ids:
         doc = chosen_docs[pid]
         path = os.path.join(upload_folder, doc['folder'], doc['filename'])
         if not os.path.isfile(path):
-            raise SystemExit(f"Source file missing on disk: {path}")
+            raise CoverGenerationError(f"Source file missing on disk: {path}")
         source_paths.append(path)
 
     print(f"Album: {album.get('title')!r} ({album_path}), {len(photo_ids)} photos total")
@@ -130,7 +153,10 @@ def generate_cover(db, upload_folder, album_path, num_photos, target_w, target_h
     for pid, path in zip(chosen_ids, source_paths):
         print(f"  - {pid} -> {path}")
 
-    collage = build_collage(source_paths, target_w, target_h)
+    try:
+        collage = build_collage(source_paths, target_w, target_h)
+    except OSError as e:
+        raise CoverGenerationError(f"Could not read/decode a source image: {e}") from e
     print(f"Collage size: {collage.size[0]}x{collage.size[1]}")
 
     if dry_run:
@@ -188,11 +214,46 @@ def generate_cover(db, upload_folder, album_path, num_photos, target_w, target_h
     print(f"Album '{album_path}' cover_photo set to {new_photo_id}")
 
 
+def run_batch(db, upload_folder, num_photos, target_w, target_h, dry_run):
+    albums = list(
+        db.albums.find({'cover_photo': {'$exists': False}}, {'path': 1})
+        .sort('path', pymongo.ASCENDING)
+    )
+    print(f"Found {len(albums)} album(s) without a cover_photo\n")
+
+    succeeded = []
+    failed = []
+    for i, album in enumerate(albums, start=1):
+        path = album['path']
+        print(f"[{i}/{len(albums)}] {path}")
+        try:
+            generate_cover(db, upload_folder, path, num_photos, target_w, target_h, dry_run)
+            succeeded.append(path)
+        except CoverGenerationError as e:
+            print(f"  SKIPPED: {e}")
+            failed.append((path, str(e)))
+        print()
+
+    print("=" * 60)
+    print(f"Done. {len(succeeded)} succeeded, {len(failed)} skipped/failed.")
+    if failed:
+        print("Failures:")
+        for path, reason in failed:
+            print(f"  - {path}: {reason}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument('album_path', help="Album 'path' slug, e.g. cute-breeder")
+    parser.add_argument(
+        'album_path', nargs='?',
+        help="Album 'path' slug, e.g. cute-breeder (omit when using --all-missing)"
+    )
+    parser.add_argument(
+        '--all-missing', action='store_true',
+        help="Run for every album that has no cover_photo set yet, instead of one album"
+    )
     parser.add_argument(
         '--num-photos', type=int, default=3,
         help="Number of photos to combine (default: 3)"
@@ -211,12 +272,25 @@ def main():
     )
     args = parser.parse_args()
 
+    if not args.all_missing and not args.album_path:
+        parser.error("album_path is required unless --all-missing is given")
+    if args.all_missing and args.album_path:
+        parser.error("pass either album_path or --all-missing, not both")
+
     upload_folder = os.environ.get('UPLOAD_FOLDER', DEFAULT_UPLOAD_FOLDER)
     db = get_db()
-    generate_cover(
-        db, upload_folder, args.album_path, args.num_photos,
-        args.width, args.height, args.dry_run
-    )
+
+    if args.all_missing:
+        run_batch(db, upload_folder, args.num_photos, args.width, args.height, args.dry_run)
+        return
+
+    try:
+        generate_cover(
+            db, upload_folder, args.album_path, args.num_photos,
+            args.width, args.height, args.dry_run
+        )
+    except CoverGenerationError as e:
+        raise SystemExit(str(e))
 
 
 if __name__ == '__main__':
