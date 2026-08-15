@@ -1,0 +1,35 @@
+<div class="modal fade" id="claim-source-modal" tabindex="-1"
+     aria-labelledby="claim-source-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="claim-source-modal-label">
+                    <i class="fa fa-download me-2"></i>Claim photos from the same source
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="claim-source-modal-body">
+                <!-- Populated dynamically by claimFromSource JS -->
+                <div class="text-center py-5" id="claim-source-loading">
+                    <i class="fa fa-spinner fa-spin fa-2x text-muted"></i>
+                    <p class="mt-2 text-muted">Loading…</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="me-auto d-flex align-items-center gap-3">
+                    <span id="claim-selected-count" class="text-muted small"></span>
+                    <a href="javascript:void(0)" id="claim-select-all"
+                       class="small" style="display:none">Select all</a>
+                    <a href="javascript:void(0)" id="claim-deselect-all"
+                       class="small" style="display:none">Deselect all</a>
+                </div>
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="btn-claim-confirm" disabled>
+                    <i class="fa fa-plus-circle me-1"></i>Add selected to album
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

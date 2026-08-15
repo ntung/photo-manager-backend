@@ -75,6 +75,8 @@
     {% endif %}
     </div>
 </div>
+{% include('_claim-from-source-modal.html') %}
+
 <!-- Slideshow overlay -->
 <div id="slideshow-overlay">
     <div id="ss-loading">
@@ -401,6 +403,154 @@
         callServerToChangeView(viewStyle);
     });
     {% endif %}
+
+    // ── Claim from source ─────────────────────────────────────────────────
+    (function () {
+        let unclaimedData = null;  // cached on page-load; reused when modal opens
+
+        function escapeHtml(str) {
+            return $('<div>').text(str || '').html();
+        }
+
+        function updateGroupCheckboxes() {
+            $('.claim-group-chk').each(function () {
+                const grp = $(this).data('group');
+                const all = $('.claim-photo-chk[data-group="' + grp + '"]');
+                const checkedCount = all.filter(':checked').length;
+                if (checkedCount === 0) {
+                    $(this).prop('checked', false).prop('indeterminate', false);
+                } else if (checkedCount === all.length) {
+                    $(this).prop('checked', true).prop('indeterminate', false);
+                } else {
+                    $(this).prop('checked', false).prop('indeterminate', true);
+                }
+            });
+        }
+
+        function updateClaimCount() {
+            const n = $('.claim-photo-chk:checked').length;
+            const total = $('.claim-photo-chk').length;
+            $('#claim-selected-count').text(n + ' of ' + total + ' selected');
+            $('#btn-claim-confirm').prop('disabled', n === 0);
+            updateGroupCheckboxes();
+        }
+
+        function renderClaimModal(data) {
+            const body = $('#claim-source-modal-body');
+            $('#claim-source-loading').hide();
+
+            if (!data || data.sources.length === 0) {
+                body.html('<p class="text-muted py-3">No unclaimed photos found from the same source.</p>');
+                return;
+            }
+
+            let html = '';
+            data.sources.forEach(function (src, groupIdx) {
+                const label = src.profile.startsWith('http')
+                    ? '<a href="' + escapeHtml(src.profile) + '" target="_blank">'
+                      + escapeHtml(src.profile) + '</a>'
+                    : escapeHtml(src.profile);
+                html += '<div class="mb-4">';
+                html += '<h6 class="text-muted border-bottom pb-2 d-flex align-items-center gap-2">'
+                      + '<input type="checkbox" class="claim-group-chk form-check-input flex-shrink-0 mt-0"'
+                      + ' data-group="' + groupIdx + '" checked'
+                      + ' title="Select / deselect all from this source">'
+                      + '<span class="flex-grow-1"><i class="fa fa-link me-1"></i>' + label + '</span>'
+                      + '<span class="badge bg-secondary ms-1">' + src.photos.length + '</span>'
+                      + '</h6>';
+                html += '<div class="row g-2">';
+                src.photos.forEach(function (photo) {
+                    const imgUrl  = '/photo/' + photo.folder + '/' + photo.filename;
+                    const showUrl = '/photo/show/' + photo.id;
+                    html += '<div class="col-6 col-md-3 col-lg-2">'
+                          + '<div class="card h-100 border-0 shadow-sm">'
+                          + '<div class="position-relative">'
+                          + '<a href="' + showUrl + '" target="_blank" tabindex="-1">'
+                          + '<img src="' + imgUrl + '" class="card-img-top rounded-top"'
+                          + ' style="height:90px;object-fit:cover;" alt="' + escapeHtml(photo.title) + '">'
+                          + '</a>'
+                          + '<div class="position-absolute top-0 start-0 p-1">'
+                          + '<input type="checkbox" class="claim-photo-chk form-check-input"'
+                          + ' value="' + photo.id + '" data-group="' + groupIdx + '" checked'
+                          + ' title="' + escapeHtml(photo.title) + '">'
+                          + '</div></div>'
+                          + '<div class="card-body p-1">'
+                          + '<small class="text-truncate d-block">'
+                          + '<a href="' + showUrl + '" target="_blank" class="text-secondary text-decoration-none"'
+                          + ' title="' + escapeHtml(photo.title) + '">'
+                          + escapeHtml(photo.title) + '</a>'
+                          + '</small>'
+                          + '</div></div></div>';
+                });
+                html += '</div></div>';
+            });
+            body.html(html);
+
+            $('#claim-select-all, #claim-deselect-all').show();
+            updateClaimCount();
+            $(document).on('change.claim', '.claim-photo-chk', updateClaimCount);
+            $(document).on('change.claim', '.claim-group-chk', function () {
+                const grp = $(this).data('group');
+                $('.claim-photo-chk[data-group="' + grp + '"]').prop('checked', $(this).prop('checked'));
+                updateClaimCount();
+            });
+        }
+
+        // Fetch unclaimed count on page load; show button only when > 0.
+        $.getJSON('/api/v1/album/{{ album_path }}/unclaimed-by-source', function (data) {
+            unclaimedData = data;
+            if (data.total_count > 0) {
+                $('#btn-claim-source').show();
+                $('#claim-source-badge').text(data.total_count);
+            }
+        });
+
+        // Populate modal when it opens (data already in memory).
+        $('#claim-source-modal').on('show.bs.modal', function () {
+            renderClaimModal(unclaimedData);
+        });
+
+        // Clean up delegated handler when modal hides.
+        $('#claim-source-modal').on('hidden.bs.modal', function () {
+            $(document).off('change.claim');
+        });
+
+        $('#claim-select-all').on('click', function () {
+            $('.claim-photo-chk').prop('checked', true);
+            updateClaimCount();
+        });
+        $('#claim-deselect-all').on('click', function () {
+            $('.claim-photo-chk').prop('checked', false);
+            updateClaimCount();
+        });
+
+        $('#btn-claim-confirm').on('click', function () {
+            const photoIds = $('.claim-photo-chk:checked').map(function () {
+                return $(this).val();
+            }).get();
+            if (photoIds.length === 0) return;
+
+            const $btn = $(this);
+            $btn.prop('disabled', true)
+                .html('<i class="fa fa-spinner fa-spin me-1"></i>Adding…');
+
+            $.ajax({
+                url: '/api/v1/album/{{ album_path }}/claim-photos',
+                method: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify({photo_ids: photoIds}),
+                success: function (res) {
+                    toastr.success('Added ' + res.count + ' photo(s) to the album!');
+                    setTimeout(function () { window.location.reload(); }, 1000);
+                },
+                error: function () {
+                    toastr.error('Failed to add photos. Please try again.');
+                    $btn.prop('disabled', false)
+                        .html('<i class="fa fa-plus-circle me-1"></i>Add selected to album');
+                }
+            });
+        });
+    })();
 
     // ── Slideshow ──────────────────────────────────────────────────────────
     (function () {

@@ -69,6 +69,13 @@
                 data-album-object-id="{{ album_object_id }}"
                 data-album-path="{{ album_path }}">Shuffle <i class="fa fa-random" style="font-size:20px"></i>
         </button>
+        <button type="button" class="btn btn-warning" id="btn-claim-source"
+                data-bs-toggle="modal" data-bs-target="#claim-source-modal"
+                data-album-path="{{ album_path }}"
+                style="display:none" title="Add photos from the same source that are not yet in this album">
+            <i class="fa fa-download me-1"></i>Claim from source
+            <span id="claim-source-badge" class="badge bg-dark ms-1">0</span>
+        </button>
         <label class="switch">
             <input type="checkbox" id="btn-view-original-description" title="Toggle to view formatted descriptions">
             <span class="slider round"></span>
