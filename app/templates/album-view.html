@@ -357,7 +357,6 @@
     }
 
     function callServerToChangeView(viewStyle) {
-        // TODO: revise due to creating duplicated elements
         let photosObjectIds = [];
         $('.photo').children().map((index, element) => {
             photosObjectIds.push($(element).attr('id'));
@@ -380,6 +379,15 @@
             return response.text();
         }).then(data => {
             $(".photo").html(data);
+            // The view-change response already contains every photo in the
+            // album (unpaginated), so the scroll-triggered infinite-scroll
+            // fetch must be disabled. Otherwise it keeps firing with the
+            // stale pre-switch state, appends more pages of
+            // _album_view_photo_rows.html (list-row markup) into whatever
+            // view is now active, and the two layouts render on top of each
+            // other.
+            albumHasMore = false;
+            albumIsLoading = false;
         }).catch(error => {
             console.error('Error: ', error);
         });
