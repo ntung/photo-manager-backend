@@ -9,8 +9,7 @@ import random
 import tempfile
 import time
 import uuid
-from datetime import datetime, timedelta
-from functools import wraps
+from datetime import datetime
 from logging.config import dictConfig
 from html import unescape as html_unescape
 from urllib.parse import urlparse, parse_qs
@@ -143,29 +142,6 @@ def infer_submission_folder():
         submission_folders[location] = 1
     app.logger.info("current submission folder: %s", location)
     return location
-
-
-# https://www.linkedin.com/advice/0/what-some-best-practices-managing-flask-session-expiration
-# https://www.maskaravivek.com/post/how-to-add-http-cachecontrol-headers-in-flask/
-# https://stackoverflow.com/questions/704561/ns-binding-aborted-shown-in-firefox-with-httpfox
-def do_cache(minutes=5, content_type='application/json; charset=utf-8'):
-    """ Flask decorator that allows set Expire and Cache headers. """
-
-    def fwrap(f):
-        @wraps(f)
-        def wrapped_f(*args, **kwargs):
-            r = f(*args, **kwargs)
-            then = datetime.now() + timedelta(minutes=minutes)
-            rsp = Response(r, content_type=content_type)
-            v = then.strftime("%a, %d %b %Y %H:%M:%S GMT")
-            rsp.headers.add('Expires', v)
-            v = f'private,max-age={int(60 * minutes)}'
-            rsp.headers.add('Cache-Control', v)
-            return rsp
-
-        return wrapped_f
-
-    return fwrap
 
 
 @app.route('/', methods=('GET', 'POST'))
@@ -587,7 +563,6 @@ def albums_update():
 
 
 @app.route('/albums/view/<string:path>', methods=['GET', 'POST'])
-@do_cache(minutes=5, content_type='text/html;utf-8')
 def albums_view(path):
     _albums = []
     for album in db.albums.find():
