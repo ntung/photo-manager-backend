@@ -56,7 +56,7 @@ Flask + PyMongo photo management backend. No ORM — direct PyMongo queries thro
 - `GET /photo/<path:path>` — serve photo file from `UPLOAD_FOLDER` (cached 24 h)
 - `GET/POST /photo/albums` — album CRUD list view (HTML)
 - `GET/POST /albums`, `/albums/<path>` — album data (JSON)
-- `GET /albums/view/<path>` — album detail page (HTML, 5-min cache)
+- `GET /albums/view/<path>` — album detail page (HTML)
 - `POST /albums/add-photo`, `/album/add`, `/photo/save-photo-to-albums` — add photos to albums
 - `POST /albums/remove-photos` — remove photos from an album
 - `POST /albums/reorder-photos/` — reorder photos within an album
