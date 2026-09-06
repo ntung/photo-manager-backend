@@ -334,10 +334,14 @@ def photo_albums():
             cp = a.get('cover_photo')
             a['cover_photo_url'] = cp_map.get(str(cp)) if isinstance(cp, ObjectId) else None
 
+        classified_ids = _get_classified_photo_ids()
+        unclassified_query = (
+            {"_id": {"$nin": list(classified_ids)}} if classified_ids else {}
+        )
         unclassified = {
             "title": "Unclassified",
             "description": "Unclassified photos - not in any albums yet.",
-            "amount_photos": 1
+            "amount_photos": db.photos.count_documents(unclassified_query)
         }
         return render_template(view,
                                albums=sorted_albums,
@@ -573,19 +577,20 @@ def albums_view(path):
         })
 
     if path == "unclassified":
-        _photos = photo_unclassified()
-        nb_photos = len(_photos)
-        is_empty_album = nb_photos == 0
+        # Default GET: load only the first page; the client fetches subsequent
+        # pages via /api/v1/album/unclassified/photos as the user scrolls,
+        # same as a real album.
+        photos, nb_photos, has_more = _get_unclassified_photos_page()
         ctx: dict = {
             "album_path": "unclassified",
             "album_title": "Unclassified",
             "status": "FOUND",
-            "photos": _photos,
+            "photos": photos,
             "album_object_id": "unclassified",
             "albums": _albums,
             "nb_photos": nb_photos,
-            "is_empty_album": is_empty_album,
-            "has_more": False,
+            "is_empty_album": nb_photos == 0,
+            "has_more": has_more,
             "api_svr": API_SVR,
             "dict_album_values": {},
         }
@@ -692,25 +697,45 @@ def albums_view(path):
     })
 
 
-def photo_unclassified():
-    _albums = db.albums.find()
-    _albums = bson.json_util.dumps(_albums)
-    _albums = bson.json_util.loads(_albums)
+def _get_classified_photo_ids():
+    """
+    Returns the set of every photo ObjectId that belongs to at least one
+    album. Only pulls the `photos` array field from each album doc, so cost
+    scales with album membership counts rather than with every photo in the
+    database.
+    """
+    classified = set()
+    for album in db.albums.find({}, {"photos": 1}):
+        for pid in album.get("photos", []):
+            if pid is not None and pid != "None":
+                classified.add(pid)
+    return classified
 
-    _photos = db.photos.find()
-    _photos = bson.json_util.dumps(_photos)
-    _photos = bson.json_util.loads(_photos)
 
-    _unclassified = []
-    for photo in _photos:
-        found = False
-        for album in _albums:
-            if str(photo.get("_id")) in album['photos']:
-                found = True
-                break
-        if not found:
-            _unclassified.append(photo)
-    return _unclassified
+def _get_unclassified_photos_page():
+    """
+    Returns one paginated page of "unclassified" photos (photos that belong
+    to no album), newest first — mirrors _get_album_photos_page so the
+    unclassified pseudo-album loads the same way as a real album.
+
+    Replaces the old greedy approach, which loaded every photo AND every
+    album into Python (round-tripped through bson.json_util) and then did an
+    O(photos x albums) membership check for each photo.
+
+    Returns (photo_docs, total_count, has_more).
+    """
+    skip, page_size = _get_pagination_params()
+    classified_ids = _get_classified_photo_ids()
+
+    query = {"_id": {"$nin": list(classified_ids)}} if classified_ids else {}
+    total = db.photos.count_documents(query)
+    cursor = (db.photos.find(query)
+              .sort("date_uploaded", pymongo.DESCENDING)
+              .skip(skip)
+              .limit(page_size))
+    photos = list(cursor)
+    has_more = (skip + page_size) < total
+    return photos, total, has_more
 
 
 @app.route('/photo/delete/', methods=['POST'])
@@ -1632,6 +1657,15 @@ def get_album_photos(path):
       sort=<field>;<dir> e.g. sort=title;down (field sort, paginated)
       page=<n> page number (default 1)
     """
+    if path == "unclassified":
+        photos, _, has_more = _get_unclassified_photos_page()
+        content = render_template(
+            "_album_view_photo_rows.html",
+            **{"photos": photos, "album_path": path, "status": "FOUND",
+               "cover_photo_id": ''},
+        )
+        return jsonify(content=content, has_more=has_more, count=len(photos))
+
     sort_field, sort_dir = None, 'down'
     sort_param = request.args.get('sort', '')
     if sort_param:
