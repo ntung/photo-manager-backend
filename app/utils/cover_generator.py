@@ -7,9 +7,11 @@ Used by both scripts/generate_album_cover.py (CLI, batch runs) and the
 album view page).
 
 How it works:
-  1. Load the album and pick N photos evenly spaced through its existing
-     `photos` order (so the collage is representative of the whole album,
-     not just its first few uploads).
+  1. Load the album and pick N photos from its existing `photos` order -
+     evenly spaced by default (so the collage is representative of the
+     whole album, not just its first few uploads), or randomly when
+     `randomize=True` (so re-running it on an unchanged album still gives
+     a different result, for a manual "Re-generate cover" action).
   2. Center-crop + resize each source photo to an equal-width vertical
      slice, then stitch the slices edge-to-edge into one landscape image
      (target aspect ratio ~2.4:1, matching the existing hand-picked covers
@@ -21,6 +23,7 @@ How it works:
 """
 import hashlib
 import os
+import random
 import uuid
 from datetime import datetime
 
@@ -87,6 +90,18 @@ def pick_evenly_spaced(photo_ids, num_photos):
     return [photo_ids[i] for i in indices]
 
 
+def pick_random(photo_ids, num_photos):
+    """Like pick_evenly_spaced, but a random subset instead of a
+    deterministic one - so re-running this on an unchanged album gives a
+    different collage instead of reproducing (or MD5-deduping back to)
+    the same one every time."""
+    n = len(photo_ids)
+    if n <= num_photos:
+        return photo_ids
+    indices = sorted(random.sample(range(n), num_photos))
+    return [photo_ids[i] for i in indices]
+
+
 def center_crop_to_aspect(img, target_ratio):
     w, h = img.size
     current_ratio = w / h
@@ -121,11 +136,16 @@ def build_collage(image_paths, target_w, target_h):
 
 def generate_cover(
     db, upload_folder, album_path, num_photos=DEFAULT_NUM_PHOTOS,
-    target_w=DEFAULT_WIDTH, target_h=DEFAULT_HEIGHT, dry_run=False
+    target_w=DEFAULT_WIDTH, target_h=DEFAULT_HEIGHT, dry_run=False, randomize=False
 ):
     """Build a collage cover for the album at `album_path` and set it as
     cover_photo. Returns the new (or reused, or dry-run None) photo
-    ObjectId. Raises CoverGenerationError for expected per-album failures."""
+    ObjectId. Raises CoverGenerationError for expected per-album failures.
+
+    By default photos are picked evenly spaced through the album's order,
+    for reproducible batch/CLI runs. Pass randomize=True (used by the
+    interactive "Re-generate cover" button) to pick a random subset
+    instead, so repeated clicks produce different collages."""
     album = db.albums.find_one({'path': album_path})
     if not album:
         raise CoverGenerationError(f"Album not found: {album_path}")
@@ -134,7 +154,8 @@ def generate_cover(
     if not photo_ids:
         raise CoverGenerationError(f"Album '{album_path}' has no photos to build a cover from")
 
-    chosen_ids = pick_evenly_spaced(photo_ids, num_photos)
+    picker = pick_random if randomize else pick_evenly_spaced
+    chosen_ids = picker(photo_ids, num_photos)
     projection = {'folder': 1, 'filename': 1, 'title': 1}
     chosen_docs = {
         p['_id']: p

@@ -15,6 +15,7 @@ from html import unescape as html_unescape
 from urllib.parse import urlparse, parse_qs
 
 import bson
+import bson.errors
 import bson.json_util
 import pymongo
 import pytz
@@ -1721,6 +1722,25 @@ def _cover_needs_regen(cover_id):
     return not cover_generator.is_landscape_enough(path)
 
 
+def _cover_resource(cover_id):
+    """JSON representation of an album's cover, shared by every /cover
+    response so API consumers (this app's own JS, or a future separate
+    frontend) always see the same shape."""
+    return {
+        'cover_photo_id': str(cover_id) if cover_id else None,
+        'cover_photo_url': _cover_photo_url(cover_id),
+        'needs_regen': _cover_needs_regen(cover_id),
+    }
+
+
+@app.route('/api/v1/album/<string:path>/cover', methods=['GET'])
+def get_album_cover(path):
+    album = db.albums.find_one({'path': path}, {'cover_photo': 1})
+    if album is None:
+        return jsonify({'message': 'Album not found'}), 404
+    return jsonify(_cover_resource(album.get('cover_photo')))
+
+
 @app.route('/api/v1/album/<string:path>/cover', methods=['PATCH'])
 def set_album_cover(path):
     body = request.get_json(silent=True)
@@ -1729,29 +1749,53 @@ def set_album_cover(path):
     photo_id = (body.get('photo_id') or '').strip()
     if not photo_id:
         return jsonify({'message': 'photo_id is required'}), 400
+    try:
+        cover_id = ObjectId(photo_id)
+    except bson.errors.InvalidId:
+        return jsonify({'message': 'photo_id is not a valid id'}), 400
     result = db.albums.update_one(
         {'path': path},
-        {'$set': {'cover_photo': ObjectId(photo_id), 'date_modified': datetime.now(TZ_LONDON)}}
+        {'$set': {'cover_photo': cover_id, 'date_modified': datetime.now(TZ_LONDON)}}
     )
     if result.matched_count == 0:
         return jsonify({'message': 'Album not found'}), 404
-    return jsonify({'message': 'Cover photo updated'})
+    return jsonify({'message': 'Cover photo updated', **_cover_resource(cover_id)})
 
 
-@app.route('/api/v1/album/<string:path>/generate-cover', methods=['POST'])
+@app.route('/api/v1/album/<string:path>/cover/generate', methods=['POST'])
 def generate_album_cover(path):
     """On-demand version of scripts/generate_album_cover.py: build a
     collage cover from photos already in the album and set it as
-    cover_photo. Used by the 'Generate cover' button on the album view
-    page when no existing photo is landscape enough to crop well."""
+    cover_photo. Used by the 'Generate cover' / 'Re-generate cover'
+    button on the album view page, and callable directly as a REST
+    action by any other frontend.
+
+    Optional JSON body:
+      num_photos (int), width (int), height (int) - override the collage
+        defaults (3, 1200, 500)
+      randomize (bool, default true) - pick a random subset of the
+        album's photos instead of an evenly-spaced one, so repeated
+        calls on an unchanged album produce different collages
+    """
+    body = request.get_json(silent=True) or {}
     try:
-        new_photo_id = cover_generator.generate_cover(db, UPLOAD_FOLDER, path)
+        num_photos = int(body.get('num_photos', cover_generator.DEFAULT_NUM_PHOTOS))
+        width = int(body.get('width', cover_generator.DEFAULT_WIDTH))
+        height = int(body.get('height', cover_generator.DEFAULT_HEIGHT))
+    except (TypeError, ValueError):
+        return jsonify({'message': 'num_photos, width and height must be integers'}), 400
+    if num_photos < 1 or width < 1 or height < 1:
+        return jsonify({'message': 'num_photos, width and height must be positive'}), 400
+    randomize = bool(body.get('randomize', True))
+
+    try:
+        new_photo_id = cover_generator.generate_cover(
+            db, UPLOAD_FOLDER, path, num_photos=num_photos,
+            target_w=width, target_h=height, randomize=randomize,
+        )
     except cover_generator.CoverGenerationError as e:
         return jsonify({'message': str(e)}), 400
-    return jsonify({
-        'message': 'Cover generated',
-        'cover_photo_url': _cover_photo_url(new_photo_id),
-    })
+    return jsonify({'message': 'Cover generated', **_cover_resource(new_photo_id)})
 
 
 @app.route('/api/v1/album/<string:path>/unclaimed-by-source', methods=['GET'])

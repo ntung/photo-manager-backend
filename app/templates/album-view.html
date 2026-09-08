@@ -48,11 +48,14 @@
                 <div class="position-relative">
                     <img src="{{ cover_photo_url }}" class="img-fluid rounded"
                          style="max-height:260px;width:100%;object-fit:cover;">
-                    {% if cover_needs_regen and not is_empty_album %}
+                    {% if not is_empty_album %}
                     <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2 shadow-sm"
                             id="btn-generate-cover" data-album-path="{{ album_path }}"
-                            title="Current cover isn't landscape enough for a good crop">
-                        <i class="fa fa-magic me-1"></i>Generate cover
+                            data-confirm="{{ 'false' if cover_needs_regen else 'true' }}"
+                            title="{{ "Current cover isn't landscape enough for a good crop"
+                                      if cover_needs_regen else
+                                      'Generate a new collage cover from photos in this album' }}">
+                        <i class="fa fa-magic me-1"></i>{{ 'Generate cover' if cover_needs_regen else 'Re-generate cover' }}
                     </button>
                     {% endif %}
                 </div>
@@ -585,12 +588,19 @@
     (function () {
         $('#btn-generate-cover').on('click', function () {
             const $btn = $(this);
+            if ($btn.data('confirm') &&
+                !confirm('Replace the current cover with a newly generated one?')) {
+                return;
+            }
+            const originalHtml = $btn.html();
             $btn.prop('disabled', true)
                 .html('<i class="fa fa-spinner fa-spin me-1"></i>Generating…');
 
             $.ajax({
-                url: '/api/v1/album/{{ album_path }}/generate-cover',
+                url: '/api/v1/album/{{ album_path }}/cover/generate',
                 method: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify({randomize: true}),
                 success: function () {
                     toastr.success('Cover generated!');
                     setTimeout(function () { window.location.reload(); }, 800);
@@ -599,8 +609,7 @@
                     const msg = (xhr.responseJSON && xhr.responseJSON.message)
                         || 'Failed to generate cover.';
                     toastr.error(msg);
-                    $btn.prop('disabled', false)
-                        .html('<i class="fa fa-magic me-1"></i>Generate cover');
+                    $btn.prop('disabled', false).html(originalHtml);
                 }
             });
         });
