@@ -33,6 +33,7 @@ from slugify import slugify
 
 from migration_framework.runner import MigrationRunner
 from .utils import PhotoManager
+from .utils import cover_generator
 
 load_dotenv()  # loads variables from .env into environment
 
@@ -615,6 +616,7 @@ def albums_view(path):
     cover_id = album_doc.get('cover_photo')
     cover_url = _cover_photo_url(cover_id)
     cover_id_str = str(cover_id) if cover_id else ''
+    cover_needs_regen = _cover_needs_regen(cover_id)
 
     if is_empty_album:
         return render_template(view, **{
@@ -626,6 +628,7 @@ def albums_view(path):
             "has_more": False, "api_svr": API_SVR,
             "dict_album_values": {},
             "cover_photo_url": cover_url, "cover_photo_id": cover_id_str,
+            "cover_needs_regen": cover_needs_regen,
         })
 
     sort = request.args.get('sort')
@@ -699,6 +702,7 @@ def albums_view(path):
         "api_svr": API_SVR,
         "dict_album_values": {},
         "cover_photo_url": cover_url, "cover_photo_id": cover_id_str,
+        "cover_needs_regen": cover_needs_regen,
     })
 
 
@@ -1703,6 +1707,20 @@ def _cover_photo_url(cover_id):
     return f"/photo/{photo['folder']}/{photo['filename']}" if photo else None
 
 
+def _cover_needs_regen(cover_id):
+    """True when there's no cover, or the current cover's file is missing,
+    or its image isn't landscape enough to make a decent object-fit:cover
+    crop for the wide album banner - i.e. a good candidate for the
+    generate-cover button."""
+    if not cover_id:
+        return True
+    photo = db.photos.find_one({'_id': cover_id}, {'folder': 1, 'filename': 1})
+    if not photo:
+        return True
+    path = os.path.join(UPLOAD_FOLDER, photo['folder'], photo['filename'])
+    return not cover_generator.is_landscape_enough(path)
+
+
 @app.route('/api/v1/album/<string:path>/cover', methods=['PATCH'])
 def set_album_cover(path):
     body = request.get_json(silent=True)
@@ -1718,6 +1736,22 @@ def set_album_cover(path):
     if result.matched_count == 0:
         return jsonify({'message': 'Album not found'}), 404
     return jsonify({'message': 'Cover photo updated'})
+
+
+@app.route('/api/v1/album/<string:path>/generate-cover', methods=['POST'])
+def generate_album_cover(path):
+    """On-demand version of scripts/generate_album_cover.py: build a
+    collage cover from photos already in the album and set it as
+    cover_photo. Used by the 'Generate cover' button on the album view
+    page when no existing photo is landscape enough to crop well."""
+    try:
+        new_photo_id = cover_generator.generate_cover(db, UPLOAD_FOLDER, path)
+    except cover_generator.CoverGenerationError as e:
+        return jsonify({'message': str(e)}), 400
+    return jsonify({
+        'message': 'Cover generated',
+        'cover_photo_url': _cover_photo_url(new_photo_id),
+    })
 
 
 @app.route('/api/v1/album/<string:path>/unclaimed-by-source', methods=['GET'])

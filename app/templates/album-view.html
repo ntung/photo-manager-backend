@@ -45,8 +45,29 @@
         {% if cover_photo_url %}
         <div class="row mb-3">
             <div class="col">
-                <img src="{{ cover_photo_url }}" class="img-fluid rounded"
-                     style="max-height:260px;width:100%;object-fit:cover;">
+                <div class="position-relative">
+                    <img src="{{ cover_photo_url }}" class="img-fluid rounded"
+                         style="max-height:260px;width:100%;object-fit:cover;">
+                    {% if cover_needs_regen and not is_empty_album %}
+                    <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2 shadow-sm"
+                            id="btn-generate-cover" data-album-path="{{ album_path }}"
+                            title="Current cover isn't landscape enough for a good crop">
+                        <i class="fa fa-magic me-1"></i>Generate cover
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% elif cover_needs_regen and not is_empty_album %}
+        <div class="row mb-3">
+            <div class="col">
+                <div class="rounded d-flex align-items-center justify-content-center"
+                     style="height:120px;background:#f0f0f0;">
+                    <button type="button" class="btn btn-outline-secondary"
+                            id="btn-generate-cover" data-album-path="{{ album_path }}">
+                        <i class="fa fa-magic me-1"></i>Generate cover
+                    </button>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -555,6 +576,31 @@
                     toastr.error('Failed to add photos. Please try again.');
                     $btn.prop('disabled', false)
                         .html('<i class="fa fa-plus-circle me-1"></i>Add selected to album');
+                }
+            });
+        });
+    })();
+
+    // ── Generate cover ────────────────────────────────────────────────────
+    (function () {
+        $('#btn-generate-cover').on('click', function () {
+            const $btn = $(this);
+            $btn.prop('disabled', true)
+                .html('<i class="fa fa-spinner fa-spin me-1"></i>Generating…');
+
+            $.ajax({
+                url: '/api/v1/album/{{ album_path }}/generate-cover',
+                method: 'POST',
+                success: function () {
+                    toastr.success('Cover generated!');
+                    setTimeout(function () { window.location.reload(); }, 800);
+                },
+                error: function (xhr) {
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message)
+                        || 'Failed to generate cover.';
+                    toastr.error(msg);
+                    $btn.prop('disabled', false)
+                        .html('<i class="fa fa-magic me-1"></i>Generate cover');
                 }
             });
         });
