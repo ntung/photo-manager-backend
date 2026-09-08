@@ -24,6 +24,16 @@
             border-radius: 4px;
             padding: 2px 4px;
         }
+        #toggle-upload-form .fa-chevron-down {
+            transition: transform .2s ease;
+        }
+        #toggle-upload-form.collapsed .fa-chevron-down {
+            transform: rotate(-90deg);
+        }
+        #toggle-upload-form.collapsed .label-hide,
+        #toggle-upload-form:not(.collapsed) .label-show {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -34,14 +44,24 @@
         <div class="col">
             <h1>Photo Manager</h1>
             <div class="content">
-                <div class="d-flex flex-column flex-sm-row gap-3">
-                    <div id="edit-preview-col" style="display:none;">
-                        <img id="edit-photo-preview" src="" alt="Photo preview"
-                             class="img-fluid"
-                             style="max-width:200px;max-height:320px;object-fit:contain;border-radius:4px;">
-                    </div>
-                    <div class="flex-grow-1">
-                        {% include('_photo-upload-form.html') %}
+                <button class="btn btn-outline-primary btn-sm mb-2 collapsed" type="button"
+                        id="toggle-upload-form"
+                        data-bs-toggle="collapse" data-bs-target="#upload-form-collapse"
+                        aria-expanded="false" aria-controls="upload-form-collapse">
+                    <i class="fa fa-chevron-down"></i>
+                    <span class="label-show">Upload a photo</span>
+                    <span class="label-hide">Hide upload form</span>
+                </button>
+                <div class="collapse" id="upload-form-collapse">
+                    <div class="d-flex flex-column flex-sm-row gap-3">
+                        <div id="edit-preview-col" style="display:none;">
+                            <img id="edit-photo-preview" src="" alt="Photo preview"
+                                 class="img-fluid"
+                                 style="max-width:200px;max-height:320px;object-fit:contain;border-radius:4px;">
+                        </div>
+                        <div class="flex-grow-1">
+                            {% include('_photo-upload-form.html') %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -80,6 +100,11 @@
         };
         $('#upload-form')[0].reset();
     });
+
+    // The upload form is collapsed by default; the toggle button expands it,
+    // and clicking Edit on a photo expands it automatically.
+    const uploadFormCollapse = bootstrap.Collapse.getOrCreateInstance(
+        document.getElementById('upload-form-collapse'), { toggle: false });
 
     let photoObjectId = "", photoFolder = "", photoFileName = "", photoTitle = "";
     const _savedPage = previousPage();
@@ -184,6 +209,7 @@
         loadExistingAlbumsIntoSelect(photoObjectId);
         document.getElementById('edit-photo-preview').src = '/photo/' + photoFolder + '/' + photoFileName;
         document.getElementById('edit-preview-col').style.display = '';
+        uploadFormCollapse.show();
         window.scrollTo(0, 0);
         $("#photo-edit-modal-form").modal("show");
         $("#btn-save").on("click", function () {
