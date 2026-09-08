@@ -394,6 +394,11 @@ def get_album(path):
 
     album = {**album_doc}
     album["photos_details"] = photos_details
+    # The cover photo may not be one of the album's own photos (e.g. an
+    # auto-generated collage cover lives as a standalone photo document), so
+    # resolve its URL directly rather than expecting callers to find it in
+    # photos_details.
+    album["cover_photo_url"] = _cover_photo_url(album_doc.get("cover_photo"))
     return album
 
 
