@@ -213,7 +213,15 @@ def generate_cover(
 
     db.albums.update_one(
         {'path': album_path},
-        {'$set': {'cover_photo': new_photo_id, 'date_modified': datetime.now(TZ_LONDON)}}
+        {
+            '$set': {'cover_photo': new_photo_id, 'date_modified': datetime.now(TZ_LONDON)},
+            # File the generated cover into the album itself too, so it shows
+            # up as classified (part of this album) rather than lingering in
+            # the unclassified pile on /photo/list. $addToSet keeps this a
+            # no-op if it's already there (e.g. an identical cover reused
+            # from a previous generation).
+            '$addToSet': {'photos': new_photo_id},
+        }
     )
     print(f"Album '{album_path}' cover_photo set to {new_photo_id}")
     return new_photo_id
