@@ -83,6 +83,15 @@
             <div class="photo">
                 {% include("_album_view_list.html") %}
             </div>
+
+            <!-- Rendered once here, outside .photo, so switching view style
+                 (which replaces .photo's content via AJAX) never re-injects
+                 and re-executes these forms' inline <script> — that caused
+                 "Identifier '...' has already been declared" errors and,
+                 in gallery/columns view, left the modals missing from the
+                 DOM entirely. -->
+            {% include('_photo-edit-modal-form.html') %}
+            {% include('_albums-select2-modal-form.html') %}
         {% else %}
             <div class="row">
                 <div class="col">
