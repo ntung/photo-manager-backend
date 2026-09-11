@@ -39,7 +39,7 @@
     {% if status == "FOUND" %}
         <div class="row">
             <div class="col">
-                <h1>View Album {{ album_title }} ({{ nb_photos }})</h1>
+                <h1>View Album {{ album_title }} (<span id="album-nb-photos">{{ nb_photos }}</span>)</h1>
             </div>
         </div>
         {% if cover_photo_url %}
@@ -399,6 +399,12 @@
         }).then(response => {
             if (!response.ok) {
                 throw new Error('Network response failed!!!');
+            }
+            // The server recomputes the photo count fresh on every switch —
+            // surfaced via this header since the body is plain HTML, not JSON.
+            const nbPhotos = response.headers.get('X-Nb-Photos');
+            if (nbPhotos !== null) {
+                $('#album-nb-photos').text(nbPhotos);
             }
             return response.text();
         }).then(data => {

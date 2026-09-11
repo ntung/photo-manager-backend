@@ -648,7 +648,7 @@ def albums_view(path):
         nb_photos = len(photos_details)
         bz = math.ceil(len(array_photos_object_ids) / 3)
         buckets = PhotoManager.create_buckets(photos_details, bz)
-        return render_template(view, **{
+        rendered = render_template(view, **{
             "status": "FOUND", "album": album,
             "album_path": album['path'],
             "album_title": album['title'],
@@ -662,6 +662,12 @@ def albums_view(path):
             "dict_album_values": {},
             "cover_photo_url": cover_url, "cover_photo_id": cover_id_str,
         })
+        # The view-switch fetch only swaps the photo grid, not the page's
+        # <h1> photo count — surface the freshly-computed total via a header
+        # so the client can keep that count in sync (PM-43).
+        response = Response(rendered, content_type='text/html; charset=utf-8')
+        response.headers['X-Nb-Photos'] = str(nb_photos)
+        return response
 
     if sort is not None:
         # Sort or shuffle — load all photos so the full ordered set is shown.
