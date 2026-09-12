@@ -244,6 +244,22 @@
         }
     });
 
+    // If a page of photos is dense enough that it doesn't overflow the
+    // viewport — columns view especially, whose thumbnails pack far more
+    // per screen than list/gallery, but any view can hit this on a tall
+    // enough window — there is no scrollbar at all, so the scroll handler
+    // above never fires and infinite scroll would never engage past the
+    // first page. Called after every load/append/switch/sort/shuffle to
+    // keep pulling in pages until there's something to actually scroll, or
+    // nothing left to load.
+    function fillViewportIfNeeded() {
+        if (albumIsLoading || !albumHasMore) return;
+        if ($(document).height() <= $(window).height()) {
+            loadMoreAlbumPhotos();
+        }
+    }
+    fillViewportIfNeeded();
+
     function loadMoreAlbumPhotos() {
         albumIsLoading = true;
         const myToken = renderToken;
@@ -267,6 +283,7 @@
                 $('#photo-gallery').append(response.content);
                 albumCurrentPage += 1;
                 albumHasMore = response.has_more;
+                fillViewportIfNeeded();
             },
             error: function () {
                 albumIsLoading = false;
@@ -340,6 +357,7 @@
                 if ($('#photo-gallery').sortable('instance')) {
                     $('#photo-gallery').sortable('disable');
                 }
+                fillViewportIfNeeded();
             },
             error: function () {
                 console.error('Shuffle request failed');
@@ -403,6 +421,7 @@
                 if ($('#photo-gallery').sortable('instance')) {
                     $('#photo-gallery').sortable('disable');
                 }
+                fillViewportIfNeeded();
             },
             error: function () {
                 console.error('Sort request failed');
@@ -450,6 +469,7 @@
             albumHasMore = headers.get('X-Has-More') === 'true';
             $(".photo").html(data);
             albumIsLoading = false;
+            fillViewportIfNeeded();
         }).catch(error => {
             console.error('Error: ', error);
         });
