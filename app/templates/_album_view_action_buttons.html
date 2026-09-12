@@ -60,7 +60,7 @@
     }
 </style>
 <div class="row">
-    <div class="col-5 d-flex flex-wrap align-items-center gap-1 px-1">
+    <div class="col-6 d-flex flex-wrap align-items-center gap-1 px-1">
         <button type="button" class="btn btn-primary" id="btn-reset-order-photo">Reset Order</button>
         <button type="button" class="btn btn-success" id="btn-slideshow">
             Slideshow <i class="fa fa-play-circle" style="font-size:18px"></i>
@@ -108,7 +108,10 @@
             </div>
         </div>
     </div>
-    <div class="col-2">
+    <div class="col-1 d-flex align-items-center justify-content-center px-1">
+        <!-- col-1, like each photo row's own toggle-switch column below, so
+             Remove lines up directly above the per-photo checkboxes it acts
+             on rather than sitting off to the right of them. -->
         <button type="button" class="btn btn-primary" id="btn-remove-photo"
                 data-album-path="{{ album_path }}"
                 data-album-title="{{ album_title }}">Remove

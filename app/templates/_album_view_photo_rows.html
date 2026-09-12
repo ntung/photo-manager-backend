@@ -57,8 +57,14 @@
             {% endif %}
         </div>
         <div class="col-1 d-flex flex-column align-items-center gap-2">
-            <div class="form-check">
-                <label class="form-check-label switch" for="chk-remove-{{ photo['filename'] }}">
+            <!-- ps-0: Bootstrap's default .form-check padding-left (reserved
+                 for a real checkbox sitting to the left of its label) insets
+                 this custom slider switch 24px to the right of the wrapper's
+                 own (correctly centered) box, throwing it out of alignment
+                 with Set cover and the Remove button above. -->
+            <div class="form-check ps-0">
+                <label class="form-check-label switch" for="chk-remove-{{ photo['filename'] }}"
+                       title="Select to remove this photo from the album">
                 <input class="form-check-input cls-chk-remove-photo"
                        type="checkbox" id="chk-remove-{{ photo['filename'] }}"
                        name="chk-remove-{{ photo['filename'] }}"
