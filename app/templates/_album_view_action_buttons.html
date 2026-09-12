@@ -60,7 +60,7 @@
     }
 </style>
 <div class="row">
-    <div class="col-6 d-flex flex-wrap align-items-center gap-1 px-1">
+    <div class="col-8 d-flex flex-wrap align-items-center gap-1 px-1">
         <button type="button" class="btn btn-primary" id="btn-reset-order-photo">Reset Order</button>
         <button type="button" class="btn btn-success" id="btn-slideshow">
             Slideshow <i class="fa fa-play-circle" style="font-size:18px"></i>
@@ -76,16 +76,9 @@
         </label>
         <span class="d-inline-flex align-items-center"><i id="btn-view-changer" class="fa fa-th-list" style="font-size:26px"
                title="Switch to gallery view"></i></span>
-        <button type="button" class="btn btn-warning" id="btn-claim-source"
-                data-bs-toggle="modal" data-bs-target="#claim-source-modal"
-                data-album-path="{{ album_path }}"
-                style="display:none" title="Add photos from the same source that are not yet in this album">
-            <i class="fa fa-download me-1"></i>Claim from source
-            <span id="claim-source-badge" class="badge bg-dark ms-1">0</span>
-        </button>
-    </div>
-    <div class="col-5">
-        <!-- Example split danger button -->
+        <!-- PM-46: Sort moved next to the view-changer so it's grouped with
+             the other core controls, freeing the column below (between
+             this group and Remove) for a future search textbox. -->
         <div class="btn-group d-flex align-items-center gap-2">
             <p style="font-size: 26px; margin: 0;" id="sort-direction-block" class="sort-direction-para">
                 <i class="fa fa-arrow-circle-down" aria-hidden="true" id="sort-direction-icon"></i>
@@ -107,6 +100,17 @@
                 </ul>
             </div>
         </div>
+        <button type="button" class="btn btn-warning" id="btn-claim-source"
+                data-bs-toggle="modal" data-bs-target="#claim-source-modal"
+                data-album-path="{{ album_path }}"
+                style="display:none" title="Add photos from the same source that are not yet in this album">
+            <i class="fa fa-download me-1"></i>Claim from source
+            <span id="claim-source-badge" class="badge bg-dark ms-1">0</span>
+        </button>
+    </div>
+    <div class="col-3">
+        <!-- PM-46: reserved for a future search textbox, between the
+             button group above and Remove below. -->
     </div>
     <div class="col-1 d-flex align-items-center justify-content-center px-1">
         <!-- col-1, like each photo row's own toggle-switch column below, so
