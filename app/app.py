@@ -1814,6 +1814,12 @@ def get_unclaimed_by_source(path):
     Response: { sources: [{profile, photos: [{id, folder, filename, title, courtesy}]}],
                 total_count: int }
     """
+    if path == "unclassified":
+        # The virtual "unclassified" pseudo-album has no document in
+        # `albums` (it's just "photos in no album"), so there's no set of
+        # existing photos to match a source_profile against.
+        return jsonify({'sources': [], 'total_count': 0})
+
     album = db.albums.find_one({"path": path})
     if not album:
         return jsonify({'error': 'Album not found'}), 404

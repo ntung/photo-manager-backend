@@ -544,13 +544,18 @@
         }
 
         // Fetch unclaimed count on page load; show button only when > 0.
-        $.getJSON('/api/v1/album/{{ album_path }}/unclaimed-by-source', function (data) {
-            unclaimedData = data;
-            if (data.total_count > 0) {
-                $('#btn-claim-source').show();
-                $('#claim-source-badge').text(data.total_count);
-            }
-        });
+        // Skip for the virtual "unclassified" pseudo-album — it has no
+        // album document in the DB (it's just "photos in no album"), so
+        // there's nothing to claim into and the endpoint 404s.
+        if ('{{ album_path }}' !== 'unclassified') {
+            $.getJSON('/api/v1/album/{{ album_path }}/unclaimed-by-source', function (data) {
+                unclaimedData = data;
+                if (data.total_count > 0) {
+                    $('#btn-claim-source').show();
+                    $('#claim-source-badge').text(data.total_count);
+                }
+            });
+        }
 
         // Populate modal when it opens (data already in memory).
         $('#claim-source-modal').on('show.bs.modal', function () {
