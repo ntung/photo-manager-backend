@@ -60,7 +60,7 @@
     }
 </style>
 <div class="row">
-    <div class="col-5">
+    <div class="col-5 d-flex flex-wrap align-items-center gap-1 px-1">
         <button type="button" class="btn btn-primary" id="btn-reset-order-photo">Reset Order</button>
         <button type="button" class="btn btn-success" id="btn-slideshow">
             Slideshow <i class="fa fa-play-circle" style="font-size:18px"></i>
@@ -69,6 +69,11 @@
                 data-album-object-id="{{ album_object_id }}"
                 data-album-path="{{ album_path }}">Shuffle <i class="fa fa-random" style="font-size:20px"></i>
         </button>
+        <label class="switch mb-0">
+            <input type="checkbox" id="btn-view-original-description" title="Toggle to view formatted descriptions">
+            <span class="slider round"></span>
+        </label>
+        <span class="d-inline-flex align-items-center"><i id="btn-view-changer" class="fa fa-th-list" style="font-size:26px"></i></span>
         <button type="button" class="btn btn-warning" id="btn-claim-source"
                 data-bs-toggle="modal" data-bs-target="#claim-source-modal"
                 data-album-path="{{ album_path }}"
@@ -76,38 +81,28 @@
             <i class="fa fa-download me-1"></i>Claim from source
             <span id="claim-source-badge" class="badge bg-dark ms-1">0</span>
         </button>
-        <label class="switch">
-            <input type="checkbox" id="btn-view-original-description" title="Toggle to view formatted descriptions">
-            <span class="slider round"></span>
-        </label>
-        <span><i id="btn-view-changer" class="fa fa-th-list" style="font-size:26px"></i></span>
     </div>
     <div class="col-5">
         <!-- Example split danger button -->
-        <div class="btn-group" style="display: block">
-            <div class="row">
-                <div class="col-2">
-                    <p style="font-size: 26px" id="sort-direction-block" class="sort-direction-para">
-                        <i class="fa fa-arrow-circle-down" aria-hidden="true" id="sort-direction-icon"></i>
-                    </p>
-                </div>
+        <div class="btn-group d-flex align-items-center gap-2">
+            <p style="font-size: 26px; margin: 0;" id="sort-direction-block" class="sort-direction-para">
+                <i class="fa fa-arrow-circle-down" aria-hidden="true" id="sort-direction-icon"></i>
+            </p>
 
-                <div class="col-10">
-                    <button type="button" class="btn btn-danger" id="btn-sort">Sort</button>
-                    <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="visually-hidden">Toggle Dropdown</span>
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" data-field-name="title">Title</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li><a class="dropdown-item" data-field-name="date_modified">Modified</a></li>
-                        <li><a class="dropdown-item" data-field-name="date_uploaded">Uploaded</a></li>
-                    </ul>
-                </div>
-
+            <div>
+                <button type="button" class="btn btn-danger" id="btn-sort">Sort</button>
+                <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" data-field-name="title">Title</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" data-field-name="date_modified">Modified</a></li>
+                    <li><a class="dropdown-item" data-field-name="date_uploaded">Uploaded</a></li>
+                </ul>
             </div>
         </div>
     </div>
