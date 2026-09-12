@@ -69,8 +69,11 @@ def test_action_bar_row_uses_flex_alignment(app_context):
     baselines.
     """
     html = _render()
-    # The container opening tag carries the alignment classes.
-    container_start = html.index('<div class="col-5')
+    # The container opening tag carries the alignment classes. It's col-6
+    # (not col-5) — widened to make room for Reset Order/Slideshow/Shuffle/
+    # toggle/view-changer/Claim, with the freed column going to Remove's
+    # own col-1 so it lines up above the per-photo toggle column.
+    container_start = html.index('<div class="col-6')
     container_tag_end = html.index(">", container_start)
     container_tag = html[container_start:container_tag_end]
     assert "d-flex" in container_tag
@@ -133,6 +136,27 @@ def test_view_changer_icon_starts_with_a_title_naming_the_next_view(app_context)
     tag_end = html.index(">", icon_start)
     icon_tag = html[icon_start:tag_end]
     assert 'title="Switch to gallery view"' in icon_tag
+
+
+def test_remove_button_column_matches_the_photo_row_toggle_column(app_context):
+    """
+    Regression test: Remove used to sit in a col-2 while each photo row's
+    own remove-checkbox toggle sits in a col-1 — different widths starting
+    at different offsets, so Remove never lined up above the column of
+    toggles it acts on. It must now be col-1 too (see
+    _album_view_photo_rows.html's matching col-1 toggle column), with the
+    button centered inside it to match how the toggle switch centers in
+    its own column.
+    """
+    html = _render()
+    remove_start = html.index('id="btn-remove-photo"')
+    container_start = html.rindex('<div class="col', 0, remove_start)
+    container_tag_end = html.index(">", container_start)
+    container_tag = html[container_start:container_tag_end]
+    assert "col-1" in container_tag
+    assert "col-10" not in container_tag  # guard against a "col-1" substring false-positive
+    assert "col-2" not in container_tag
+    assert "justify-content-center" in container_tag
 
 
 def test_claim_from_source_button_starts_hidden(app_context):
