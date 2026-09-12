@@ -1,20 +1,29 @@
 <!-- Gallery -->
-<!-- https://mdbootstrap.com/docs/standard/extended/image-grid/ -->
-<div class="row">
-    {% for bucket in buckets %}
-    <div class="col-lg-4 col-md-12 mb-4 mb-lg-0 my-gallery">
-    {% for photo in bucket %}
-    {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
-        <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album_path }}">
-            <img src="{{ photo_url }}" alt="{{ photo['title'] }}" class="w-100 shadow-1-strong rounded mb-4"
-                 data-photo-object-id="{{ photo.get('_id') }}"></a>
-    {% endfor %}
-    </div>
-    {% endfor %}
+<!-- https://mdbootstrap.com/docs/standard/extended/image-grid/
+     A single #photo-gallery container laid out with CSS columns (rather than
+     photos pre-split into 3 server-computed buckets) so that further pages
+     appended by infinite scroll, sort, or shuffle just drop new items in —
+     no need to know the full album's photo count up front to bucket evenly. -->
+<style>
+    #photo-gallery.my-gallery {
+        column-count: 3;
+        column-gap: 1rem;
+    }
+    #photo-gallery.my-gallery a {
+        display: block;
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+    @media (max-width: 991px) {
+        #photo-gallery.my-gallery { column-count: 1; }
+    }
+</style>
+<div id="photo-gallery" class="my-gallery">
+{% include("_album_view_gallery_items.html") %}
 </div>
 <script>
     $(function () {
-        const $myGallery = $(".my-gallery");
+        const $myGallery = $("#photo-gallery");
         $myGallery.sortable();
         $myGallery.disableSelection();
     });

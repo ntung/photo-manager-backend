@@ -224,6 +224,7 @@
     let albumHasMore = {{ 'true' if has_more else 'false' }};
     let currentSort = '';       // e.g. "title;down" — set by sort, cleared on reset
     let currentShuffle = null;  // integer seed — set by shuffle, cleared on reset
+    let currentView = '_album_view_list.html';  // set by the view-changer button
 
     $(window).on('scroll', function () {
         if (albumIsLoading || !albumHasMore) return;
@@ -234,7 +235,7 @@
 
     function loadMoreAlbumPhotos() {
         albumIsLoading = true;
-        const params = { page: albumCurrentPage };
+        const params = { page: albumCurrentPage, view: currentView };
         if (currentSort) params.sort = currentSort;
         if (currentShuffle !== null) params.shuffle = currentShuffle;
         $.ajax({
@@ -313,7 +314,7 @@
         $.ajax({
             url: '/api/v1/album/{{ album_path }}/photos',
             type: 'GET',
-            data: { page: 1, shuffle: currentShuffle },
+            data: { page: 1, shuffle: currentShuffle, view: currentView },
             success: function (response) {
                 $('#photo-gallery').html(response.content);
                 albumCurrentPage = 2;
@@ -372,7 +373,7 @@
         $.ajax({
             url: '/api/v1/album/{{ album_path }}/photos',
             type: 'GET',
-            data: { page: 1, sort: currentSort },
+            data: { page: 1, sort: currentSort, view: currentView },
             success: function (response) {
                 $('#photo-gallery').html(response.content);
                 albumCurrentPage = 2;
@@ -390,10 +391,14 @@
     }
 
     function callServerToChangeView(viewStyle) {
-        let photosObjectIds = [];
-        $('.photo').children().map((index, element) => {
-            photosObjectIds.push($(element).attr('id'));
-        });
+        // Switching view style shows the album's default order (matching the
+        // pre-switch behaviour), so drop any active sort/shuffle rather than
+        // let stale state leak into the infinite-scroll requests that follow.
+        currentSort = '';
+        currentShuffle = null;
+        currentView = viewStyle;
+        albumCurrentPage = 2;
+        albumHasMore = false;
 
         const URL = "/albums/view/{{album_path}}";
         fetch(URL, {
@@ -401,10 +406,7 @@
             headers: {
                 'Content-Type': 'application/json; charset=utf-8'
             },
-            body: JSON.stringify({
-                "view": viewStyle,
-                "photos-object-ids": photosObjectIds
-            })
+            body: JSON.stringify({ "view": viewStyle })
         }).then(response => {
             if (!response.ok) {
                 throw new Error('Network response failed!!!');
@@ -415,17 +417,13 @@
             if (nbPhotos !== null) {
                 $('#album-nb-photos').text(nbPhotos);
             }
+            // The view-change response is now just the first page (PM-43
+            // follow-up) — X-Has-More says whether infinite scroll should
+            // keep fetching further pages of the newly-active view.
+            albumHasMore = response.headers.get('X-Has-More') === 'true';
             return response.text();
         }).then(data => {
             $(".photo").html(data);
-            // The view-change response already contains every photo in the
-            // album (unpaginated), so the scroll-triggered infinite-scroll
-            // fetch must be disabled. Otherwise it keeps firing with the
-            // stale pre-switch state, appends more pages of
-            // _album_view_photo_rows.html (list-row markup) into whatever
-            // view is now active, and the two layouts render on top of each
-            // other.
-            albumHasMore = false;
             albumIsLoading = false;
         }).catch(error => {
             console.error('Error: ', error);

@@ -1,0 +1,6 @@
+{% for photo in photos %}
+{% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
+<a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album_path }}">
+    <img src="{{ photo_url }}" alt="{{ photo['title'] }}" class="w-100 shadow-1-strong rounded"
+         data-photo-object-id="{{ photo.get('_id') }}"></a>
+{% endfor %}

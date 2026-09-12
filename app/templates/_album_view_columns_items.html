@@ -1,0 +1,14 @@
+{% for photo in photos %}
+    <div class="photo-item">
+        {% set photo_url = '/photo/' + photo['folder'] + '/' + photo['filename'] %}
+        <span class="align-items-center">
+        <label>
+        <input type="checkbox" class="form-check-input selection-checkbox"
+               data-photo-object-id="{{ photo.get('_id') }}" id="{{ photo.get('_id') }}"/>
+        </label></span>
+        <a href="{{ photo_url }}" title="{{ photo['title'] }}" data-lightbox="{{ album_path }}">
+            <img src="{{ photo_url }}" alt="{{ photo['title'] }}" class="img-item"
+                 data-photo-object-id="{{ photo.get('_id') }}" style="width: 50%"></a>
+
+    </div>
+{% endfor %}
