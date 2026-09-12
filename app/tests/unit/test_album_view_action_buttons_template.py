@@ -120,6 +120,21 @@ def test_description_toggle_has_an_informative_title(app_context):
     assert 'title="' not in html[input_start:input_tag_end]
 
 
+def test_view_changer_icon_starts_with_a_title_naming_the_next_view(app_context):
+    """
+    The icon always shows the CURRENTLY active view (list/gallery/columns);
+    the page always loads with list active (see _album_view_list.html being
+    the default include in album-view.html), so its initial title should
+    name the NEXT view a click switches to — gallery — matching what the
+    click handler in album-view.html sets for each of the other two states.
+    """
+    html = _render()
+    icon_start = html.index('id="btn-view-changer"')
+    tag_end = html.index(">", icon_start)
+    icon_tag = html[icon_start:tag_end]
+    assert 'title="Switch to gallery view"' in icon_tag
+
+
 def test_claim_from_source_button_starts_hidden(app_context):
     """Claim from source is shown by JS only when the album has unclaimed
     photos (see the $.getJSON('/api/v1/album/.../unclaimed-by-source')
