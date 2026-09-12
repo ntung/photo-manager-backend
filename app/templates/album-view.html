@@ -226,6 +226,17 @@
     let currentShuffle = null;  // integer seed — set by shuffle, cleared on reset
     let currentView = '_album_view_list.html';  // set by the view-changer button
 
+    // Switching view, sorting, and shuffling each replace what's on screen —
+    // and each fires an AJAX request that can resolve out of order relative
+    // to a later one (e.g. the user clicks the view-changer again, or picks
+    // a sort, before the previous request lands). Without a guard, a slower
+    // earlier response can arrive after a newer one and overwrite the DOM
+    // with stale content, leaving the view-changer icon and the rendered
+    // photo section out of sync. Every such action bumps this token before
+    // firing its request and captures its own value; a response is applied
+    // only if the token is still current, otherwise it's silently dropped.
+    let renderToken = 0;
+
     $(window).on('scroll', function () {
         if (albumIsLoading || !albumHasMore) return;
         if ($(window).scrollTop() + $(window).height() >= $(document).height() - 300) {
@@ -235,6 +246,7 @@
 
     function loadMoreAlbumPhotos() {
         albumIsLoading = true;
+        const myToken = renderToken;
         const params = { page: albumCurrentPage, view: currentView };
         if (currentSort) params.sort = currentSort;
         if (currentShuffle !== null) params.shuffle = currentShuffle;
@@ -244,6 +256,10 @@
             data: params,
             success: function (response) {
                 albumIsLoading = false;
+                // A view switch/sort/shuffle started (and already replaced
+                // #photo-gallery) while this page was in flight — its
+                // content no longer matches what's on screen, so drop it.
+                if (myToken !== renderToken) return;
                 if (response.count === 0) {
                     albumHasMore = false;
                     return;
@@ -311,11 +327,13 @@
         currentShuffle = Math.floor(Math.random() * 1e9);
         albumCurrentPage = 2;
         albumHasMore = false;
+        const myToken = ++renderToken;
         $.ajax({
             url: '/api/v1/album/{{ album_path }}/photos',
             type: 'GET',
             data: { page: 1, shuffle: currentShuffle, view: currentView },
             success: function (response) {
+                if (myToken !== renderToken) return;  // superseded meanwhile
                 $('#photo-gallery').html(response.content);
                 albumCurrentPage = 2;
                 albumHasMore = response.has_more;
@@ -370,11 +388,13 @@
         currentShuffle = null;
         albumCurrentPage = 2;
         albumHasMore = false;
+        const myToken = ++renderToken;
         $.ajax({
             url: '/api/v1/album/{{ album_path }}/photos',
             type: 'GET',
             data: { page: 1, sort: currentSort, view: currentView },
             success: function (response) {
+                if (myToken !== renderToken) return;  // superseded meanwhile
                 $('#photo-gallery').html(response.content);
                 albumCurrentPage = 2;
                 albumHasMore = response.has_more;
@@ -399,6 +419,7 @@
         currentView = viewStyle;
         albumCurrentPage = 2;
         albumHasMore = false;
+        const myToken = ++renderToken;
 
         const URL = "/albums/view/{{album_path}}";
         fetch(URL, {
@@ -411,18 +432,22 @@
             if (!response.ok) {
                 throw new Error('Network response failed!!!');
             }
+            return response.text().then(data => ({ data, headers: response.headers }));
+        }).then(({ data, headers }) => {
+            // Another switch/sort/shuffle was triggered after this request
+            // was sent — this response no longer reflects what the user is
+            // looking at, so drop it instead of clobbering the newer view.
+            if (myToken !== renderToken) return;
             // The server recomputes the photo count fresh on every switch —
             // surfaced via this header since the body is plain HTML, not JSON.
-            const nbPhotos = response.headers.get('X-Nb-Photos');
+            const nbPhotos = headers.get('X-Nb-Photos');
             if (nbPhotos !== null) {
                 $('#album-nb-photos').text(nbPhotos);
             }
             // The view-change response is now just the first page (PM-43
             // follow-up) — X-Has-More says whether infinite scroll should
             // keep fetching further pages of the newly-active view.
-            albumHasMore = response.headers.get('X-Has-More') === 'true';
-            return response.text();
-        }).then(data => {
+            albumHasMore = headers.get('X-Has-More') === 'true';
             $(".photo").html(data);
             albumIsLoading = false;
         }).catch(error => {
