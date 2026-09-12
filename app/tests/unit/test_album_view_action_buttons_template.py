@@ -96,15 +96,28 @@ def test_sort_icon_sits_close_to_the_sort_button(app_context):
 
 
 def test_description_toggle_has_an_informative_title(app_context):
+    """
+    The title must live on the <label> (the visible, hoverable 60x34
+    switch) — .switch input is styled width:0;height:0;opacity:0 (only
+    the sibling .slider span is actually rendered), so a title on the
+    input alone can never show a tooltip: the cursor can never land on a
+    0x0 element.
+    """
     html = _render()
-    toggle_start = html.index('id="btn-view-original-description"')
-    tag_end = html.index(">", toggle_start)
-    toggle_tag = html[toggle_start:tag_end]
-    assert 'title="' in toggle_tag
+    label_start = html.index('<label class="switch')
+    tag_end = html.index(">", label_start)
+    label_tag = html[label_start:tag_end]
+    assert 'title="' in label_tag
     # It must actually describe the behaviour (original line breaks vs.
     # reformatted text), not just gesture at "formatted descriptions".
-    assert "original" in toggle_tag.lower()
-    assert "line break" in toggle_tag.lower() or "reformat" in toggle_tag.lower()
+    assert "original" in label_tag.lower()
+    assert "line break" in label_tag.lower() or "reformat" in label_tag.lower()
+
+    # Regression guard: the title must not sit on the invisible input,
+    # where it would never actually trigger a tooltip.
+    input_start = html.index('id="btn-view-original-description"')
+    input_tag_end = html.index(">", input_start)
+    assert 'title="' not in html[input_start:input_tag_end]
 
 
 def test_claim_from_source_button_starts_hidden(app_context):
