@@ -13,21 +13,32 @@ Two resolution strategies, tried in order per record:
      into (e.g. photos on a Page you administer), not arbitrary public
      photos.
   2. HTML scrape of the public photo page -- fetches
-     https://www.facebook.com/photo/?fbid=<id> and reads the profile
-     slug out of the page's <link rel="canonical"> / og:url tag, which
-     for a photo page looks like facebook.com/<profile>/photos/...
-     Facebook's markup changes often and this is best-effort --
-     spot-check the report. (An earlier version of this script also
-     matched an `actorID` field in embedded JSON, but that key turned
-     out to hold a constant placeholder on every page regardless of
-     content, not the real owner -- it's intentionally not used.)
+     https://www.facebook.com/photo/?fbid=<id> **logged out** and reads
+     the profile slug out of the page's <link rel="canonical"> / og:url
+     tag, which for a photo page looks like facebook.com/<profile>/photos/...
+     This deliberately does NOT send a Facebook session cookie: tested
+     against real data, an authenticated request gets Facebook's full
+     "Comet" app shell (a ~1MB JSON blob for client-side rendering, no
+     SEO meta tags at all), while a logged-out request reliably gets the
+     lightweight SSR snapshot search engines see, which does carry the
+     canonical tag. So logged-in scraping isn't just unnecessary here --
+     it actively breaks this parsing strategy. Facebook's markup changes
+     often regardless, so this stays best-effort -- spot-check the
+     report. (An earlier version of this script also matched an
+     `actorID` field in embedded JSON, but that key turned out to hold a
+     constant placeholder on every page regardless of content, not the
+     real owner -- it's intentionally not used.)
 
-Credentials (both optional; the Graph API step is skipped without a
-token, the scrape step just runs logged-out without a cookie):
+A record that consistently fails the scrape step (confirmed non-flaky by
+retrying) is most likely a photo Facebook doesn't consider public enough
+to hand out SEO metadata for to an anonymous/crawler-like request --
+even if it renders fine in your own logged-in browser. There's no known
+workaround for that case via plain HTTP; the Graph API step is the only
+other option, and only helps for content your own token has permission
+to see.
+
+Credentials (optional; the Graph API step is skipped without a token):
   FB_ACCESS_TOKEN   Graph API access token (see Graph API Explorer)
-  FB_COOKIE         Cookie header string from a logged-in facebook.com
-                    session -- improves scrape success on pages that
-                    otherwise redirect to a login wall
   FB_GRAPH_VERSION  Graph API version, default v19.0
 
 Every attempted record is written to a CSV report (see --report), so
@@ -152,12 +163,12 @@ def _profile_from_facebook_url(url):
     return None
 
 
-def resolve_via_scrape(fbid, cookie):
-    """Best-effort HTML scrape of the public photo page. Returns (profile_id, error)."""
+def resolve_via_scrape(fbid):
+    """Best-effort HTML scrape of the public photo page, logged out on purpose --
+    see the module docstring for why a session cookie is never sent here.
+    Returns (profile_id, error)."""
     url = f"https://www.facebook.com/photo/?fbid={fbid}"
     headers = {'User-Agent': USER_AGENT}
-    if cookie:
-        headers['Cookie'] = cookie
     try:
         resp = requests.get(url, headers=headers, timeout=15)
     except requests.exceptions.RequestException as e:
@@ -184,7 +195,7 @@ def resolve_via_scrape(fbid, cookie):
     return None, "no profile id found in page"
 
 
-def resolve_record(fbid, token, graph_version, cookie, skip_graph_api):
+def resolve_record(fbid, token, graph_version, skip_graph_api):
     """Try the Graph API then the HTML-scrape fallback. Returns (profile, method, error)."""
     graph_error = None
     if not skip_graph_api:
@@ -192,7 +203,7 @@ def resolve_record(fbid, token, graph_version, cookie, skip_graph_api):
         if profile:
             return profile, 'graph_api', None
 
-    profile, scrape_error = resolve_via_scrape(fbid, cookie)
+    profile, scrape_error = resolve_via_scrape(fbid)
     if profile:
         return profile, 'scrape', None
     return None, None, graph_error or scrape_error
@@ -235,13 +246,11 @@ def apply_local_fixes(db, local_fixes, dry_run, writer):
     return len(local_fixes)
 
 
-def process_records(db, records, token, graph_version, cookie, args, writer, report_fh):
+def process_records(db, records, token, graph_version, args, writer, report_fh):
     counts = {'graph_api': 0, 'scrape': 0, 'failed': 0}
     for i, (object_id, fbid, courtesy) in enumerate(records, start=1):
         print(f"[{i}/{len(records)}] fbid={fbid}", end=' ')
-        profile, method, error = resolve_record(
-            fbid, token, graph_version, cookie, args.skip_graph_api
-        )
+        profile, method, error = resolve_record(fbid, token, graph_version, args.skip_graph_api)
 
         if profile:
             print(f"-> {profile} ({method})")
@@ -290,14 +299,11 @@ def main():
     args = parser.parse_args()
 
     token = os.environ.get('FB_ACCESS_TOKEN')
-    cookie = os.environ.get('FB_COOKIE')
     graph_version = os.environ.get('FB_GRAPH_VERSION', DEFAULT_GRAPH_VERSION)
 
     if not token and not args.skip_graph_api:
         print("No FB_ACCESS_TOKEN set - skipping Graph API step, scraping only.\n")
         args.skip_graph_api = True
-    if not cookie:
-        print("No FB_COOKIE set - scraping logged-out; expect login-wall failures on some pages.\n")
 
     db = get_db()
     local_fixes, network_records, total_candidates = find_candidates(db)
@@ -324,7 +330,7 @@ def main():
         writer.writerow(['object_id', 'fbid', 'courtesy', 'source_profile', 'method', 'error'])
         local_count = apply_local_fixes(db, local_fixes, args.dry_run, writer)
         f.flush()
-        counts = process_records(db, network_records, token, graph_version, cookie, args, writer, f)
+        counts = process_records(db, network_records, token, graph_version, args, writer, f)
 
     print("\n" + "=" * 60)
     print(f"Resolved locally (hidden set=/id=): {local_count}")
