@@ -1,7 +1,6 @@
 import hashlib
 import json
 import logging
-import math
 import os
 import pathlib
 import pprint
@@ -635,38 +634,39 @@ def albums_view(path):
     sort = request.args.get('sort')
 
     if request.method == "POST":
-        # Invoked when changing layout/view style — load all photos.
+        # Invoked when changing layout/view style. Paginated the same way as
+        # the default GET below — an album with thousands of photos used to
+        # get fully loaded (N+1 find_one per photo) and rendered in one shot
+        # here, which could crash the app; now only the first page is
+        # fetched/rendered and the client's infinite scroll picks up the
+        # rest via /api/v1/album/<path>/photos.
         request_json = request.get_json(silent=True)
         if not isinstance(request_json, dict):
             return jsonify({"error": "Invalid or missing JSON body"}), 400
-        view = request_json['view']
-        array_photos_object_ids = request_json['photos-object-ids']
-        album = get_album(path)
-        if album is None:
-            return jsonify({"error": "Album not found"}), 404
-        photos_details = album['photos_details']
-        nb_photos = len(photos_details)
-        bz = math.ceil(len(array_photos_object_ids) / 3)
-        buckets = PhotoManager.create_buckets(photos_details, bz)
+        view = request_json.get('view')
+        if view not in _ALBUM_VIEW_ITEM_TEMPLATES:
+            return jsonify({"error": "Invalid view"}), 400
+        photos, nb_photos, has_more = _get_album_photos_page(path)
         rendered = render_template(view, **{
-            "status": "FOUND", "album": album,
-            "album_path": album['path'],
-            "album_title": album['title'],
+            "status": "FOUND",
+            "album_path": path,
+            "album_title": album_doc['title'],
             "albums": _albums,
-            "photos": photos_details,
-            "buckets": buckets, "nb_photos": nb_photos,
-            "album_object_id": album.get("_id"),
+            "photos": photos, "nb_photos": nb_photos,
+            "album_object_id": album_doc.get("_id"),
             "is_empty_album": False,
-            "has_more": False,
+            "has_more": has_more,
             "api_svr": API_SVR,
             "dict_album_values": {},
             "cover_photo_url": cover_url, "cover_photo_id": cover_id_str,
         })
         # The view-switch fetch only swaps the photo grid, not the page's
         # <h1> photo count — surface the freshly-computed total via a header
-        # so the client can keep that count in sync (PM-43).
+        # so the client can keep that count in sync (PM-43). X-Has-More lets
+        # the client know whether to keep infinite-scrolling in the new view.
         response = Response(rendered, content_type='text/html; charset=utf-8')
         response.headers['X-Nb-Photos'] = str(nb_photos)
+        response.headers['X-Has-More'] = 'true' if has_more else 'false'
         return response
 
     if sort is not None:
@@ -1663,20 +1663,38 @@ def get_photos():
     return jsonify(photos=_photos, content=content, has_more=has_more)
 
 
+# Maps a full view template (what the view-changer button switches to) to
+# the item-only partial that renders just the photo markup for that view —
+# used to append further pages into an already-rendered #photo-gallery
+# without re-emitting the container/init-script every time.
+_ALBUM_VIEW_ITEM_TEMPLATES = {
+    '_album_view_list.html': '_album_view_photo_rows.html',
+    '_album_view_gallery.html': '_album_view_gallery_items.html',
+    '_album_view_columns.html': '_album_view_columns_items.html',
+}
+
+
 @app.route('/api/v1/album/<string:path>/photos', methods=['GET'])
 def get_album_photos(path):
     """
     Returns one paginated page of photos for an album as JSON + pre-rendered
-    HTML, for use by the album-view infinite scroll and sorted views.
+    HTML, for use by the album-view infinite scroll, sorted views, and
+    continuing infinite scroll after a view-style switch.
 
     Optional query params:
       sort=<field>;<dir> e.g. sort=title;down (field sort, paginated)
       page=<n> page number (default 1)
+      view=<template> which view style's item markup to render
+           (one of _ALBUM_VIEW_ITEM_TEMPLATES; defaults to list rows)
     """
+    item_template = _ALBUM_VIEW_ITEM_TEMPLATES.get(
+        request.args.get('view'), '_album_view_photo_rows.html'
+    )
+
     if path == "unclassified":
         photos, _, has_more = _get_unclassified_photos_page()
         content = render_template(
-            "_album_view_photo_rows.html",
+            item_template,
             **{"photos": photos, "album_path": path, "status": "FOUND",
                "cover_photo_id": ''},
         )
@@ -1700,7 +1718,7 @@ def get_album_photos(path):
     cover_id = album_doc.get('cover_photo') if album_doc else None
     cover_id_str = str(cover_id) if cover_id else ''
     content = render_template(
-        "_album_view_photo_rows.html",
+        item_template,
         **{"photos": photos, "album_path": path, "status": "FOUND",
            "cover_photo_id": cover_id_str},
     )
