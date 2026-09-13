@@ -5,6 +5,7 @@ import os
 import pathlib
 import pprint
 import random
+import re
 import tempfile
 import time
 import uuid
@@ -728,7 +729,7 @@ def _get_classified_photo_ids():
     return classified
 
 
-def _get_unclassified_photos_page():
+def _get_unclassified_photos_page(search_query=None):
     """
     Returns one paginated page of "unclassified" photos (photos that belong
     to no album), newest first — mirrors _get_album_photos_page so the
@@ -738,12 +739,21 @@ def _get_unclassified_photos_page():
     album into Python (round-tripped through bson.json_util) and then did an
     O(photos x albums) membership check for each photo.
 
+    search_query: optional text to filter by title/description, same
+                  case-insensitive substring match as _matching_photo_ids.
+
     Returns (photo_docs, total_count, has_more).
     """
     skip, page_size = _get_pagination_params()
     classified_ids = _get_classified_photo_ids()
 
     query = {"_id": {"$nin": list(classified_ids)}} if classified_ids else {}
+    if search_query:
+        pattern = re.escape(search_query.strip())
+        query["$or"] = [
+            {"title": {"$regex": pattern, "$options": "i"}},
+            {"description": {"$regex": pattern, "$options": "i"}},
+        ]
     total = db.photos.count_documents(query)
     cursor = (db.photos.find(query)
               .sort("date_uploaded", pymongo.DESCENDING)
@@ -916,8 +926,29 @@ def _get_latest_photos_with_albums(page=None):
     return [_serialize_photo(doc) for doc in result]
 
 
+def _matching_photo_ids(candidate_ids, search_query):
+    """
+    The subset of candidate_ids (a list of photo ObjectIds) whose title or
+    description contains search_query, case-insensitive. A cheap _id-only
+    projection, so callers can filter their own ordered ID list before
+    fetching full documents for just the current page.
+    """
+    pattern = re.escape(search_query.strip())
+    cursor = db.photos.find(
+        {
+            "_id": {"$in": candidate_ids},
+            "$or": [
+                {"title": {"$regex": pattern, "$options": "i"}},
+                {"description": {"$regex": pattern, "$options": "i"}},
+            ],
+        },
+        {"_id": 1},
+    )
+    return {doc["_id"] for doc in cursor}
+
+
 def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
-                           shuffle_seed=None):
+                           shuffle_seed=None, search_query=None):
     """
     Returns a paginated slice of photos for an album together with per-photo
     other-album cross-references.
@@ -929,6 +960,10 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
                   The full ID list is shuffled with random.Random(seed), so
                   every page request with the same seed yields a consistent
                   order without any server-side state.
+    search_query: optional text to filter by title/description (see
+                  _matching_photo_ids) — applied before sort/shuffle/
+                  pagination, so has_more and the returned total reflect
+                  only the matches, same as a real (smaller) album would.
 
     Returns: (photo_docs, total_count, has_more)
     """
@@ -940,6 +975,12 @@ def _get_album_photos_page(album_path, sort_field=None, sort_dir='down',
 
     all_ids = list(reversed(album.get('photos', [])))
     valid_ids = [pid for pid in all_ids if str(pid) != 'None']
+
+    if search_query:
+        matched_ids = _matching_photo_ids(valid_ids, search_query)
+        valid_ids = [pid for pid in valid_ids if pid in matched_ids]
+        all_ids = valid_ids
+
     total = len(valid_ids)
 
     if not valid_ids:
@@ -1686,19 +1727,23 @@ def get_album_photos(path):
       page=<n> page number (default 1)
       view=<template> which view style's item markup to render
            (one of _ALBUM_VIEW_ITEM_TEMPLATES; defaults to list rows)
+      q=<text> filter to photos whose title/description contains it
+        (case-insensitive); applied before sort/shuffle/pagination, so
+        `total` and `has_more` reflect only the matches
     """
     item_template = _ALBUM_VIEW_ITEM_TEMPLATES.get(
         request.args.get('view'), '_album_view_photo_rows.html'
     )
+    search_query = request.args.get('q', '').strip() or None
 
     if path == "unclassified":
-        photos, _, has_more = _get_unclassified_photos_page()
+        photos, total, has_more = _get_unclassified_photos_page(search_query=search_query)
         content = render_template(
             item_template,
             **{"photos": photos, "album_path": path, "status": "FOUND",
                "cover_photo_id": ''},
         )
-        return jsonify(content=content, has_more=has_more, count=len(photos))
+        return jsonify(content=content, has_more=has_more, count=len(photos), total=total)
 
     sort_field, sort_dir = None, 'down'
     sort_param = request.args.get('sort', '')
@@ -1711,8 +1756,9 @@ def get_album_photos(path):
 
     shuffle_seed = request.args.get('shuffle', None, type=int)
 
-    photos, _, has_more = _get_album_photos_page(
-        path, sort_field=sort_field, sort_dir=sort_dir, shuffle_seed=shuffle_seed
+    photos, total, has_more = _get_album_photos_page(
+        path, sort_field=sort_field, sort_dir=sort_dir, shuffle_seed=shuffle_seed,
+        search_query=search_query,
     )
     album_doc = db.albums.find_one({"path": path}, {'cover_photo': 1})
     cover_id = album_doc.get('cover_photo') if album_doc else None
@@ -1722,7 +1768,7 @@ def get_album_photos(path):
         **{"photos": photos, "album_path": path, "status": "FOUND",
            "cover_photo_id": cover_id_str},
     )
-    return jsonify(content=content, has_more=has_more, count=len(photos))
+    return jsonify(content=content, has_more=has_more, count=len(photos), total=total)
 
 
 def _cover_photo_url(cover_id):
