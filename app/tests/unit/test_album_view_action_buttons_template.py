@@ -62,22 +62,62 @@ def test_description_toggle_and_view_changer_come_before_claim_button(app_contex
 
 def test_action_bar_row_uses_flex_alignment(app_context):
     """
-    Reset Order/Slideshow/Shuffle/toggle/view-changer/Claim share one
+    Reset Order/Slideshow/Shuffle/toggle/view-changer/Sort/Claim share one
     container; it must be a flex row with vertically-centered items for
     those controls (a <label>/<span> of a different height than the
     buttons) to align on the same line rather than sitting on divergent
     baselines.
     """
     html = _render()
-    # The container opening tag carries the alignment classes. It's col-6
-    # (not col-5) — widened to make room for Reset Order/Slideshow/Shuffle/
-    # toggle/view-changer/Claim, with the freed column going to Remove's
-    # own col-1 so it lines up above the per-photo toggle column.
-    container_start = html.index('<div class="col-6')
+    # The container opening tag carries the alignment classes. It's col-8
+    # (PM-46: widened from col-6 to also fit Sort, moved in here from its
+    # own column) — the freed middle column is reserved (see
+    # test_pm46_reserves_a_middle_column_for_a_future_search_box) and
+    # Remove keeps its own col-1 so it lines up above the per-photo toggle
+    # column.
+    container_start = html.index('<div class="col-8')
     container_tag_end = html.index(">", container_start)
     container_tag = html[container_start:container_tag_end]
     assert "d-flex" in container_tag
     assert "align-items-center" in container_tag
+
+
+def test_pm46_sort_group_sits_next_to_the_view_changer(app_context):
+    """PM-46: Sort (icon + button + dropdown) moved out of its own column
+    to sit right after the view-changer, in the same group as the other
+    core controls — ahead of the optional, usually-hidden Claim button,
+    same reasoning as test_description_toggle_and_view_changer_come_before_claim_button."""
+    html = _render()
+    changer_pos = html.index('id="btn-view-changer"')
+    sort_icon_pos = html.index('id="sort-direction-icon"')
+    sort_btn_pos = html.index('id="btn-sort"')
+    claim_pos = html.index('id="btn-claim-source"')
+    assert changer_pos < sort_icon_pos < sort_btn_pos < claim_pos
+
+
+def test_pm46_search_input_sits_between_the_group_and_remove(app_context):
+    """PM-46: the column freed by widening the button group (col-6->col-8)
+    holds the search box, positioned between the group and Remove's own
+    col-1 — not absorbed into either neighbour."""
+    html = _render()
+    group_start = html.index('<div class="col-8')
+    remove_col_start = html.rindex('<div class="col', 0, html.index('id="btn-remove-photo"'))
+    between = html[group_start:remove_col_start]
+    assert 'class="col-3' in between
+    assert 'id="album-search-input"' in between[between.index('class="col-3'):]
+
+
+def test_pm46_search_input_has_type_search_and_a_label(app_context):
+    """type=search gets the browser's native clear button; aria-label
+    stands in for a <label> since there's no visible one in this compact
+    action bar."""
+    html = _render()
+    input_start = html.index('id="album-search-input"')
+    tag_start = html.rindex("<input", 0, input_start)
+    tag_end = html.index(">", tag_start)
+    input_tag = html[tag_start:tag_end]
+    assert 'type="search"' in input_tag
+    assert "aria-label=" in input_tag
 
 
 def test_sort_icon_sits_close_to_the_sort_button(app_context):
