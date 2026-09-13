@@ -95,19 +95,29 @@ def test_pm46_sort_group_sits_next_to_the_view_changer(app_context):
     assert changer_pos < sort_icon_pos < sort_btn_pos < claim_pos
 
 
-def test_pm46_reserves_a_middle_column_for_a_future_search_box(app_context):
+def test_pm46_search_input_sits_between_the_group_and_remove(app_context):
     """PM-46: the column freed by widening the button group (col-6->col-8)
-    is kept empty between the group and Remove's own col-1, reserved for a
-    future search textbox rather than being absorbed into either
-    neighbour."""
+    holds the search box, positioned between the group and Remove's own
+    col-1 — not absorbed into either neighbour."""
     html = _render()
     group_start = html.index('<div class="col-8')
     remove_col_start = html.rindex('<div class="col', 0, html.index('id="btn-remove-photo"'))
     between = html[group_start:remove_col_start]
-    assert 'class="col-3"' in between
-    # And nothing but the reserved column's own (empty) div sits between
-    # the two: no stray button/control leaked into the gap.
-    assert "btn" not in between[between.index('class="col-3"'):]
+    assert 'class="col-3' in between
+    assert 'id="album-search-input"' in between[between.index('class="col-3'):]
+
+
+def test_pm46_search_input_has_type_search_and_a_label(app_context):
+    """type=search gets the browser's native clear button; aria-label
+    stands in for a <label> since there's no visible one in this compact
+    action bar."""
+    html = _render()
+    input_start = html.index('id="album-search-input"')
+    tag_start = html.rindex("<input", 0, input_start)
+    tag_end = html.index(">", tag_start)
+    input_tag = html[tag_start:tag_end]
+    assert 'type="search"' in input_tag
+    assert "aria-label=" in input_tag
 
 
 def test_sort_icon_sits_close_to_the_sort_button(app_context):

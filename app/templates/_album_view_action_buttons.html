@@ -108,9 +108,11 @@
             <span id="claim-source-badge" class="badge bg-dark ms-1">0</span>
         </button>
     </div>
-    <div class="col-3">
-        <!-- PM-46: reserved for a future search textbox, between the
-             button group above and Remove below. -->
+    <div class="col-3 d-flex align-items-center">
+        <input type="search" id="album-search-input" class="form-control"
+               placeholder="Search photos…"
+               aria-label="Search photos in this album by title or description"
+               autocomplete="off">
     </div>
     <div class="col-1 d-flex align-items-center justify-content-center px-1">
         <!-- col-1, like each photo row's own toggle-switch column below, so

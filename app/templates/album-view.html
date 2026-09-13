@@ -224,6 +224,8 @@
     let albumHasMore = {{ 'true' if has_more else 'false' }};
     let currentSort = '';       // e.g. "title;down" — set by sort, cleared on reset
     let currentShuffle = null;  // integer seed — set by shuffle, cleared on reset
+    let currentSearch = '';     // title/description filter text — cleared on view switch
+    let searchDebounceTimer = null;
     let currentView = '_album_view_list.html';  // set by the view-changer button
 
     // Persists the chosen view style (like the description-format toggle
@@ -290,13 +292,14 @@
         const params = { page: albumCurrentPage, view: currentView };
         if (currentSort) params.sort = currentSort;
         if (currentShuffle !== null) params.shuffle = currentShuffle;
+        if (currentSearch) params.q = currentSearch;
         $.ajax({
             url: '/api/v1/album/{{ album_path }}/photos',
             type: 'GET',
             data: params,
             success: function (response) {
                 albumIsLoading = false;
-                // A view switch/sort/shuffle started (and already replaced
+                // A view switch/sort/shuffle/search started (and already replaced
                 // #photo-gallery) while this page was in flight — its
                 // content no longer matches what's on screen, so drop it.
                 if (myToken !== renderToken) return;
@@ -363,31 +366,74 @@
         }
     });
 
+    // Shared by shuffle/sort/search: all three fully replace #photo-gallery
+    // with a fresh page 1 and reset pagination the same way. `total` (the
+    // count of MATCHING photos, not necessarily the whole album — search
+    // narrows it) keeps the <h1> count in sync the same way view-switch's
+    // X-Nb-Photos header already does for the unfiltered case.
+    function applyFullPageReplace(response) {
+        $('#photo-gallery').html(response.content);
+        albumCurrentPage = 2;
+        albumHasMore = response.has_more;
+        if (typeof response.total === 'number') {
+            $('#album-nb-photos').text(response.total);
+        }
+        if ($('#photo-gallery').sortable('instance')) {
+            $('#photo-gallery').sortable('disable');
+        }
+        fillViewportIfNeeded();
+    }
+
     $("#btn-shuffle-photo").on("click", function () {
         currentSort = '';
         currentShuffle = Math.floor(Math.random() * 1e9);
         albumCurrentPage = 2;
         albumHasMore = false;
         const myToken = ++renderToken;
+        const params = { page: 1, shuffle: currentShuffle, view: currentView };
+        if (currentSearch) params.q = currentSearch;
         $.ajax({
             url: '/api/v1/album/{{ album_path }}/photos',
             type: 'GET',
-            data: { page: 1, shuffle: currentShuffle, view: currentView },
+            data: params,
             success: function (response) {
                 if (myToken !== renderToken) return;  // superseded meanwhile
-                $('#photo-gallery').html(response.content);
-                albumCurrentPage = 2;
-                albumHasMore = response.has_more;
-                if ($('#photo-gallery').sortable('instance')) {
-                    $('#photo-gallery').sortable('disable');
-                }
-                fillViewportIfNeeded();
+                applyFullPageReplace(response);
             },
             error: function () {
                 console.error('Shuffle request failed');
             }
         });
     });
+
+    $('#album-search-input').on('input', function () {
+        currentSearch = $(this).val().trim();
+        clearTimeout(searchDebounceTimer);
+        // Debounced so we don't fire a request per keystroke while typing.
+        searchDebounceTimer = setTimeout(callServerToSearchPhotos, 350);
+    });
+
+    function callServerToSearchPhotos() {
+        albumCurrentPage = 2;
+        albumHasMore = false;
+        const myToken = ++renderToken;
+        const params = { page: 1, view: currentView };
+        if (currentSearch) params.q = currentSearch;
+        if (currentSort) params.sort = currentSort;
+        if (currentShuffle !== null) params.shuffle = currentShuffle;
+        $.ajax({
+            url: '/api/v1/album/{{ album_path }}/photos',
+            type: 'GET',
+            data: params,
+            success: function (response) {
+                if (myToken !== renderToken) return;  // superseded meanwhile
+                applyFullPageReplace(response);
+            },
+            error: function () {
+                console.error('Search request failed');
+            }
+        });
+    }
 
     $("#btn-reset-order-photo").on("click", function () {
         currentSort = '';
@@ -431,21 +477,15 @@
         albumCurrentPage = 2;
         albumHasMore = false;
         const myToken = ++renderToken;
+        const params = { page: 1, sort: currentSort, view: currentView };
+        if (currentSearch) params.q = currentSearch;
         $.ajax({
             url: '/api/v1/album/{{ album_path }}/photos',
             type: 'GET',
-            data: { page: 1, sort: currentSort, view: currentView },
+            data: params,
             success: function (response) {
                 if (myToken !== renderToken) return;  // superseded meanwhile
-                $('#photo-gallery').html(response.content);
-                albumCurrentPage = 2;
-                albumHasMore = response.has_more;
-                // Sorted view: disable drag-to-reorder to avoid conflicting
-                // with the applied sort order.
-                if ($('#photo-gallery').sortable('instance')) {
-                    $('#photo-gallery').sortable('disable');
-                }
-                fillViewportIfNeeded();
+                applyFullPageReplace(response);
             },
             error: function () {
                 console.error('Sort request failed');
@@ -455,10 +495,14 @@
 
     function callServerToChangeView(viewStyle) {
         // Switching view style shows the album's default order (matching the
-        // pre-switch behaviour), so drop any active sort/shuffle rather than
-        // let stale state leak into the infinite-scroll requests that follow.
+        // pre-switch behaviour), so drop any active sort/shuffle/search
+        // rather than let stale state leak into the infinite-scroll
+        // requests that follow. The view-switch endpoint itself doesn't
+        // support search, so the input is cleared to match.
         currentSort = '';
         currentShuffle = null;
+        currentSearch = '';
+        $('#album-search-input').val('');
         currentView = viewStyle;
         albumCurrentPage = 2;
         albumHasMore = false;
