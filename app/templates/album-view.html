@@ -583,19 +583,24 @@
                     ? '<a href="' + escapeHtml(src.profile) + '" target="_blank">'
                       + escapeHtml(src.profile) + '</a>'
                     : escapeHtml(src.profile);
-                html += '<div class="mb-4">';
+                html += '<div class="mb-4" data-group-section="' + groupIdx + '">';
                 html += '<h6 class="text-muted border-bottom pb-2 d-flex align-items-center gap-2">'
                       + '<input type="checkbox" class="claim-group-chk form-check-input flex-shrink-0 mt-0"'
                       + ' data-group="' + groupIdx + '" checked'
                       + ' title="Select / deselect all from this source">'
                       + '<span class="flex-grow-1"><i class="fa fa-link me-1"></i>' + label + '</span>'
                       + '<span class="badge bg-secondary ms-1">' + src.photos.length + '</span>'
+                      + '<button type="button" class="btn btn-sm btn-outline-danger claim-group-reject ms-2 py-0 px-1"'
+                      + ' data-group="' + groupIdx + '"'
+                      + ' title="Not a match — don\'t suggest any photo from this source again for this album">'
+                      + '<i class="fa fa-ban me-1"></i>Dismiss source'
+                      + '</button>'
                       + '</h6>';
                 html += '<div class="row g-2">';
                 src.photos.forEach(function (photo) {
                     const imgUrl  = '/photo/' + photo.folder + '/' + photo.filename;
                     const showUrl = '/photo/show/' + photo.id;
-                    html += '<div class="col-6 col-md-3 col-lg-2">'
+                    html += '<div class="col-6 col-md-3 col-lg-2" data-photo-card="' + photo.id + '">'
                           + '<div class="card h-100 border-0 shadow-sm">'
                           + '<div class="position-relative">'
                           + '<a href="' + showUrl + '" target="_blank" tabindex="-1">'
@@ -606,7 +611,15 @@
                           + '<input type="checkbox" class="claim-photo-chk form-check-input"'
                           + ' value="' + photo.id + '" data-group="' + groupIdx + '" checked'
                           + ' title="' + escapeHtml(photo.title) + '">'
-                          + '</div></div>'
+                          + '</div>'
+                          + '<button type="button" class="btn btn-sm btn-light claim-photo-reject'
+                          + ' position-absolute top-0 end-0 p-0 m-1 rounded-circle"'
+                          + ' data-photo-id="' + photo.id + '"'
+                          + ' style="width:20px;height:20px;line-height:1;"'
+                          + ' title="Not a match — don\'t suggest this photo again for this album">'
+                          + '<i class="fa fa-times text-danger"></i>'
+                          + '</button>'
+                          + '</div>'
                           + '<div class="card-body p-1">'
                           + '<small class="text-truncate d-block">'
                           + '<a href="' + showUrl + '" target="_blank" class="text-secondary text-decoration-none"'
@@ -626,6 +639,88 @@
                 const grp = $(this).data('group');
                 $('.claim-photo-chk[data-group="' + grp + '"]').prop('checked', $(this).prop('checked'));
                 updateClaimCount();
+            });
+            $(document).on('click.claim', '.claim-photo-reject', function () {
+                dismissPhoto($(this));
+            });
+            $(document).on('click.claim', '.claim-group-reject', function () {
+                dismissGroup($(this));
+            });
+        }
+
+        // Drop dismissed photo ids from the cached suggestion data and
+        // reflect the new count on the page's badge/button.
+        function removeDismissedFromCache(photoIds) {
+            if (!unclaimedData) return;
+            const idSet = new Set(photoIds);
+            unclaimedData.sources.forEach(function (src) {
+                src.photos = src.photos.filter(function (p) { return !idSet.has(p.id); });
+            });
+            unclaimedData.sources = unclaimedData.sources.filter(function (src) {
+                return src.photos.length > 0;
+            });
+            unclaimedData.total_count = Math.max(0, unclaimedData.total_count - photoIds.length);
+            $('#claim-source-badge').text(unclaimedData.total_count);
+            if (unclaimedData.total_count === 0) $('#btn-claim-source').hide();
+        }
+
+        // Mark a single photo as "not a match" for this album (PM-43) so it
+        // stops being suggested here, then remove it from the modal in place.
+        function dismissPhoto($btn) {
+            const photoId = $btn.data('photo-id');
+            const $card = $btn.closest('[data-photo-card]');
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: '/api/v1/album/{{ album_path }}/dismiss-photos',
+                method: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify({photo_ids: [photoId]}),
+                success: function () {
+                    removeDismissedFromCache([photoId]);
+
+                    const $group = $card.closest('.mb-4');
+                    $card.remove();
+                    const remaining = $group.find('[data-photo-card]').length;
+                    if (remaining === 0) {
+                        $group.remove();
+                    } else {
+                        $group.find('.badge.bg-secondary').first().text(remaining);
+                    }
+                    updateClaimCount();
+                    toastr.info('Won\'t suggest this photo for this album again.');
+                },
+                error: function () {
+                    $btn.prop('disabled', false);
+                    toastr.error('Failed to dismiss photo. Please try again.');
+                }
+            });
+        }
+
+        // Mark every photo from one source_profile as "not a match" for this
+        // album (PM-43), then drop the whole group from the modal in place.
+        function dismissGroup($btn) {
+            const grp = $btn.data('group');
+            const $group = $btn.closest('[data-group-section]');
+            const photoIds = $group.find('.claim-photo-chk[data-group="' + grp + '"]')
+                .map(function () { return $(this).val(); }).get();
+            if (photoIds.length === 0) return;
+
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: '/api/v1/album/{{ album_path }}/dismiss-photos',
+                method: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify({photo_ids: photoIds}),
+                success: function () {
+                    removeDismissedFromCache(photoIds);
+                    $group.remove();
+                    updateClaimCount();
+                    toastr.info('Won\'t suggest photos from this source again.');
+                },
+                error: function () {
+                    $btn.prop('disabled', false);
+                    toastr.error('Failed to dismiss this source. Please try again.');
+                }
             });
         }
 
@@ -648,9 +743,10 @@
             renderClaimModal(unclaimedData);
         });
 
-        // Clean up delegated handler when modal hides.
+        // Clean up delegated handlers when modal hides.
         $('#claim-source-modal').on('hidden.bs.modal', function () {
             $(document).off('change.claim');
+            $(document).off('click.claim');
         });
 
         $('#claim-select-all').on('click', function () {

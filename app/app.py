@@ -1856,9 +1856,15 @@ def get_unclaimed_by_source(path):
     if not source_profiles:
         return jsonify({'sources': [], 'total_count': 0})
 
-    # Photos that share a source_profile but are NOT already in the album.
+    # Photos previously marked "not a match" for this album are excluded so
+    # they stop being suggested here (PM-43).
+    dismissed_ids = list(album.get('dismissed_photos', []))
+    excluded_ids = album_photo_ids + dismissed_ids
+
+    # Photos that share a source_profile but are NOT already in the album
+    # and haven't been dismissed for it.
     unclaimed = list(db.photos.find(
-        {'source_profile': {'$in': source_profiles}, '_id': {'$nin': album_photo_ids}},
+        {'source_profile': {'$in': source_profiles}, '_id': {'$nin': excluded_ids}},
         {'folder': 1, 'filename': 1, 'title': 1, 'courtesy': 1, 'source_profile': 1}
     ))
 
@@ -1906,6 +1912,35 @@ def claim_photos_to_album(path):
     if result.matched_count == 0:
         return jsonify({'error': 'Album not found'}), 404
     return jsonify({'message': f'Added {len(oid_list)} photos', 'count': len(oid_list)})
+
+
+@app.route('/api/v1/album/<string:path>/dismiss-photos', methods=['POST'])
+def dismiss_photos_from_album(path):
+    """
+    Mark a list of photos (by ObjectId string) as "not a match" for this
+    album, so they stop being suggested by the claim-from-source feature
+    even though they share a source_profile with the album's photos (PM-43).
+
+    Body: { photo_ids: [str, ...] }
+    """
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({'error': 'Invalid or missing JSON body'}), 400
+    photo_ids = body.get('photo_ids', [])
+    if not photo_ids:
+        return jsonify({'error': 'photo_ids is required'}), 400
+    try:
+        oid_list = [ObjectId(pid) for pid in photo_ids]
+    except Exception:
+        return jsonify({'error': 'Invalid photo_ids — expected ObjectId strings'}), 400
+
+    result = db.albums.update_one(
+        {'path': path},
+        {'$addToSet': {'dismissed_photos': {'$each': oid_list}}}
+    )
+    if result.matched_count == 0:
+        return jsonify({'error': 'Album not found'}), 404
+    return jsonify({'message': f'Dismissed {len(oid_list)} photos', 'count': len(oid_list)})
 
 
 @app.route('/api/v1/album/<string:path>/slideshow', methods=['GET'])
