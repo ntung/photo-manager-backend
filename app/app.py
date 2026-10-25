@@ -2120,15 +2120,12 @@ def get_album_by_id(object_id):
 
 
 if __name__ != "__main__":
-    # 1. Locate Gunicorn's error logger
+    # Under flask run / pytest (also __name__ != "__main__"), gunicorn.error
+    # has no handlers, so only touch the root logger when actually running
+    # inside a gunicorn worker - otherwise this would wipe out the dictConfig
+    # handlers above and logging would go nowhere.
     gunicorn_logger = logging.getLogger('gunicorn.error')
-
-    # 2. Set Flask's logger handlers to match Gunicorn's
-    app.logger.handlers = gunicorn_logger.handlers
-
-    # 3. Match the log levels (so INFO or DEBUG messages actually show up)
-    app.logger.setLevel(gunicorn_logger.level)
-
-    # 4. (Optional) Propagate messages to the root logger
-    # This ensures third-party library logs also go to Gunicorn
-    logging.getLogger().handlers = gunicorn_logger.handlers
+    if gunicorn_logger.handlers:
+        root_logger = logging.getLogger()
+        root_logger.handlers = gunicorn_logger.handlers + root_logger.handlers
+        root_logger.setLevel(gunicorn_logger.level)
