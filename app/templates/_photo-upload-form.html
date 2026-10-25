@@ -88,7 +88,7 @@
         </select>
     </div>
     <div class="mb-3" id="action-button">
-        <button class="btn btn-primary btn-photo-upload">Upload</button>
+        <button class="btn btn-primary btn-photo-upload" title="Shortcut: Ctrl+Enter (Cmd+Enter on Mac)">Upload</button>
     </div>
     <div id="duplicate-preview" class="mb-3" style="display:none;">
         <div class="alert alert-warning d-flex align-items-center gap-3 p-2 mb-0">
@@ -345,6 +345,17 @@
             });
 
         //toggleLockAndUnlockForm(true);
+    });
+
+    // Ctrl+Enter (Cmd+Enter on Mac) submits whichever action is currently
+    // showing in #action-button - Upload when adding a photo, Save when
+    // editing one - so it works from any field, including the description
+    // textarea where a plain Enter must stay a newline.
+    $("#upload-form").on("keydown", function (event) {
+        const isSaveShortcut = (event.ctrlKey || event.metaKey) && event.key === "Enter";
+        if (!isSaveShortcut) return;
+        event.preventDefault();
+        $("#action-button button").trigger("click");
     });
 
     $(".photo-description").on("focusout", function () {
