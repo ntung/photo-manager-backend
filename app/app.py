@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import pathlib
-import pprint
 import random
 import re
 import tempfile
@@ -22,7 +21,7 @@ import pytz
 import requests
 from bson import ObjectId
 from dotenv import load_dotenv
-from flask import Flask, Response
+from flask import Flask, Response, g
 from flask import jsonify, render_template, request, url_for
 from flask import redirect, send_from_directory
 from flask_cors import CORS
@@ -123,6 +122,19 @@ submission_folders = pm_init.submission_folder_dict()
 nb_downloads = 0
 
 
+@app.before_request
+def _log_request_start():
+    g.request_start_time = time.time()
+
+
+@app.after_request
+def _log_request_end(response):
+    duration_ms = (time.time() - g.get('request_start_time', time.time())) * 1000
+    app.logger.info("%s %s -> %s (%.1fms)",
+                    request.method, request.path, response.status_code, duration_ms)
+    return response
+
+
 @app.cli.command()
 def migrate():
     """
@@ -153,7 +165,7 @@ def index():
 
 @app.route('/photo/todo-list', methods=('GET', 'POST'))
 def photo_todo_list():
-    app.logger.info("You've accessed TODO List")
+    app.logger.debug("You've accessed TODO List")
     if request.method == 'POST':
         content = request.form['content']
         degree = request.form['degree']
@@ -249,7 +261,7 @@ def album_add():
 
 @app.route('/photo/albums', methods=('GET', 'POST'))
 def photo_albums():
-    app.logger.info("You've accessed photo albums")
+    app.logger.debug("You've accessed photo albums")
     view = 'photo-albums.html'
     if request.method == 'POST':
         file = request.files['cover']
@@ -269,8 +281,8 @@ def photo_albums():
                 title = "Untitled 001"
             else:
                 for album in all_untitled_albums:
-                    app.logger.info(album['title'])
-        app.logger.info("%s\t%s", title, description)
+                    app.logger.debug(album['title'])
+        app.logger.debug("%s\t%s", title, description)
 
         if not title:
             # stop creating untitled album
@@ -503,7 +515,7 @@ def albums_delete():
     if album_path is not None and album_path is not None:
         query = {"_id": ObjectId(album_object_id)}
         result = db.albums.delete_one(query)
-        app.logger.info(result)
+        app.logger.debug(result)
 
     return jsonify(message="Deleted successfully")
 
@@ -530,7 +542,7 @@ def albums_reorder_photos():
                 }
             }, upsert=False
         )
-        app.logger.info(album)
+        app.logger.debug(album)
         updated_album = db.albums.find_one({"_id": ObjectId(album_object_id)})
         if updated_album is not None and updated_album.get("_id") != "":
             album = {
@@ -564,7 +576,7 @@ def albums_update():
                 }
             }, upsert=False
         )
-        app.logger.info(album)
+        app.logger.debug(album)
     retval = {
         "message": "Updated completely",
         "title": album_title,
@@ -1044,7 +1056,7 @@ def photo_read(path):
         return send_from_directory(UPLOAD_FOLDER, path,
                                    as_attachment=True, max_age=86400)
     except FileNotFoundError as exception:
-        app.logger.error("404: File Not Found %s", exception)
+        app.logger.exception("404: File Not Found %s", exception)
         return None
 
 
@@ -1085,7 +1097,7 @@ def photo_update():
     photo_title = request_json['photo-title']
     photo_description = request_json['photo-description']
     photo_courtesy = sanitize_facebook_url(request_json['photo-courtesy'])
-    app.logger.info("Photo requesting to be updated: %s", request_json)
+    app.logger.debug("Photo requesting to be updated: %s", request_json)
     result = db.photos.update_one(
         {"_id": ObjectId(photo_object_id)},
         {
@@ -1161,13 +1173,13 @@ def extension_save():
     try:
         result = do_download_image(upload_dir, download_url, filename)
     except requests.exceptions.HTTPError as e:
-        app.logger.error("Extension save HTTP error: %s", e)
+        app.logger.exception("Extension save HTTP error: %s", e)
         return jsonify({'message': str(e)}), 502
     except requests.exceptions.ConnectionError as e:
-        app.logger.error("Extension save connection error: %s", e)
+        app.logger.exception("Extension save connection error: %s", e)
         return jsonify({'message': str(e)}), 502
     except requests.exceptions.RequestException as e:
-        app.logger.error("Extension save request error: %s", e)
+        app.logger.exception("Extension save request error: %s", e)
         return jsonify({'message': str(e)}), 502
 
     if isinstance(result, Response):
@@ -1302,13 +1314,13 @@ def extension_auto_save():
     try:
         result = do_download_image(upload_dir, download_url, filename)
     except requests.exceptions.HTTPError as e:
-        app.logger.error("Auto-save HTTP error: %s", e)
+        app.logger.exception("Auto-save HTTP error: %s", e)
         return jsonify({'message': str(e)}), 502
     except requests.exceptions.ConnectionError as e:
-        app.logger.error("Auto-save connection error: %s", e)
+        app.logger.exception("Auto-save connection error: %s", e)
         return jsonify({'message': str(e)}), 502
     except requests.exceptions.RequestException as e:
-        app.logger.error("Auto-save request error: %s", e)
+        app.logger.exception("Auto-save request error: %s", e)
         return jsonify({'message': str(e)}), 502
 
     if isinstance(result, Response):
@@ -1521,13 +1533,13 @@ def do_upload_photo(req):
             result = do_download_image(UPLOAD_DIR, photo_url, filename)
             nb_downloads += 1
         except requests.exceptions.HTTPError as e:
-            app.logger.error("HTTP error occurred: %s", e)
+            app.logger.exception("HTTP error occurred: %s", e)
             return jsonify({'message': str(e)}), 500
         except requests.exceptions.ConnectionError as e:
-            app.logger.error("Connection error occurred: %s", e)
+            app.logger.exception("Connection error occurred: %s", e)
             return jsonify({'message': str(e)}), 500
         except requests.exceptions.RequestException as e:
-            app.logger.error("A general error occurred: %s", e)
+            app.logger.exception("A general error occurred: %s", e)
             return jsonify({'message': str(e)}), 500
         finally:
             app.logger.info("The number of downloads the remote photo: %s", nb_downloads)
@@ -1541,8 +1553,6 @@ def do_upload_photo(req):
     col_photos = db.photos
     docs = col_photos.find_one({"hash_md5": hash_md5})
     if docs is not None:
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(docs)
         app.logger.debug(docs)
         col_albums = []
         all_albums = db.albums.find()
@@ -1945,7 +1955,8 @@ def claim_photos_to_album(path):
         return jsonify({'error': 'photo_ids is required'}), 400
     try:
         oid_list = [ObjectId(pid) for pid in photo_ids]
-    except Exception:
+    except Exception as e:
+        app.logger.warning("Invalid photo_ids for album %s: %s", path, e)
         return jsonify({'error': 'Invalid photo_ids — expected ObjectId strings'}), 400
 
     result = db.albums.update_one(
@@ -1977,7 +1988,8 @@ def dismiss_photos_from_album(path):
         return jsonify({'error': 'photo_ids is required'}), 400
     try:
         oid_list = [ObjectId(pid) for pid in photo_ids]
-    except Exception:
+    except Exception as e:
+        app.logger.warning("Invalid photo_ids for album %s: %s", path, e)
         return jsonify({'error': 'Invalid photo_ids — expected ObjectId strings'}), 400
 
     result = db.albums.update_one(

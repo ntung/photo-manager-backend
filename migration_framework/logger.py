@@ -1,10 +1,13 @@
 # migration_framework/logger.py
 import json
+import logging
+
+logger = logging.getLogger("migration_framework")
 
 
 class MigrationLogger:
     def info(self, msg, **kwargs):
-        print(json.dumps({"level": "INFO", "msg": msg, **kwargs}))
+        logger.info(json.dumps({"msg": msg, **kwargs}))
 
     def error(self, msg, **kwargs):
-        print(json.dumps({"level": "ERROR", "msg": msg, **kwargs}))
+        logger.error(json.dumps({"msg": msg, **kwargs}))

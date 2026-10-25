@@ -5,6 +5,8 @@ from collections import defaultdict
 from bson import ObjectId
 from bson.errors import InvalidId
 
+logger = logging.getLogger(__name__)
+
 MAX_NB_FILES_PER_DIR = 400
 PHOTO_SUBMISSION_FOLDERS = defaultdict()
 
@@ -37,7 +39,7 @@ class InitPM:
             return k
         for k in folders_dict:
             if folders_dict[k] < MAX_NB_FILES_PER_DIR:
-                logging.info("Directory %s has  %s photos.", k, folders_dict[k])
+                logger.info("Directory %s has  %s photos.", k, folders_dict[k])
                 return k
         # Otherwise, it is starting a new series folder
         next_value = next_string(k)
@@ -47,12 +49,12 @@ class InitPM:
                             exist_ok=True)
                 folders_dict[next_value] = 0
             except FileExistsError as e:
-                logging.error("Folder Exists! Use It! %s", e)
+                logger.exception("Folder Exists! Use It! %s", e)
             except FileNotFoundError as e:
-                logging.error("404: Folder Not Found %s", e)
+                logger.exception("404: Folder Not Found %s", e)
             except OSError as error:
-                logging.error("Directory %s can not be created due to %s.",
-                              next_value, error)
+                logger.exception("Directory %s can not be created due to %s.",
+                                 next_value, error)
             return next_value
         return self.default_name
 
@@ -132,6 +134,6 @@ def safe_convert(id_str):
     """
     try:
         return ObjectId(id_str)
-    except (InvalidId, TypeError):
-        print(f"Error: '{id_str}' is not a valid ObjectId.")
+    except (InvalidId, TypeError) as e:
+        logger.warning("'%s' is not a valid ObjectId: %s", id_str, e)
         return None

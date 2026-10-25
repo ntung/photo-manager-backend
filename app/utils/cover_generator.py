@@ -22,6 +22,7 @@ How it works:
      the album's cover_photo.
 """
 import hashlib
+import logging
 import os
 import random
 import uuid
@@ -33,6 +34,8 @@ from bson import ObjectId
 from PIL import Image
 
 from . import PhotoManager
+
+logger = logging.getLogger(__name__)
 
 TZ_LONDON = pytz.timezone("Europe/London")
 
@@ -76,7 +79,7 @@ def _normalize_object_ids(raw_ids):
         try:
             normalized.append(ObjectId(x))
         except (bson.errors.InvalidId, TypeError):
-            print(f"  WARNING: skipping malformed photo id in album.photos: {x!r}")
+            logger.warning("Skipping malformed photo id in album.photos: %r", x)
     return normalized
 
 
@@ -173,23 +176,22 @@ def generate_cover(
             raise CoverGenerationError(f"Source file missing on disk: {path}")
         source_paths.append(path)
 
-    print(f"Album: {album.get('title')!r} ({album_path}), {len(photo_ids)} photos total")
-    print(f"Chosen {len(chosen_ids)} source photo(s):")
-    for pid, path in zip(chosen_ids, source_paths):
-        print(f"  - {pid} -> {path}")
+    logger.info("Album: %r (%s), %s photos total", album.get('title'), album_path, len(photo_ids))
+    logger.info("Chosen %s source photo(s): %s",
+                len(chosen_ids), list(zip(chosen_ids, source_paths)))
 
     try:
         collage = build_collage(source_paths, target_w, target_h)
     except OSError as e:
         raise CoverGenerationError(f"Could not read/decode a source image: {e}") from e
-    print(f"Collage size: {collage.size[0]}x{collage.size[1]}")
+    logger.debug("Collage size: %sx%s", collage.size[0], collage.size[1])
 
     if dry_run:
         preview_path = os.path.join(
             '/tmp', f"cover-preview-{album_path}.jpg"
         )
         collage.save(preview_path, 'JPEG', quality=90)
-        print(f"[dry-run] Not saving to DB. Preview written to {preview_path}")
+        logger.info("[dry-run] Not saving to DB. Preview written to %s", preview_path)
         return None
 
     # Save directly under the target submission folder so the later rename
@@ -209,7 +211,7 @@ def generate_cover(
     if existing:
         os.remove(tmp_path)
         new_photo_id = existing['_id']
-        print(f"Identical cover already exists as photo {new_photo_id}, reusing it")
+        logger.info("Identical cover already exists as photo %s, reusing it", new_photo_id)
     else:
         filename = f"{uuid.uuid4()}.jpg"
         dest_path = os.path.join(dest_dir, filename)
@@ -230,7 +232,7 @@ def generate_cover(
             'hash_md5': hash_md5,
         })
         new_photo_id = result.inserted_id
-        print(f"Saved new cover photo {new_photo_id} -> {dest_path}")
+        logger.info("Saved new cover photo %s -> %s", new_photo_id, dest_path)
 
     db.albums.update_one(
         {'path': album_path},
@@ -244,5 +246,5 @@ def generate_cover(
             '$addToSet': {'photos': new_photo_id},
         }
     )
-    print(f"Album '{album_path}' cover_photo set to {new_photo_id}")
+    logger.info("Album '%s' cover_photo set to %s", album_path, new_photo_id)
     return new_photo_id
