@@ -14,5 +14,4 @@ python-slugify
 pytz
 uvicorn
 asgiref
-hexora
 Pillow
