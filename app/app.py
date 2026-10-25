@@ -110,6 +110,7 @@ dictConfig({
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type: application/json'
 socketio = SocketIO(app)
