@@ -14,7 +14,6 @@ flask run                           # Flask dev server
 ```bash
 flake8 app/ migration_framework/ migrations/
 ```
-Config in `.flake8`: max line length 100, max complexity 12, F401 ignored globally.
 
 **Tests:**
 ```bash
@@ -45,26 +44,6 @@ Flask + PyMongo photo management backend. No ORM — direct PyMongo queries thro
 **Custom migration framework** (`migration_framework/runner.py`): migrations in `migrations/` are Python files named `NNNN_description.py`. Each must expose `upgrade(db, logger, session)`. The runner records applied versions in `migration_versions` and supports sessions for transactional rollback (transactions only run when connected to a replica set; standalone MongoDB skips them).
 
 **Templates:** Underscore-prefixed templates (`_photo-list.html`, `_album_view_list.html`, `_album_view_photo_rows.html`, etc.) are HTML partials returned by API endpoints for HTMX-style infinite scroll. Full-page templates (`photo-list.html`, `album-view.html`, etc.) use these partials via Jinja includes. Pagination page size is hardcoded at 20 in `_get_pagination_params()`.
-
-**API surface:**
-- `GET/POST /photo/upload` — upload a photo (form + `metadata` JSON field)
-- `GET /photo/show/<unique_key>` — show photo by ObjectId string or MD5 hash
-- `POST /photo/delete`, `GET/POST /photo/delete/<id>` — delete photo and its album references
-- `PATCH /api/v1/photo/update` — update photo title
-- `POST /photo/update` — update photo title, description, courtesy
-- `GET /photo/list`, `GET /photo/view` — paginated photo list (HTML)
-- `GET /photo/<path:path>` — serve photo file from `UPLOAD_FOLDER` (cached 24 h)
-- `GET/POST /photo/albums` — album CRUD list view (HTML)
-- `GET/POST /albums`, `/albums/<path>` — album data (JSON)
-- `GET /albums/view/<path>` — album detail page (HTML)
-- `POST /albums/add-photo`, `/album/add`, `/photo/save-photo-to-albums` — add photos to albums
-- `POST /albums/remove-photos` — remove photos from an album
-- `POST /albums/reorder-photos/` — reorder photos within an album
-- `POST /albums/update/`, `/albums/delete` — update/delete an album
-- `GET /api/v1/photos` — paginated photo list (JSON + pre-rendered HTML for infinite scroll)
-- `GET /api/v1/photos/gallery` — paginated photo gallery (JSON + pre-rendered HTML)
-- `GET /api/v1/album/<path>/photos` — paginated album photos (JSON + pre-rendered HTML); supports `sort=<field>;<dir>` and `shuffle=<seed>` query params
-- `GET /api/v1/album/<path>/slideshow` — lightweight photo URL + title list for slideshow
 
 **ASGI support:** `asgi_app.py` wraps the WSGI app via `asgiref.WsgiToAsgi` for uvicorn deployments.
 
